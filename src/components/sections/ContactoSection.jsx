@@ -39,7 +39,7 @@ const ContactoSection = ({ company }) => {
 
             <div>
               <h3 className="text-xl font-bold mb-2">Teléfono</h3>
-              <p className="text-gray-600">+52 442 676 7490</p>
+              <p className="text-gray-600">+52 442 773 4562</p>
               {company.name === 'Centro de Ingeniería y Abastecimiento ECG' && (
                 <p className="text-gray-600">Ing. Erasmo Cuaya: +52 442 669 1732</p>
               )}
@@ -48,7 +48,7 @@ const ContactoSection = ({ company }) => {
             <div>
               <h3 className="text-xl font-bold mb-2">Horario de Atención</h3>
               <p className="text-gray-600">Lunes a Viernes</p>
-              <p className="text-gray-600">08:00 am - 18:00 hrs</p>
+              <p className="text-gray-600">09:00 am - 17:00 hrs</p>
             </div>
           </div>
 
