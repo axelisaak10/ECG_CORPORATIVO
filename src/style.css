@@ -94,3 +94,36 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* Corrección de visibilidad del Header y Logo */
+.header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+/* Animación para el logo al cambiar de empresa */
+.logo-fade {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilo para que el texto de los botones del menú no se pierda */
+.nav-menu button span {
+  display: inline-block;
+  pointer-events: none;
+}
+
+/* Efecto de selección activa */
+.scale-105 {
+  transform: scale(1.05);
+}
+
+/* Asegurar que el botón de hamburguesa esté por encima del menú */
+.hamburger-button {
+  z-index: 60;
+  position: relative;
+}
