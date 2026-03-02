@@ -10,9 +10,9 @@ export const companiesData = [
     phone: '5214427734562',
     email: 'centroecging@gmail.com',
     socialMedia: {
-      facebook: 'https://www.facebook.com/ecgcapacitacion',
-      instagram: 'https://www.instagram.com/ecgcapacitacion',
-      tiktok: 'https://www.tiktok.com/@ecgcapacitacion'
+      facebook: 'https://www.facebook.com/profile.php?id=100092558892899',
+      instagram: 'https://www.instagram.com/ecg_corporativo_qro/',
+      tiktok: 'https://www.tiktok.com/@ecg_corporativo_qro'
     },
     services: [
       { title: 'Sistema de Gestión Ambiental', desc: 'Consultoría en evaluación diagnóstica, diseño e implementación de SGA, auditorías internas y certificaciones ambientales.' },
@@ -39,9 +39,9 @@ export const companiesData = [
     phone: '5214427734562',
     email: 'centroecging@gmail.com',
     socialMedia: {
-      facebook: 'https://www.facebook.com/jecgsustentabilidad',
-      instagram: 'https://www.instagram.com/jecgsustentabilidad',
-      tiktok: 'https://www.tiktok.com/@jecgsustentabilidad'
+      facebook: 'https://www.facebook.com/profile.php?id=100092558892899',
+      instagram: 'https://www.instagram.com/ecg_corporativo_qro/',
+      tiktok: 'https://www.tiktok.com/@ecg_corporativo_qro'
     },
     services: [
       { title: 'Cambios de Tarifas Eléctricas', desc: 'Ajuste tarifario que promueve la eficiencia energética e incentiva el consumo sostenible.' },
@@ -68,9 +68,9 @@ export const companiesData = [
     phone: '5214427734562',
     email: 'facturacionecging@gmail.com',
     socialMedia: {
-      facebook: 'https://www.facebook.com/ecgingenieria',
-      instagram: 'https://www.instagram.com/ecgingenieria',
-      tiktok: 'https://www.tiktok.com/@ecgingenieria'
+      facebook: 'https://www.facebook.com/profile.php?id=100092558892899',
+      instagram: 'https://www.instagram.com/ecg_corporativo_qro/',
+      tiktok: 'https://www.tiktok.com/@ecg_corporativo_qro'
     },
     services: [
       { title: 'Diseño de Subestaciones', desc: 'Diseño, cálculo e instalación de subestaciones eléctricas en media tensión.' },
