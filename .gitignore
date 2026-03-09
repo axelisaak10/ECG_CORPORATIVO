@@ -1,3 +1,9 @@
+# Env files (never commit credentials)
+.env
+.env.local
+.env.production
+server/.env
+
 # Logs
 logs
 *.log

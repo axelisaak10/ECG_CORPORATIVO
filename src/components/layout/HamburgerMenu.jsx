@@ -1,76 +1,173 @@
 import React from 'react';
+import { LogIn, LogOut, User, X, LayoutDashboard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { navItems } from '../../data/navItems';
 
-// Mapeo extendido para asegurar que JECG (red) e Ingeniería (gray) funcionen
 const accentColors = {
-  blue: 'bg-blue-600 text-white shadow-blue-200',
-  red: 'bg-red-600 text-white shadow-red-200',
-  gray: 'bg-gray-700 text-white shadow-gray-200',
-  green: 'bg-green-600 text-white shadow-green-200',
-  orange: 'bg-orange-600 text-white shadow-orange-200'
+  blue:   { pill: 'bg-blue-600',   glow: 'shadow-blue-500/40',  text: 'text-blue-600',   soft: 'bg-blue-50'   },
+  red:    { pill: 'bg-red-600',    glow: 'shadow-red-500/40',   text: 'text-red-600',    soft: 'bg-red-50'    },
+  gray:   { pill: 'bg-gray-700',   glow: 'shadow-gray-500/40',  text: 'text-gray-700',   soft: 'bg-gray-100'  },
+  green:  { pill: 'bg-green-600',  glow: 'shadow-green-500/40', text: 'text-green-600',  soft: 'bg-green-50'  },
+  orange: { pill: 'bg-orange-500', glow: 'shadow-orange-500/40',text: 'text-orange-500', soft: 'bg-orange-50' },
 };
 
-const HamburgerMenu = ({ company, activeSection, setActiveSection, menuOpen, setMenuOpen }) => {
+const HamburgerMenu = ({
+  company,
+  activeSection,
+  setActiveSection,
+  menuOpen,
+  setMenuOpen,
+  currentUser,
+  onOpenAuth,
+  onLogout,
+}) => {
+  const accent = accentColors[company?.accentColor] ?? accentColors.blue;
+  const navigate = useNavigate();
+
   return (
-    <div className={`fixed inset-0 z-[110] ${menuOpen ? 'visible' : 'invisible'}`}>
-      {/* Overlay con desenfoque suave para cerrar el menú */}
+    <div className={`fixed inset-0 z-[110] ${menuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+
+      {/* ── Backdrop ── */}
       <div
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-500 ${
-          menuOpen ? 'opacity-100' : 'opacity-0'
-        }`}
         onClick={() => setMenuOpen(false)}
+        className={`absolute inset-0 transition-all duration-500 ${
+          menuOpen ? 'bg-black/60 backdrop-blur-md opacity-100' : 'opacity-0'
+        }`}
       />
-      
-      {/* Panel Lateral con desplazamiento (Scroll) habilitado */}
-      <div className={`absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transform transition-transform duration-500 ease-in-out flex flex-col ${
-        menuOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        
-        {/* LA CLAVE: 'overflow-y-auto' permite navegar si el zoom es alto y el contenido se sale de la pantalla */}
-        <div className="flex-grow overflow-y-auto overflow-x-hidden pt-24 pb-8 px-6">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Navegación</h2>
-          
-          <nav className="space-y-4">
+
+      {/* ── Panel ── */}
+      <aside
+        className={`absolute right-0 top-0 bottom-0 w-80 flex flex-col bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-500 ease-[cubic-bezier(.77,0,.175,1)] ${
+          menuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{ borderLeft: '1px solid rgba(0,0,0,0.06)' }}
+      >
+
+        {/* ── Decorative top bar ── */}
+        <div className={`h-1 w-full ${accent.pill}`} />
+
+        {/* ── Header row ── */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-400">Menú</span>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <X size={14} className="text-gray-600" />
+          </button>
+        </div>
+
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 pb-8">
+
+          {/* ── Auth block ── */}
+          <div className="mb-6">
+            {currentUser ? (
+              <div
+                className="rounded-2xl p-4 mb-2"
+                style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%)', border: '1px solid #e2e8f0' }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-full ${accent.pill} flex items-center justify-center shadow-md ${accent.glow}`}>
+                    <User size={16} className="text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{currentUser.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{currentUser.email ?? 'Usuario activo'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { navigate(currentUser.role === 'admin' ? '/admin' : '/usuario'); setMenuOpen(false); }}
+                  className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-white text-sm font-semibold transition-all mb-2 ${accent.pill}`}
+                >
+                  <LayoutDashboard size={14} />
+                  Ir al Panel
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-red-500 hover:bg-red-50 text-sm font-semibold transition-all border border-red-100"
+                >
+                  <LogOut size={14} />
+                  Cerrar sesión
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-bold shadow-lg ${accent.pill} ${accent.glow} transition-transform hover:scale-[1.02] active:scale-[0.98]`}
+                style={{ boxShadow: `0 8px 24px -6px var(--tw-shadow-color)` }}
+              >
+                <LogIn size={16} />
+                Iniciar sesión
+              </button>
+            )}
+          </div>
+
+          {/* ── Divider ── */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-gray-400">Secciones</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* ── Nav items ── */}
+          <nav className="space-y-1.5">
             {navItems.map((item, index) => {
               const isActive = activeSection === item.id;
-              // Buscamos la clase según el accentColor de la empresa
-              const activeClass = accentColors[company.accentColor] || accentColors.blue;
 
               return (
                 <button
                   key={item.id}
                   onClick={() => {
                     setActiveSection(item.id);
-                    // Retraso pequeño para cerrar después de la animación de clic
-                    setTimeout(() => setMenuOpen(false), 250);
+                    setTimeout(() => setMenuOpen(false), 280);
                   }}
-                  style={{ transitionDelay: `${index * 50}ms` }}
-                  className={`w-full text-left px-5 py-4 rounded-2xl flex items-center space-x-4 transition-all duration-300 transform ${
-                    menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
+                  style={{
+                    transitionDelay: menuOpen ? `${index * 45}ms` : '0ms',
+                  }}
+                  className={`group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 ${
+                    menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
                   } ${
                     isActive
-                      ? `${activeClass} scale-105 shadow-lg font-bold`
-                      : 'text-gray-700 hover:bg-gray-100 hover:translate-x-2'
+                      ? `${accent.pill} text-white shadow-lg ${accent.glow}`
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <span className={`text-2xl transition-transform ${isActive ? 'animate-bounce' : 'group-hover:rotate-12'}`}>
+                  {/* Icon bubble */}
+                  <span
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-lg transition-transform duration-200 flex-shrink-0 ${
+                      isActive
+                        ? 'bg-white/20'
+                        : `${accent.soft} group-hover:scale-110`
+                    }`}
+                  >
                     {item.icon}
                   </span>
-                  <span className="text-lg font-medium whitespace-nowrap">
+
+                  <span className="font-semibold text-[15px] leading-tight flex-1">
                     {item.label}
                   </span>
+
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />
+                  )}
                 </button>
               );
             })}
           </nav>
-
-          {/* Información de contacto dinámica al final del scroll */}
-          <div className="mt-10 pt-6 border-t border-gray-100">
-            <p className="text-sm font-bold text-gray-800 break-words">{company.phone}</p>
-            <p className="text-xs text-gray-500 break-words">{company.email}</p>
-          </div>
         </div>
-      </div>
+
+        {/* ── Footer ── */}
+        <div
+          className="px-6 py-5 border-t border-gray-100"
+          style={{ background: 'linear-gradient(to top, #f8fafc, transparent)' }}
+        >
+          <p className="text-xs font-bold text-gray-700 truncate">{company?.name}</p>
+          <p className="text-[11px] text-gray-400 truncate mt-0.5">{company?.phone}</p>
+          <p className="text-[11px] text-gray-400 truncate">{company?.email}</p>
+        </div>
+      </aside>
     </div>
   );
 };

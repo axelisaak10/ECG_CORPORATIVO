@@ -1,8 +1,6 @@
-import React from 'react';
-
 const CompanySelector = ({ companies, activeCompany, setActiveCompany }) => {
   return (
-    <div className="pt-24 pb-8 px-4">
+    <div className="pt-24 pb-6 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-center gap-4">
           {companies.map((company, idx) => (

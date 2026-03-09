@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
 import Header from './components/layout/Header';
 import HamburgerMenu from './components/layout/HamburgerMenu';
 import CompanySelector from './components/layout/CompanySelector';
@@ -9,16 +10,94 @@ import ServiciosSection from './components/sections/ServiciosSection';
 import MiembrosSection from './components/sections/MiembrosSection';
 import PoliticasSection from './components/sections/PoliticasSection';
 import ContactoSection from './components/sections/ContactoSection';
-import MainPortal from './components/layout/MainPortal'; // Importa el nuevo componente
-import { Home } from 'lucide-react';
+import MainPortal from './components/layout/MainPortal';
+import AuthModal from './components/auth/AuthModal';
+import AdminDashboard from './components/auth/AdminDashboard';
+import UserDashboard from './components/auth/UserDashboard';
+import { Home, LogIn, LogOut, User } from 'lucide-react';
 import { companiesData } from './data/companies';
 
-function App() {
-  const [viewMode, setViewMode] = useState('portal'); // 'portal' o 'empresa'
-  const [activeCompany, setActiveCompany] = useState(0);
-  const [activeSection, setActiveSection] = useState('inicio');
+// ── Shared auth state ────────────────────────────────────────────────────────
+function useAuth() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const session = localStorage.getItem('ecg_session');
+    return session ? JSON.parse(session) : null;
+  });
+
+  const login = (user) => setCurrentUser(user);
+
+  const logout = () => {
+    localStorage.removeItem('ecg_session');
+    setCurrentUser(null);
+  };
+
+  return { currentUser, login, logout };
+}
+
+// ── Portal principal ─────────────────────────────────────────────────────────
+function PortalView({ currentUser, onLogin, onLogout }) {
+  const navigate = useNavigate();
+  const [showAuth, setShowAuth] = useState(false);
+
+  const handleLogin = (user) => {
+    onLogin(user);
+    if (user.role === 'admin') navigate('/admin');
+    else navigate('/usuario');
+  };
+
+  const handleSelectCompany = (index) => {
+    navigate(`/empresa/${companiesData[index].id}/inicio`);
+  };
+
+  return (
+    <>
+      <div className="fixed top-4 right-4 z-[200] flex items-center gap-2">
+        {currentUser ? (
+          <>
+            <button
+              onClick={() => navigate(currentUser.role === 'admin' ? '/admin' : '/usuario')}
+              className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700 transition-all"
+            >
+              <User size={14} className="text-blue-500" />
+              {currentUser.name}
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-2 shadow-sm text-sm font-semibold text-slate-500 hover:text-red-600 hover:border-red-200 transition-all"
+              title="Cerrar sesión"
+            >
+              <LogOut size={14} />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setShowAuth(true)}
+            className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm text-sm font-semibold text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all"
+          >
+            <LogIn size={14} />
+            Iniciar sesión
+          </button>
+        )}
+      </div>
+
+      <MainPortal companies={companiesData} onSelectCompany={handleSelectCompany} />
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={handleLogin} />}
+    </>
+  );
+}
+
+// ── Vista empresa ────────────────────────────────────────────────────────────
+function EmpresaView({ currentUser, onLogin, onLogout }) {
+  const navigate = useNavigate();
+  const { id, seccion } = useParams();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+
+  const companyIndex = companiesData.findIndex((c) => String(c.id) === String(id));
+  const company = companiesData[companyIndex] ?? companiesData[0];
+  const activeSection = seccion || 'inicio';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -26,58 +105,61 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const currentCompany = companiesData[activeCompany];
-
-  // Función para seleccionar empresa desde el Portal
-  const handleSelectCompany = (index) => {
-    setActiveCompany(index);
-    setViewMode('empresa');
-    setActiveSection('inicio');
+  // Scroll al cambiar sección
+  useEffect(() => {
     window.scrollTo(0, 0);
+  }, [seccion]);
+
+  const handleLogin = (user) => {
+    onLogin(user);
+    if (user.role === 'admin') navigate('/admin');
+    else navigate('/usuario');
   };
+
+  const setActiveSection = (s) => {
+    navigate(`/empresa/${id}/${s}`);
+  };
+
+  const setActiveCompany = (index) => {
+    navigate(`/empresa/${companiesData[index].id}/${activeSection}`);
+  };
+
+  if (companyIndex === -1) return <Navigate to="/" replace />;
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'inicio': return <InicioSection company={currentCompany} />;
-      case 'nosotros': return <NosotrosSection company={currentCompany} />;
-      case 'servicios': return <ServiciosSection company={currentCompany} />;
-      case 'miembros': return <MiembrosSection company={currentCompany} />;
-      case 'politicas': return <PoliticasSection company={currentCompany} />;
-      case 'contacto': return <ContactoSection company={currentCompany} />;
-      default: return <InicioSection company={currentCompany} />;
+      case 'inicio':    return <InicioSection company={company} />;
+      case 'nosotros':  return <NosotrosSection company={company} />;
+      case 'servicios': return <ServiciosSection company={company} />;
+      case 'miembros':  return <MiembrosSection company={company} />;
+      case 'politicas': return <PoliticasSection company={company} />;
+      case 'contacto':  return <ContactoSection company={company} />;
+      default:          return <InicioSection company={company} />;
     }
   };
-
-  // RENDERIZADO CONDICIONAL: Portal vs Empresa
-  if (viewMode === 'portal') {
-    return (
-      <MainPortal 
-        companies={companiesData} 
-        onSelectCompany={handleSelectCompany} 
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fadeIn">
       <Header
-        company={currentCompany}
+        company={company}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
         scrolled={scrolled}
       />
 
       <HamburgerMenu
-        company={currentCompany}
+        company={company}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
+        currentUser={currentUser}
+        onOpenAuth={() => { setMenuOpen(false); setShowAuth(true); }}
+        onLogout={onLogout}
       />
 
-      {/* Botón flotante para regresar al Portal Principal */}
       <button
-        onClick={() => setViewMode('portal')}
+        onClick={() => navigate('/')}
         className="fixed bottom-24 left-6 z-[150] bg-white text-gray-700 p-4 rounded-full shadow-2xl border border-gray-100 hover:scale-110 transition-all group"
         title="Regresar al Portal Central"
       >
@@ -86,7 +168,7 @@ function App() {
 
       <CompanySelector
         companies={companiesData}
-        activeCompany={activeCompany}
+        activeCompany={companyIndex}
         setActiveCompany={setActiveCompany}
       />
 
@@ -97,10 +179,68 @@ function App() {
       </main>
 
       <WhatsAppButton
-        phone={currentCompany.phone}
-        companyName={currentCompany.name}
+        phone={company.phone}
+        companyName={company.name}
       />
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={handleLogin} />}
     </div>
+  );
+}
+
+// ── Redirect /empresa/:id → /empresa/:id/inicio ─────────────────────────────
+function EmpresaRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/empresa/${id}/inicio`} replace />;
+}
+
+// ── App raíz con rutas ───────────────────────────────────────────────────────
+function App() {
+  const navigate = useNavigate();
+  const { currentUser, login, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={<PortalView currentUser={currentUser} onLogin={login} onLogout={handleLogout} />}
+      />
+      <Route
+        path="/empresa/:id/:seccion"
+        element={<EmpresaView currentUser={currentUser} onLogin={login} onLogout={handleLogout} />}
+      />
+      <Route
+        path="/empresa/:id"
+        element={<EmpresaRedirect />}
+      />
+      <Route
+        path="/admin"
+        element={
+          currentUser?.role === 'admin'
+            ? <AdminDashboard currentUser={currentUser} onGoToPortal={() => navigate('/')} onLogout={handleLogout} />
+            : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/usuario"
+        element={
+          currentUser
+            ? <UserDashboard
+                currentUser={currentUser}
+                onGoToPortal={() => navigate('/')}
+                onSelectCompany={(index) => navigate(`/empresa/${companiesData[index].id}/inicio`)}
+                onLogout={handleLogout}
+              />
+            : <Navigate to="/" replace />
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
