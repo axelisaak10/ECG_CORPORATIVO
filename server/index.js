@@ -91,6 +91,49 @@ app.post('/api/auth/register', async (req, res) => {
   return res.status(201).json({ message: 'Cuenta creada exitosamente.' });
 });
 
+// ── GET /api/users ────────────────────────────────────────────────────────────
+app.get('/api/users', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('Usuarios')
+    .select('id, "Nombre Completo", "Correo", nivel')
+    .order('id', { ascending: true });
+
+  if (error) return res.status(500).json({ error: 'Error al obtener usuarios.' });
+
+  const users = (data || []).map(u => {
+    const rawName = u['Nombre Completo'];
+    return {
+      id:    u.id,
+      name:  Array.isArray(rawName) ? rawName[0] : rawName,
+      email: u['Correo'],
+      nivel: u.nivel,
+      role:  u.nivel >= 2 ? 'superadmin' : u.nivel >= 1 ? 'admin' : 'user',
+    };
+  });
+
+  return res.json({ users });
+});
+
+// ── PUT /api/users ────────────────────────────────────────────────────────────
+app.put('/api/users', async (req, res) => {
+  const { id, nivel } = req.body;
+  if (id == null || nivel == null) return res.status(400).json({ error: 'id y nivel requeridos.' });
+
+  const { error } = await supabase.from('Usuarios').update({ nivel: Number(nivel) }).eq('id', id);
+  if (error) return res.status(500).json({ error: 'Error al actualizar usuario.' });
+  return res.json({ message: 'Nivel actualizado.' });
+});
+
+// ── DELETE /api/users ─────────────────────────────────────────────────────────
+app.delete('/api/users', async (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'id requerido.' });
+
+  const { error } = await supabase.from('Usuarios').delete().eq('id', id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar usuario.' });
+  return res.json({ message: 'Usuario eliminado.' });
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
