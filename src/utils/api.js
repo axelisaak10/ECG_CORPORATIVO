@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:3001';
+// En producción (Vercel) las funciones /api/* están en el mismo dominio.
+// En desarrollo local se usa el proxy de Vite hacia Express.
+const BASE_URL = '';
 
 export async function apiLogin(email, password) {
   const res = await fetch(`${BASE_URL}/api/auth/login`, {
