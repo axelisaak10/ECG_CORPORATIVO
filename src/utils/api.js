@@ -13,6 +13,17 @@ export async function apiLogin(email, password) {
   return data.user;
 }
 
+export async function apiResetPassword(email, newPassword) {
+  const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al restablecer la contraseña.');
+  return data;
+}
+
 export async function apiRegister(name, email, password) {
   const res = await fetch(`${BASE_URL}/api/auth/register`, {
     method: 'POST',

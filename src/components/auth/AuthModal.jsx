@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Eye, EyeOff, AlertCircle, CheckCircle, LogIn, UserPlus, Mail, Lock, User } from 'lucide-react';
-import { apiLogin, apiRegister } from '../../utils/api';
+import { X, Eye, EyeOff, AlertCircle, CheckCircle, LogIn, UserPlus, Mail, Lock, User, KeyRound, ArrowLeft } from 'lucide-react';
+import { apiLogin, apiRegister, apiResetPassword } from '../../utils/api';
 
 /* ── Tiny field wrapper ─────────────────────────────────────── */
 const Field = ({ label, icon: Icon, error, children }) => (
@@ -32,6 +32,12 @@ const AuthModal = ({ onClose, onLogin }) => {
   const [regLoading, setRegLoading] = useState(false);
   const [showRegPwd, setShowRegPwd] = useState(false);
 
+  const [recForm, setRecForm]       = useState({ email: '', password: '', confirm: '' });
+  const [recError, setRecError]     = useState('');
+  const [recSuccess, setRecSuccess] = useState(false);
+  const [recLoading, setRecLoading] = useState(false);
+  const [showRecPwd, setShowRecPwd] = useState(false);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginLoading(true);
@@ -45,6 +51,22 @@ const AuthModal = ({ onClose, onLogin }) => {
       setLoginError(err.message);
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const handleRecover = async (e) => {
+    e.preventDefault();
+    setRecError('');
+    if (recForm.password.length < 6)           { setRecError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (recForm.password !== recForm.confirm)   { setRecError('Las contraseñas no coinciden.'); return; }
+    setRecLoading(true);
+    try {
+      await apiResetPassword(recForm.email, recForm.password);
+      setRecSuccess(true);
+    } catch (err) {
+      setRecError(err.message);
+    } finally {
+      setRecLoading(false);
     }
   };
 
@@ -102,26 +124,28 @@ const AuthModal = ({ onClose, onLogin }) => {
               </h1>
             </div>
 
-            {/* Tab switcher */}
-            <div className="relative mt-6 flex bg-blue-950/40 rounded-2xl p-1 gap-1">
-              {[
-                { id: 'login',    icon: LogIn,    label: 'Ingresar' },
-                { id: 'register', icon: UserPlus, label: 'Registrarse' },
-              ].map(({ id, icon: Icon, label }) => (
-                <button
-                  key={id}
-                  onClick={() => { setTab(id); setLoginError(''); setRegError(''); setRegSuccess(false); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 ${
-                    tab === id
-                      ? 'bg-white text-blue-700 shadow-md'
-                      : 'text-blue-300 hover:text-white'
-                  }`}
-                >
-                  <Icon size={13} />
-                  {label}
-                </button>
-              ))}
-            </div>
+            {/* Tab switcher — oculto en recover */}
+            {tab !== 'recover' && (
+              <div className="relative mt-6 flex bg-blue-950/40 rounded-2xl p-1 gap-1">
+                {[
+                  { id: 'login',    icon: LogIn,    label: 'Ingresar' },
+                  { id: 'register', icon: UserPlus, label: 'Registrarse' },
+                ].map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => { setTab(id); setLoginError(''); setRegError(''); setRegSuccess(false); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 ${
+                      tab === id
+                        ? 'bg-white text-blue-700 shadow-md'
+                        : 'text-blue-300 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={13} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── Body ─────────────────────────────────────────── */}
@@ -180,6 +204,14 @@ const AuthModal = ({ onClose, onLogin }) => {
                       Verificando…
                     </span>
                   ) : 'Ingresar al Portal'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setTab('recover'); setLoginError(''); setRecError(''); setRecSuccess(false); setRecForm({ email: '', password: '', confirm: '' }); }}
+                  className="w-full text-center text-[12px] text-blue-500 hover:text-blue-700 font-semibold transition-colors pt-1"
+                >
+                  ¿Olvidaste tu contraseña?
                 </button>
 
               </form>
@@ -244,6 +276,68 @@ const AuthModal = ({ onClose, onLogin }) => {
                   ) : 'Crear Cuenta'}
                 </button>
               </form>
+            )}
+
+            {/* ── RECOVER ── */}
+            {tab === 'recover' && !recSuccess && (
+              <form onSubmit={handleRecover} className="space-y-4">
+                <button type="button" onClick={() => setTab('login')} className="flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-blue-600 font-semibold transition-colors mb-2">
+                  <ArrowLeft size={13} /> Volver al inicio de sesión
+                </button>
+                <div className="text-center pb-2">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                    <KeyRound size={22} className="text-blue-600" />
+                  </div>
+                  <p className="text-sm text-slate-500 leading-relaxed">Ingresa tu correo y una nueva contraseña.</p>
+                </div>
+
+                {recError && (
+                  <div className="flex items-center gap-2.5 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-[13px] font-semibold">
+                    <AlertCircle size={14} className="flex-shrink-0" /> {recError}
+                  </div>
+                )}
+
+                <Field label="Correo electrónico" icon={Mail}>
+                  <input type="email" value={recForm.email} onChange={e => { setRecForm({ ...recForm, email: e.target.value.replace(/\s/g, '') }); setRecError(''); }} placeholder="correo@ejemplo.com" required className={inputNormal} />
+                </Field>
+
+                <Field label="Nueva contraseña" icon={Lock}>
+                  <div className="relative">
+                    <input type={showRecPwd ? 'text' : 'password'} value={recForm.password} onChange={e => { setRecForm({ ...recForm, password: e.target.value }); setRecError(''); }} placeholder="Mínimo 6 caracteres" required className={inputNormal + ' pr-11'} />
+                    <button type="button" onClick={() => setShowRecPwd(!showRecPwd)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+                      {showRecPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </Field>
+
+                <Field label="Confirmar contraseña" icon={Lock}>
+                  <input type={showRecPwd ? 'text' : 'password'} value={recForm.confirm} onChange={e => { setRecForm({ ...recForm, confirm: e.target.value }); setRecError(''); }} placeholder="Repite tu contraseña" required className={inputNormal} />
+                </Field>
+
+                <button type="submit" disabled={recLoading} className="w-full py-3.5 mt-1 rounded-xl text-white text-sm font-bold tracking-wide transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #1d4ed8, #2563eb)' }}>
+                  {recLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Actualizando…
+                    </span>
+                  ) : 'Restablecer Contraseña'}
+                </button>
+              </form>
+            )}
+
+            {tab === 'recover' && recSuccess && (
+              <div className="text-center py-6">
+                <div className="relative w-20 h-20 mx-auto mb-5">
+                  <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-30" />
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-200">
+                    <CheckCircle size={36} className="text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+                <h3 className="text-xl font-black text-slate-800 mb-1">¡Contraseña actualizada!</h3>
+                <p className="text-sm text-slate-400 mb-7 leading-relaxed">Ya puedes iniciar sesión con tu nueva contraseña.</p>
+                <button onClick={() => { setTab('login'); setRecSuccess(false); setRecForm({ email: '', password: '', confirm: '' }); }} className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #1d4ed8, #2563eb)' }}>
+                  Iniciar Sesión
+                </button>
+              </div>
             )}
 
             {/* ── SUCCESS ── */}
