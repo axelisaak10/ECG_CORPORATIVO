@@ -90,10 +90,19 @@ const TicketsSection = ({ currentUser }) => {
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const [tickets, setTickets]   = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [apiError, setApiError] = useState('');
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Cargar lista de usuarios para el selector "Asignado a"
+  useEffect(() => {
+    fetch('/api/users')
+      .then(r => r.json())
+      .then(d => setUsuarios(d.users || []))
+      .catch(() => {});
+  }, []);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -500,7 +509,12 @@ const TicketsSection = ({ currentUser }) => {
                   </select>
                 </FL>
                 <FL label="Asignado a">
-                  <input value={editing.asignado_a || ''} onChange={e => setField('asignado_a', e.target.value)} placeholder="correo@ejemplo.com" className={inputCls} />
+                  <select value={editing.asignado_a || ''} onChange={e => setField('asignado_a', e.target.value)} className={inputCls}>
+                    <option value="">Sin asignar</option>
+                    {usuarios.map(u => (
+                      <option key={u.id} value={u.name}>{u.name} ({u.email})</option>
+                    ))}
+                  </select>
                 </FL>
               </div>
 
