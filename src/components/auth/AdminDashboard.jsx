@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
+import TicketsSection from '../admin/TicketsSection';
 
 /* ─── Status maps ─── */
 const STATUS_COTIZACION = {
@@ -505,6 +506,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
     { id: 'resumen',       label: 'Resumen',       icon: <BarChart3 size={17} />      },
     { id: 'cotizaciones',  label: 'Cotizaciones',  icon: <FileText size={17} />       },
     { id: 'dictaminacion', label: 'Dictaminación', icon: <ClipboardCheck size={17} /> },
+    { id: 'tickets',       label: 'Tickets',       icon: <ClipboardCheck size={17} /> },
     ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} /> }] : []),
   ];
 
@@ -590,6 +592,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
               emptyIcon={<ClipboardCheck size={38} />}
               newLabel="Nuevo Dictamen"
             />
+          )}
+          {activeTab === 'tickets' && (
+            <TicketsSection currentUser={currentUser} />
           )}
           {activeTab === 'usuarios' && isSuperAdmin && (
             <GestionUsuariosSection currentUser={currentUser} />

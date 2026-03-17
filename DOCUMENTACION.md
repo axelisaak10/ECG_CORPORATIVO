@@ -1,6 +1,6 @@
 # Documentación — ECG Corporativo Portal
 
-**Versión:** 1.0
+**Versión:** 1.2
 **Fecha:** Marzo 2026
 **Stack:** React 18 + Vite · Express.js · Supabase · Vercel
 
@@ -23,6 +23,7 @@
 13. [Persistencia de Datos](#13-persistencia-de-datos)
 14. [Despliegue](#14-despliegue)
 15. [Variables de Entorno](#15-variables-de-entorno)
+16. [Historial de Cambios](#16-historial-de-cambios)
 
 ---
 
@@ -75,10 +76,11 @@
 
 ```
 ECG_CORPORATIVO/
-├── index.html                    # Punto de entrada SPA
+├── index.html                    # Punto de entrada SPA (favicon: Corporativo.png)
 ├── vite.config.js                # Config Vite + proxy API
 ├── vercel.json                   # Rewrites para SPA y API
 ├── package.json                  # Dependencias frontend
+├── DOCUMENTACION.md              # Este archivo
 │
 ├── api/                          # Vercel Serverless Functions
 │   ├── package.json              # { "type": "commonjs" }
@@ -89,28 +91,29 @@ ECG_CORPORATIVO/
 │       └── reset-password.js     # POST /api/auth/reset-password
 │
 ├── server/                       # Backend Express (dev local)
-│   ├── index.js                  # Servidor Express
-│   ├── .env                      # Variables de entorno (no se sube)
+│   ├── index.js                  # Servidor Express + rutas equivalentes a /api
+│   ├── .env                      # Variables de entorno (no se sube a git)
 │   └── package.json
 │
 ├── public/
 │   └── assets/logos/
-│       ├── Corporativo.png       # Logo principal / favicon
+│       ├── Corporativo.png       # Logo principal — usado también como favicon
+│       ├── Corporativo1.png      # Variante del logo
 │       ├── Capacitacion.png
 │       ├── Dictaminacion.png
 │       └── centro.png
 │
 └── src/
     ├── main.jsx                  # Entry point React
-    ├── App.jsx                   # Router principal + auth state
+    ├── App.jsx                   # Router principal + hook useAuth
     │
     ├── components/
     │   ├── auth/
-    │   │   ├── AuthModal.jsx     # Modal login / registro / recuperar
-    │   │   ├── AdminDashboard.jsx# Panel admin (nivel >= 1)
+    │   │   ├── AuthModal.jsx     # Modal login / registro / recuperar contraseña
+    │   │   ├── AdminDashboard.jsx# Panel admin (nivel >= 1) con sidebar
     │   │   └── UserDashboard.jsx # Panel usuario (nivel 0)
     │   ├── admin/
-    │   │   └── TicketsSection.jsx# Sistema de tickets Kanban
+    │   │   └── TicketsSection.jsx# Sistema de tickets Kanban (nivel >= 1)
     │   ├── layout/
     │   │   ├── Header.jsx
     │   │   ├── HamburgerMenu.jsx
@@ -136,8 +139,8 @@ ECG_CORPORATIVO/
     │   └── features.js           # Características destacadas
     │
     └── utils/
-        ├── api.js                # Funciones fetch hacia /api/*
-        └── formatters.js         # fmtDate, fmtDateLong, uid
+        ├── api.js                # apiLogin · apiRegister · apiResetPassword
+        └── formatters.js         # fmtDate · fmtDateLong · uid
 ```
 
 ---
@@ -153,27 +156,18 @@ ECG_CORPORATIVO/
 ### Instalación local
 
 ```bash
-# 1. Clonar e instalar frontend
+# 1. Instalar dependencias del frontend
 npm install
 
-# 2. Instalar backend
+# 2. Instalar dependencias del backend
 cd server && npm install && cd ..
 
-# 3. Crear archivo de variables de entorno
-cp server/.env.example server/.env
-# Editar server/.env con las credenciales de Supabase
+# 3. Configurar variables de entorno
+# Crear server/.env con el contenido indicado en la sección 15
 
 # 4. Levantar en modo desarrollo
-npm run dev         # Frontend :5173
-node server/index.js  # Backend :3001
-```
-
-### Variables de entorno locales (`server/.env`)
-
-```env
-SUPABASE_URL=https://xxxxxxxx.supabase.co
-SUPABASE_SERVICE_KEY=eyJ...
-PORT=3001
+npm run dev            # Frontend en :5173
+node server/index.js   # Backend en :3001
 ```
 
 ---
@@ -184,25 +178,28 @@ PORT=3001
 
 | Columna | Tipo | Descripción |
 |---------|------|-------------|
-| `id` | integer | PK, auto-asignado |
-| `Nombre Completo` | text[] (array) | Nombre del usuario (se usa `[0]`) |
-| `Correo` | text | Email único |
+| `id` | integer | PK, asignado manualmente (max + 1) |
+| `Nombre Completo` | text[] | Array de texto — se usa el índice `[0]` |
+| `Correo` | text | Email único del usuario |
 | `Contraseña` | text | Contraseña en texto plano |
-| `nivel` | integer | Nivel de acceso (0, 1 o 2) |
+| `nivel` | integer | Nivel de acceso: `0`, `1` o `2` |
 
-> **Nota de seguridad:** La contraseña se almacena actualmente en texto plano. Para producción se recomienda migrar a bcrypt o usar Supabase Auth.
+> **Nota de seguridad:** La contraseña se almacena en texto plano. Para producción se recomienda migrar a bcrypt o usar Supabase Auth nativo.
 
 ---
 
 ## 6. API Endpoints
 
 Todos los endpoints usan `Content-Type: application/json` y CORS abierto (`*`).
+Las funciones en `api/` son Vercel Serverless (CommonJS). El servidor Express en `server/index.js` replica los mismos endpoints para desarrollo local.
+
+---
 
 ### Autenticación
 
 #### `POST /api/auth/login`
 
-Verifica credenciales y devuelve el usuario.
+Verifica credenciales y devuelve el usuario autenticado.
 
 **Request:**
 ```json
@@ -221,6 +218,8 @@ Verifica credenciales y devuelve el usuario.
   }
 }
 ```
+
+**Lógica de `role`:** `nivel >= 1` → `"admin"` · `nivel = 0` → `"user"`
 
 **Errores:** `400` campos vacíos · `401` credenciales incorrectas · `500` env no configuradas
 
@@ -246,23 +245,27 @@ Crea un nuevo usuario con `nivel = 0`.
 
 #### `POST /api/auth/reset-password`
 
-Actualiza la contraseña de un usuario existente.
+Restablece la contraseña de un usuario existente (sin verificación por email).
 
 **Request:**
 ```json
 { "email": "user@example.com", "newPassword": "nuevaPass123" }
 ```
 
+**Validaciones:** contraseña mínimo 6 caracteres.
+
 **Response 200:**
 ```json
 { "message": "Contraseña actualizada correctamente." }
 ```
 
-**Errores:** `400` campos vacíos o contraseña < 6 chars · `404` correo no encontrado
+**Errores:** `400` campos vacíos / contraseña < 6 chars · `404` correo no encontrado
 
 ---
 
-### Gestión de Usuarios (solo superadmin)
+### Gestión de Usuarios
+
+> Pensado para uso exclusivo desde el panel de Superadmin (nivel 2). No hay validación de autorización en el endpoint — la restricción es solo a nivel de UI.
 
 #### `GET /api/users`
 
@@ -277,11 +280,13 @@ Devuelve todos los usuarios del sistema.
 }
 ```
 
+**Mapeo de `role`:** `nivel >= 2` → `"superadmin"` · `nivel = 1` → `"admin"` · `nivel = 0` → `"user"`
+
 ---
 
 #### `PUT /api/users`
 
-Actualiza el nivel de un usuario.
+Actualiza el nivel de acceso de un usuario.
 
 **Request:**
 ```json
@@ -294,7 +299,7 @@ Actualiza el nivel de un usuario.
 
 #### `DELETE /api/users`
 
-Elimina un usuario por ID.
+Elimina permanentemente un usuario.
 
 **Request:**
 ```json
@@ -309,7 +314,7 @@ Elimina un usuario por ID.
 
 ### `App.jsx` — Router principal
 
-Gestiona el estado global de autenticación con un hook `useAuth()` que lee/escribe en `localStorage.ecg_session`.
+Gestiona el estado global de autenticación con el hook `useAuth()` que persiste la sesión en `localStorage.ecg_session`.
 
 **Rutas definidas:**
 
@@ -318,39 +323,48 @@ Gestiona el estado global de autenticación con un hook `useAuth()` que lee/escr
 | `/` | `MainPortal` | Público |
 | `/empresa/:id/:seccion` | `EmpresaView` | Público |
 | `/empresa/:id` | Redirect a `inicio` | Público |
-| `/admin` | `AdminDashboard` | `role === 'admin'` |
-| `/usuario` | `UserDashboard` | Autenticado |
+| `/admin` | `AdminDashboard` | `role === 'admin'` (nivel >= 1) |
+| `/usuario` | `UserDashboard` | Autenticado (nivel 0) |
 | `*` | Redirect a `/` | — |
 
 ---
 
 ### `AuthModal.jsx` — Modal de autenticación
 
-Tres tabs:
+Tres tabs/flujos:
 
 | Tab | Descripción |
 |-----|-------------|
-| `login` | Email + contraseña → `apiLogin()` → guarda sesión → redirige |
-| `register` | Nombre + email + contraseña + confirmar → `apiRegister()` |
+| `login` | Email + contraseña → `apiLogin()` → sesión → redirige según nivel |
+| `register` | Nombre + email + contraseña (mín. 6) + confirmar → `apiRegister()` |
 | `recover` | Email + nueva contraseña + confirmar → `apiResetPassword()` |
+
+Al iniciar sesión: `nivel >= 1` → `/admin` · `nivel 0` → `/usuario`
 
 ---
 
 ### `AdminDashboard.jsx` — Panel de administración
 
-Sidebar fijo con navegación. Las secciones disponibles dependen del `nivel`:
+Sidebar fijo a la izquierda (260 px). Las secciones disponibles dependen del `nivel`:
 
-| Tab | nivel mínimo | Descripción |
-|-----|:---:|-------------|
-| Resumen | 1 | Estadísticas, empresas, usuarios |
-| Cotizaciones | 1 | CRUD de cotizaciones con estados |
-| Dictaminación | 1 | CRUD de dictámenes técnicos |
-| Tickets | 1 | Kanban de tickets (ver sección 11) |
-| Gestión de Usuarios | 2 | CRUD de usuarios vía API Supabase |
+| Tab | `id` | Nivel mínimo | Descripción |
+|-----|------|:---:|-------------|
+| Resumen | `resumen` | 1 | Estadísticas generales, empresas, tabla de usuarios |
+| Cotizaciones | `cotizaciones` | 1 | CRUD de cotizaciones con estados |
+| Dictaminación | `dictaminacion` | 1 | CRUD de dictámenes técnicos |
+| Tickets | `tickets` | 1 | Sistema Kanban de tickets |
+| Gestión de Usuarios | `usuarios` | 2 | CRUD de usuarios vía API Supabase |
 
-**Badge visual:**
-- nivel 1 → icono `Shield`, texto azul "Administrador"
-- nivel 2 → icono `Crown`, texto morado "Superadmin"
+**Badge visual en sidebar:**
+- nivel 1 → icono `Shield` azul · etiqueta "Administrador"
+- nivel 2 → icono `Crown` morado · etiqueta "Superadmin"
+
+---
+
+### `TicketsSection.jsx` — Sistema de tickets
+
+Ver sección 11 para detalle completo.
+Accesible desde el tab `tickets` del AdminDashboard. Solo visible para nivel >= 1.
 
 ---
 
@@ -365,13 +379,13 @@ Acceso para usuarios con `nivel = 0`:
 
 ### Secciones de empresa
 
-Cada empresa tiene 6 secciones accesibles por `/empresa/:id/:seccion`:
+Accesibles por `/empresa/:id/:seccion`:
 
-| Sección | Descripción |
-|---------|-------------|
+| `seccion` | Descripción |
+|-----------|-------------|
 | `inicio` | Carrusel de imágenes + tarjetas de características |
 | `nosotros` | Historia, Misión, Visión |
-| `servicios` | Listado de servicios ofrecidos |
+| `servicios` | Listado de servicios |
 | `miembros` | Equipo de trabajo |
 | `politicas` | Políticas corporativas |
 | `contacto` | Teléfono, email, WhatsApp |
@@ -386,22 +400,19 @@ Cada empresa tiene 6 secciones accesibles por `/empresa/:id/:seccion`:
 Usuario abre AuthModal
        │
        ├─ Tab "Ingresar"
-       │      │
        │      ├─ POST /api/auth/login
        │      ├─ OK → guarda en localStorage.ecg_session
-       │      └─ Redirige: nivel >= 1 → /admin | nivel 0 → /usuario
+       │      └─ Redirige: nivel >= 1 → /admin  |  nivel 0 → /usuario
        │
        ├─ Tab "Registrarse"
-       │      │
        │      ├─ Valida: mín. 6 chars, contraseñas coinciden
        │      ├─ POST /api/auth/register
-       │      └─ Muestra pantalla de éxito
+       │      └─ Pantalla de éxito → vuelve a login
        │
        └─ "¿Olvidaste tu contraseña?"
-              │
-              ├─ Ingresa email + nueva contraseña
+              ├─ Email + nueva contraseña + confirmar
               ├─ POST /api/auth/reset-password
-              └─ Muestra pantalla de éxito → vuelve a login
+              └─ Pantalla de éxito → vuelve a login
 ```
 
 ### Cierre de sesión
@@ -416,34 +427,57 @@ setCurrentUser(null);
 
 ## 9. Roles y Permisos
 
-| `nivel` | Rol | Acceso |
-|:-------:|-----|--------|
+### Niveles de acceso
+
+| `nivel` | Rol | Ruta de acceso |
+|:-------:|-----|----------------|
 | 0 | usuario | Portal público + `/usuario` |
-| 1 | admin | Todo lo anterior + `/admin` (Resumen, Cotizaciones, Dictaminación, Tickets) |
+| 1 | admin | Todo lo anterior + `/admin` |
 | 2 | superadmin | Todo lo anterior + Gestión de Usuarios |
 
-### Permisos en Tickets (según nivel)
+### Permisos por módulo
+
+#### Tickets
 
 | Permiso | nivel 0 | nivel 1 | nivel 2 |
 |---------|:-------:|:-------:|:-------:|
 | Ver tickets | — | ✓ | ✓ |
-| Ver todos | — | ✓ | ✓ |
-| Crear | — | ✓ | ✓ |
-| Editar | — | ✓ | ✓ |
-| Cambiar estado | — | ✓ | ✓ |
-| Eliminar | — | — | ✓ |
+| Ver todos los tickets | — | ✓ | ✓ |
+| Crear ticket | — | ✓ | ✓ |
+| Editar ticket | — | ✓ | ✓ |
+| Cambiar estado (drag & drop) | — | ✓ | ✓ |
+| Eliminar ticket | — | — | ✓ |
 
-> Los usuarios con nivel 0 no tienen acceso al panel de administración ni al módulo de tickets.
+> Los usuarios nivel 0 no tienen acceso al panel `/admin` y por tanto nunca ven el módulo de tickets.
+
+#### Gestión de Usuarios
+
+| Permiso | nivel 0 | nivel 1 | nivel 2 |
+|---------|:-------:|:-------:|:-------:|
+| Ver usuarios | — | — | ✓ |
+| Cambiar nivel de usuario | — | — | ✓ |
+| Eliminar usuario | — | — | ✓ |
 
 ---
 
 ## 10. Panel de Administración
 
+### Resumen
+
+Muestra tres tarjetas estadísticas:
+- Total de usuarios registrados
+- Total de empresas en el portal
+- Total de cotizaciones
+
+También incluye una lista de las empresas activas y una tabla de usuarios registrados (con opción de eliminar para nivel >= 1).
+
+---
+
 ### Cotizaciones
 
-Datos guardados en `localStorage` bajo la clave `ecg_cotizaciones`.
+Storage: `localStorage` → clave `ecg_cotizaciones`
 
-**Campos del formulario:**
+**Campos:**
 
 | Campo | Tipo | Opciones |
 |-------|------|---------|
@@ -454,19 +488,27 @@ Datos guardados en `localStorage` bajo la clave `ecg_cotizaciones`.
 | Estado | select | Pendiente / Aprobada / Rechazada |
 | Notas | textarea | — |
 
+**Estados:**
+
+| Estado | Badge |
+|--------|-------|
+| Pendiente | Amarillo |
+| Aprobada | Verde |
+| Rechazada | Rojo |
+
 ---
 
 ### Dictaminación
 
-Datos guardados en `ecg_dictamenes`.
+Storage: `localStorage` → clave `ecg_dictamenes`
 
-**Campos del formulario:**
+**Campos:**
 
 | Campo | Tipo | Opciones |
 |-------|------|---------|
 | Cliente | texto | — |
 | Empresa ECG | select | Las 3 empresas |
-| Tipo de dictamen | select | 7 tipos técnicos |
+| Tipo de dictamen | select | Gestión Ambiental · Seguridad e Higiene · Instalación Eléctrica · Eficiencia Energética · Calidad de Energía · Cumplimiento NOM · Otro |
 | Folio / Referencia | texto | — |
 | Estado | select | En proceso / Completado / Rechazado |
 | Descripción | textarea | — |
@@ -476,40 +518,41 @@ Datos guardados en `ecg_dictamenes`.
 
 ### Gestión de Usuarios (nivel 2)
 
-Consumo directo de la API:
-- Tabla con todos los usuarios de Supabase
-- Selector de nivel (0 / 1 / 2) por usuario
-- Eliminar usuario (con confirmación)
-- No se puede modificar el propio perfil
+Consume la API `/api/users`:
+- Lista todos los usuarios de Supabase con nombre, correo y nivel actual
+- Cambia el nivel de cualquier usuario con un selector (0 / 1 / 2)
+- Elimina usuarios con confirmación
+- El propio usuario no puede modificar su perfil ni eliminarse
 
 ---
 
 ## 11. Sistema de Tickets
 
-Componente: `src/components/admin/TicketsSection.jsx`
-Storage: `localStorage` → clave `ecg_tickets`
+**Componente:** `src/components/admin/TicketsSection.jsx`
+**Storage:** `localStorage` → clave `ecg_tickets`
+**Acceso:** nivel >= 1 (admin y superadmin únicamente)
 
-### Estados (columnas Kanban)
+### Estados Kanban
 
 | Estado | Color | Descripción |
 |--------|-------|-------------|
-| `pendiente` | Gris | Creado, sin atender |
-| `en-progreso` | Azul | En desarrollo |
-| `revision` | Amarillo | Pendiente de revisión |
-| `hecho` | Verde | Completado |
-| `bloqueado` | Rojo | Bloqueado por impedimento |
+| `pendiente` | Gris (#94a3b8) | Creado, sin atender |
+| `en-progreso` | Azul (#3b82f6) | En desarrollo activo |
+| `revision` | Amarillo (#f59e0b) | Pendiente de revisión |
+| `hecho` | Verde (#10b981) | Completado |
+| `bloqueado` | Rojo (#ef4444) | Bloqueado por impedimento |
 
-### Niveles de prioridad
+### Prioridades
 
 | Prioridad | Color |
 |-----------|-------|
-| Crítica | Rojo |
-| Urgente | Naranja |
-| Alta | Amarillo |
-| Media | Azul |
-| Baja | Verde |
-| Mínima | Gris |
-| Ninguna | Gris claro |
+| Crítica | Rojo (#dc2626) |
+| Urgente | Naranja (#ea580c) |
+| Alta | Amarillo (#f59e0b) |
+| Media | Azul (#3b82f6) |
+| Baja | Verde (#10b981) |
+| Mínima | Gris (#6b7280) |
+| Ninguna | Gris claro (#d1d5db) |
 
 ### Grupos disponibles
 
@@ -517,37 +560,50 @@ Storage: `localStorage` → clave `ecg_tickets`
 
 ### Vistas
 
-- **Kanban:** Columnas drag & drop. Arrastrar una tarjeta cambia su estado y registra el cambio en el historial.
-- **Lista:** Tabla con filtros por prioridad, estado y grupo.
+| Vista | Descripción |
+|-------|-------------|
+| **Kanban** | 5 columnas con drag & drop. Mover una tarjeta cambia el estado y lo registra en el historial automáticamente. |
+| **Lista** | Tabla con todas las columnas. Incluye acciones de ver, editar y eliminar (según permisos). |
 
 ### Filtros rápidos
 
-| Filtro | Descripción |
-|--------|-------------|
-| Todos | Todos los tickets visibles |
-| Mis tickets | Solo los asignados al usuario actual |
+| Filtro | Lógica |
+|--------|--------|
+| Todos | Sin filtro adicional |
+| Mis tickets | `asignadoA === currentUser.email` |
 | Sin asignar | `asignadoA` vacío |
-| Alta prioridad | critica / urgente / alta |
+| Alta prioridad | prioridad ∈ {critica, urgente, alta} |
+
+También hay un selector por **grupo** (`IT`, `Marketing`, etc.).
+
+### Panel de detalle
+
+Al hacer clic en una tarjeta se abre un panel lateral (460 px) con:
+- Título, prioridad y estado en el encabezado
+- Descripción completa
+- Metadatos: asignado a, creado por, fecha de creación, fecha límite
+- Sección de comentarios (agregar con Enter o botón)
+- Historial cronológico de cambios
 
 ### Estructura de un ticket
 
 ```json
 {
-  "id": 1,
+  "id": 1733000000000,
   "titulo": "Error en módulo de pagos",
   "descripcion": "Descripción detallada...",
   "estado": "pendiente",
   "grupo": "Desarrollo",
-  "asignadoA": "user@ecg.com",
+  "asignadoA": "admin@ecg.com",
   "creadoPor": "admin@ecg.com",
   "prioridad": "critica",
   "fechaCreacion": "2024-03-01T00:00:00.000Z",
-  "fechaLimite": "2024-03-15T00:00:00.000Z",
+  "fechaLimite": "2024-03-15",
   "comentarios": [
-    { "id": 1, "author": "admin@ecg.com", "text": "Revisión urgente", "fecha": "..." }
+    { "id": 100, "author": "admin@ecg.com", "text": "Revisión urgente.", "fecha": "2024-03-01T..." }
   ],
   "historial": [
-    { "id": 1, "author": "admin@ecg.com", "action": "Ticket creado", "fecha": "..." }
+    { "id": 200, "author": "admin@ecg.com", "action": "Ticket creado con estado \"pendiente\"", "fecha": "2024-03-01T..." }
   ]
 }
 ```
@@ -559,51 +615,55 @@ Storage: `localStorage` → clave `ecg_tickets`
 ### Centro de Capacitación ECG (ID: 1)
 
 - **Logo:** `/assets/logos/Capacitacion.png`
-- **Contacto:** 5214427734562 · centroecging@gmail.com
+- **Contacto:** +52 1 442 773 4562 · centroecging@gmail.com
 - **Director:** Ing. Juan Erasmo Cuaya G.
-- **Servicios:** SGA, Seguridad e Higiene, Desarrollo Organizacional, Mantenimiento, Electricidad, Código RED
-- **Diferenciadores:** +20 años de experiencia, certificaciones NOM, confidencialidad
+- **Servicios:** SGA · Seguridad e Higiene · Desarrollo Organizacional · Mantenimiento · Electricidad · Código RED
+- **Diferenciadores:** +20 años de experiencia · Certificaciones NOM · Confidencialidad garantizada
+
+---
 
 ### Dictaminación y Gestoría ECG — JECG (ID: 2)
 
 - **Logo:** `/assets/logos/Dictaminacion.png`
-- **Servicios:** Cambio de tarifa, Corrección de factor de potencia, Motores eficientes, Estudios de calidad de energía, Cogeneración, Apoyo DAP legal
-- **Diferenciadores:** Reducción de costos hasta 40%, sustentabilidad, innovación
+- **Servicios:** Cambio de tarifa · Corrección de factor de potencia · Motores eficientes · Estudios de calidad de energía · Cogeneración · Apoyo DAP legal
+- **Diferenciadores:** Reducción de costos hasta 40% · Sustentabilidad · Innovación
+
+---
 
 ### Centro de Ingeniería y Abastecimiento ECG (ID: 3)
 
 - **Logo:** `/assets/logos/centro.png`
-- **Servicios:** Diseño de subestaciones, Optimización de layouts, Energía industrial integral, Soldadura especializada, Mobiliario industrial, Construcción de bodegas
-- **Diferenciadores:** Experiencia, precisión, confiabilidad
+- **Servicios:** Diseño de subestaciones · Optimización de layouts · Energía industrial integral · Soldadura especializada · Mobiliario industrial · Construcción de bodegas
+- **Diferenciadores:** Experiencia · Precisión · Confiabilidad
 
 ---
 
 ## 13. Persistencia de Datos
 
-### localStorage (frontend)
+### localStorage (por dispositivo, no sincronizado)
 
-| Clave | Contenido |
-|-------|-----------|
-| `ecg_session` | Objeto usuario con `{ id, name, email, role, nivel }` |
-| `ecg_cotizaciones` | Array de cotizaciones |
-| `ecg_dictamenes` | Array de dictámenes |
-| `ecg_tickets` | Array de tickets |
+| Clave | Tipo | Contenido |
+|-------|------|-----------|
+| `ecg_session` | objeto | `{ id, name, email, role, nivel }` del usuario activo |
+| `ecg_cotizaciones` | array | Lista de cotizaciones |
+| `ecg_dictamenes` | array | Lista de dictámenes |
+| `ecg_tickets` | array | Lista de tickets con comentarios e historial |
 
-> Los datos de cotizaciones, dictámenes y tickets son locales al navegador. No se sincronizan entre dispositivos.
+> Los datos de cotizaciones, dictámenes y tickets se guardan solo en el navegador local. No se comparten entre dispositivos ni usuarios.
 
-### Supabase (backend)
+### Supabase (persistencia centralizada)
 
-| Tabla | Datos persistidos |
-|-------|------------------|
-| `Usuarios` | Todos los usuarios, credenciales y niveles |
+| Tabla | Datos |
+|-------|-------|
+| `Usuarios` | Usuarios registrados, contraseñas y niveles de acceso |
 
 ---
 
 ## 14. Despliegue
 
-### Vercel (producción)
+### Vercel
 
-El proyecto se despliega automáticamente en cada push a `main`.
+El proyecto se despliega automáticamente en cada push a la rama `main`.
 
 **`vercel.json`:**
 ```json
@@ -615,25 +675,21 @@ El proyecto se despliega automáticamente en cada push a `main`.
 }
 ```
 
-- Las rutas `/api/*` se resuelven como Vercel Serverless Functions desde `api/`
-- Todas las demás rutas sirven `index.html` (SPA routing)
+- `/api/*` → Vercel Serverless Functions (directorio `api/`)
+- Todo lo demás → `index.html` (SPA routing con React Router)
 
-**Variables de entorno en Vercel (Settings → Environment Variables):**
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_KEY` (marcar como Sensitive)
-
-> Después de agregar o cambiar variables, hacer **Redeploy** desde el panel de Vercel para que tomen efecto.
+**Después de agregar o cambiar variables de entorno** en Vercel hay que hacer **Redeploy** manual para que tomen efecto.
 
 ---
 
 ## 15. Variables de Entorno
 
-### Producción (Vercel)
+### Producción (Vercel → Settings → Environment Variables)
 
-| Variable | Descripción |
-|----------|-------------|
-| `SUPABASE_URL` | URL del proyecto Supabase (`https://xxxx.supabase.co`) |
-| `SUPABASE_SERVICE_KEY` | Service role key (acceso total, sin RLS) |
+| Variable | Descripción | Marcar como |
+|----------|-------------|:-----------:|
+| `SUPABASE_URL` | URL del proyecto Supabase (`https://xxxx.supabase.co`) | — |
+| `SUPABASE_SERVICE_KEY` | Service role key (acceso sin RLS) | Sensitive |
 
 ### Desarrollo local (`server/.env`)
 
@@ -645,22 +701,36 @@ PORT=3001
 
 ---
 
-## Apéndice — Comandos útiles
+## Apéndice A — Comandos útiles
 
 ```bash
 # Desarrollo
-npm run dev                  # Frontend en :5173
-node server/index.js         # Backend en :3001
+npm run dev                    # Frontend en http://localhost:5173
+node server/index.js           # Backend en http://localhost:3001
 
 # Build de producción
-npm run build                # Genera /dist
+npm run build                  # Genera /dist listo para Vercel
 
-# Git
+# Git / despliegue
 git add .
-git commit -m "mensaje"
-git push origin main         # Dispara deploy en Vercel
+git commit -m "descripción"
+git push origin main           # Dispara deploy automático en Vercel
 ```
 
 ---
 
-*Documentación generada para el proyecto ECG Corporativo — Marzo 2026*
+## 16. Historial de Cambios
+
+| Versión | Fecha | Descripción |
+|---------|-------|-------------|
+| 1.0 | Mar 2026 | Versión inicial del portal con login, registro y panel admin |
+| 1.1 | Mar 2026 | Añadido nivel 2 (superadmin) con gestión de usuarios vía API |
+| 1.1 | Mar 2026 | Añadida función de recuperar contraseña en el login |
+| 1.1 | Mar 2026 | Funciones Vercel migradas a CommonJS (`api/package.json`) |
+| 1.2 | Mar 2026 | Añadido sistema de tickets Kanban (solo admin y superadmin) |
+| 1.2 | Mar 2026 | Favicon actualizado con logo `Corporativo.png` |
+| 1.2 | Mar 2026 | Acceso a tickets restringido a nivel >= 1 (usuarios nivel 0 excluidos) |
+
+---
+
+*ECG Corporativo — Documentación técnica interna*
