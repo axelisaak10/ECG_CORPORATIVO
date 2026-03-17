@@ -134,6 +134,83 @@ app.delete('/api/users', async (req, res) => {
   return res.json({ message: 'Usuario eliminado.' });
 });
 
+// ── Helpers tickets ───────────────────────────────────────────────────────────
+async function getTicketUserNivel(userId) {
+  const { data } = await supabase.from('Usuarios').select('nivel').eq('id', userId).maybeSingle();
+  return data?.nivel ?? -1;
+}
+
+// ── GET /api/tickets — listar (nivel >= 1) ────────────────────────────────────
+app.get('/api/tickets', async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) return res.status(401).json({ error: 'userId requerido.' });
+  const nivel = await getTicketUserNivel(userId);
+  if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { data, error } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener tickets.' });
+  return res.json({ tickets: data || [] });
+});
+
+// ── POST /api/tickets — crear (nivel >= 2) ────────────────────────────────────
+app.post('/api/tickets', async (req, res) => {
+  const { userId, titulo, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
+  if (!userId) return res.status(401).json({ error: 'userId requerido.' });
+  const nivel = await getTicketUserNivel(userId);
+  if (nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para crear tickets.' });
+  if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
+
+  const { data, error } = await supabase
+    .from('tickets')
+    .insert([{ titulo: titulo.trim(), descripcion: descripcion?.trim() || '', prioridad: prioridad || 'media', estado: estado || 'pendiente', grupo: grupo || 'IT', asignado_a: asignado_a || null, fecha_limite: fecha_limite || null, usuario_id: Number(userId) }])
+    .select().single();
+
+  if (error) return res.status(500).json({ error: 'Error al crear ticket.' });
+  return res.status(201).json({ ticket: data });
+});
+
+// ── PATCH /api/tickets/:id — actualizar ───────────────────────────────────────
+app.patch('/api/tickets/:id', async (req, res) => {
+  const { id } = req.params;
+  const { userId, ...fields } = req.body;
+  if (!userId) return res.status(401).json({ error: 'userId requerido.' });
+  const nivel = await getTicketUserNivel(userId);
+  if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  let updateData = {};
+  if (nivel >= 2) {
+    if (fields.titulo      !== undefined) updateData.titulo      = fields.titulo;
+    if (fields.descripcion !== undefined) updateData.descripcion = fields.descripcion;
+    if (fields.prioridad   !== undefined) updateData.prioridad   = fields.prioridad;
+    if (fields.estado      !== undefined) updateData.estado      = fields.estado;
+    if (fields.grupo       !== undefined) updateData.grupo       = fields.grupo;
+    if (fields.asignado_a  !== undefined) updateData.asignado_a  = fields.asignado_a || null;
+    if (fields.fecha_limite !== undefined) updateData.fecha_limite = fields.fecha_limite || null;
+  } else {
+    if (fields.estado === undefined)
+      return res.status(403).json({ error: 'Admin solo puede cambiar el estado del ticket.' });
+    updateData.estado = fields.estado;
+  }
+  updateData.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase.from('tickets').update(updateData).eq('id', id).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar ticket.' });
+  return res.json({ ticket: data });
+});
+
+// ── DELETE /api/tickets/:id — eliminar (nivel >= 2) ───────────────────────────
+app.delete('/api/tickets/:id', async (req, res) => {
+  const { id } = req.params;
+  const userId = req.body?.userId;
+  if (!userId) return res.status(401).json({ error: 'userId requerido.' });
+  const nivel = await getTicketUserNivel(userId);
+  if (nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para eliminar tickets.' });
+
+  const { error } = await supabase.from('tickets').delete().eq('id', id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar ticket.' });
+  return res.json({ message: 'Ticket eliminado.' });
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
