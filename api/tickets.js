@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { randomUUID } = require('crypto');
 
 async function getUserNivel(supabase, userId) {
   const { data } = await supabase
@@ -50,6 +51,7 @@ module.exports = async function handler(req, res) {
     const { data, error } = await supabase
       .from('tickets')
       .insert([{
+        id:          randomUUID(),
         titulo:      titulo.trim(),
         descripcion: descripcion?.trim() || '',
         prioridad:   prioridad  || 'media',
@@ -62,7 +64,7 @@ module.exports = async function handler(req, res) {
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: 'Error al crear ticket.' });
+    if (error) { console.error('Supabase error:', error); return res.status(500).json({ error: error.message || 'Error al crear ticket.' }); }
     return res.status(201).json({ ticket: data });
   }
 
