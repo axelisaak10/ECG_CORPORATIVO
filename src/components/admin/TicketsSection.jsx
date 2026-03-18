@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, X, Eye, Trash2, Edit2, Clock,
   LayoutGrid, List, AlertTriangle, CheckCircle2, Ban,
@@ -41,15 +41,18 @@ const getPrio = (v) => PRIORITIES.find(p => p.value === v) ?? PRIORITIES[3];
 const getCol  = (v) => KANBAN_COLS.find(c => c.value === v);
 
 // ── Kanban card ────────────────────────────────────────────────────────────
-const TicketCard = ({ ticket, isDragging, canEditState, onOpen, onDragStart, onDragEnd }) => {
+const TicketCard = ({ ticket, isDragging, canEditState, onOpen, onDragStart, onDragEnd, onTouchStart, onTouchMove, onTouchEnd }) => {
   const prio = getPrio(ticket.prioridad);
   return (
     <div
       draggable={canEditState}
       onDragStart={() => onDragStart(ticket)}
       onDragEnd={onDragEnd}
+      onTouchStart={canEditState ? () => onTouchStart(ticket) : undefined}
+      onTouchMove={canEditState ? onTouchMove : undefined}
+      onTouchEnd={canEditState ? onTouchEnd : undefined}
       onClick={() => onOpen(ticket)}
-      className={`bg-white rounded-xl border border-slate-100 p-4 shadow-sm cursor-pointer hover:shadow-md transition-all select-none ${isDragging ? 'opacity-40 scale-95' : ''}`}
+      className={`bg-white rounded-xl border border-slate-100 p-4 shadow-sm cursor-pointer hover:shadow-md transition-all select-none touch-none ${isDragging ? 'opacity-40 scale-95' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-bold text-slate-800 line-clamp-2 flex-1">{ticket.titulo}</span>
@@ -135,6 +138,7 @@ const TicketsSection = ({ currentUser }) => {
   // ── Drag ──────────────────────────────────────────────────────────────────
   const [draggingId, setDraggingId]   = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+  const touchDragRef = useRef(null);
 
   // ── Filtered tickets ──────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -153,19 +157,52 @@ const TicketsSection = ({ currentUser }) => {
   const onDragEnd   = () => { setDraggingId(null); setDragOverCol(null); };
   const onDragOver  = (e, col) => { e.preventDefault(); setDragOverCol(col); };
 
-  const onDrop = async (col) => {
-    const id = draggingId;
+  const moveTicket = async (id, col) => {
     setDraggingId(null); setDragOverCol(null);
     if (!id) return;
     const ticket = tickets.find(t => t.id === id);
     if (!ticket || ticket.estado === col) return;
-    // Optimistic update
     setTickets(prev => prev.map(t => t.id === id ? { ...t, estado: col } : t));
     try {
       await apiUpdateTicket(currentUser.id, id, { estado: col });
     } catch {
-      fetchTickets(); // revert on error
+      fetchTickets();
     }
+  };
+
+  const onDrop = (col) => moveTicket(draggingId, col);
+
+  // ── Touch drag & drop (mobile) ────────────────────────────────────────────
+  const getColFromPoint = (x, y) => {
+    const els = document.elementsFromPoint(x, y);
+    for (const el of els) {
+      const col = el.getAttribute?.('data-col');
+      if (col) return col;
+    }
+    return null;
+  };
+
+  const onTouchStart = (ticket) => {
+    touchDragRef.current = ticket.id;
+    setDraggingId(ticket.id);
+  };
+
+  const onTouchMove = (e) => {
+    if (!touchDragRef.current) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const col = getColFromPoint(t.clientX, t.clientY);
+    setDragOverCol(col || null);
+  };
+
+  const onTouchEnd = (e) => {
+    if (!touchDragRef.current) return;
+    const t = e.changedTouches[0];
+    const col = getColFromPoint(t.clientX, t.clientY);
+    const id = touchDragRef.current;
+    touchDragRef.current = null;
+    if (col) moveTicket(id, col);
+    else { setDraggingId(null); setDragOverCol(null); }
   };
 
   // ── Estado change (dropdown en lista) ────────────────────────────────────
@@ -302,6 +339,7 @@ const TicketsSection = ({ currentUser }) => {
                 const isOver = dragOverCol === col.value;
                 return (
                   <div key={col.value}
+                    data-col={col.value}
                     className={`flex-shrink-0 min-w-[260px] max-w-[280px] rounded-2xl p-3 transition-all ${isOver ? 'ring-2 ring-blue-400 bg-blue-50/50' : 'bg-slate-100/60'}`}
                     onDragOver={e => onDragOver(e, col.value)}
                     onDrop={() => onDrop(col.value)}
@@ -320,6 +358,9 @@ const TicketsSection = ({ currentUser }) => {
                           canEditState={canEditState}
                           onDragStart={onDragStart}
                           onDragEnd={onDragEnd}
+                          onTouchStart={onTouchStart}
+                          onTouchMove={onTouchMove}
+                          onTouchEnd={onTouchEnd}
                           onOpen={t => { setDetailId(t.id); setEditing(null); }}
                         />
                       ))}
