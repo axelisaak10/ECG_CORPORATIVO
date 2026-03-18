@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
         name:  Array.isArray(rawName) ? rawName[0] : rawName,
         email: u['Correo'],
         nivel: u.nivel,
-        role:  u.nivel >= 2 ? 'superadmin' : u.nivel >= 1 ? 'admin' : 'user',
+        role:  u.nivel >= 3 ? 'superadmin' : u.nivel >= 2 ? 'admin' : u.nivel >= 1 ? 'trabajador' : 'user',
       };
     });
 

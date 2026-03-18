@@ -95,7 +95,7 @@ app.post('/api/auth/impersonate', async (req, res) => {
 
   const { data: admin } = await supabase
     .from('Usuarios').select('nivel').eq('id', session.usuario_id).maybeSingle();
-  if (!admin || admin.nivel < 2)
+  if (!admin || admin.nivel < 3)
     return res.status(403).json({ error: 'Se requiere nivel superadmin.' });
 
   const { data: target } = await supabase
@@ -177,7 +177,7 @@ app.get('/api/users', async (_req, res) => {
       name:  Array.isArray(rawName) ? rawName[0] : rawName,
       email: u['Correo'],
       nivel: u.nivel,
-      role:  u.nivel >= 2 ? 'superadmin' : u.nivel >= 1 ? 'admin' : 'user',
+      role:  u.nivel >= 3 ? 'superadmin' : u.nivel >= 2 ? 'admin' : u.nivel >= 1 ? 'trabajador' : 'user',
     };
   });
 

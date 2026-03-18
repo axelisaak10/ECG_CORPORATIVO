@@ -84,8 +84,8 @@ const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate
 // ── Main component ─────────────────────────────────────────────────────────
 const TicketsSection = ({ currentUser }) => {
   // Permisos:
-  // Admin (nivel 1)     → ver todos los tickets + cambiar estado
-  // Superadmin (nivel 2)→ gestión completa (crear, editar, eliminar)
+  // Trabajador (nivel 1) → ver tickets + cambiar estado
+  // Admin (nivel 2+)     → gestión completa (crear, editar, eliminar)
   const canEditState = currentUser.nivel >= 1;
   const canEdit      = currentUser.nivel >= 2;
   const canAdd       = currentUser.nivel >= 2;

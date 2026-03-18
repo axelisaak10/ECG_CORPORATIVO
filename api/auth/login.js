@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
       id:           userId,
       name:         Array.isArray(rawName) ? rawName[0] : rawName,
       email:        data['Correo'],
-      role:         data.nivel >= 1 ? 'admin' : 'user',
+      role:         data.nivel >= 1 ? 'admin' : 'user', // nivel>=1 accede al panel admin
       nivel:        data.nivel,
       sessionToken: token,
     },

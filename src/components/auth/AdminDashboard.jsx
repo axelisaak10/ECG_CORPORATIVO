@@ -136,7 +136,7 @@ const DetailModal = ({ item, fields, onClose }) => (
 );
 
 /* ─── ItemSection — componente genérico para Cotizaciones y Dictaminación ─── */
-const ItemSection = ({ title, subtitle, storageKey, formFields, detailFields, statusEnum, tableColumns, emptyIcon, newLabel }) => {
+const ItemSection = ({ title, subtitle, storageKey, formFields, detailFields, statusEnum, tableColumns, emptyIcon, newLabel, readOnly = false }) => {
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem(storageKey) || '[]'));
   const [showForm, setShowForm] = useState(false);
   const [viewItem, setViewItem] = useState(null);
@@ -163,9 +163,11 @@ const ItemSection = ({ title, subtitle, storageKey, formFields, detailFields, st
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h1>
           <p className="text-slate-500 text-sm mt-0.5">{subtitle}</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm text-sm transition-all">
-          <Plus size={16} /> {newLabel}
-        </button>
+        {!readOnly && (
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm text-sm transition-all">
+            <Plus size={16} /> {newLabel}
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -209,22 +211,28 @@ const ItemSection = ({ title, subtitle, storageKey, formFields, detailFields, st
                       </td>
                     ))}
                     <td className="px-5 py-3.5">
-                      <select value={item.estado} onChange={e => updateStatus(item.id, e.target.value)} className={`text-xs font-bold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none ${statusEnum[item.estado]?.cls || 'bg-slate-100 text-slate-600'}`}>
-                        {Object.entries(statusEnum).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                      </select>
+                      {readOnly ? (
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusEnum[item.estado]?.cls || 'bg-slate-100 text-slate-600'}`}>
+                          {statusEnum[item.estado]?.label || item.estado}
+                        </span>
+                      ) : (
+                        <select value={item.estado} onChange={e => updateStatus(item.id, e.target.value)} className={`text-xs font-bold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none ${statusEnum[item.estado]?.cls || 'bg-slate-100 text-slate-600'}`}>
+                          {Object.entries(statusEnum).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 text-slate-400 text-sm">{fmtDate(item.createdAt)}</td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => setViewItem(item)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Eye size={15} /></button>
-                        {confirmDel === item.id ? (
+                        {!readOnly && (confirmDel === item.id ? (
                           <>
                             <button onClick={() => del(item.id)} className="text-xs bg-red-600 text-white font-bold px-2.5 py-1 rounded-lg hover:bg-red-700">Eliminar</button>
                             <button onClick={() => setConfirmDel(null)} className="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-1 rounded-lg">✕</button>
                           </>
                         ) : (
                           <button onClick={() => setConfirmDel(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={15} /></button>
-                        )}
+                        ))}
                       </div>
                     </td>
                   </tr>
@@ -366,11 +374,12 @@ const ResumenSection = () => {
   );
 };
 
-/* ─── Gestión de Usuarios (solo superadmin nivel >= 2) ─── */
+/* ─── Gestión de Usuarios (solo superadmin nivel >= 3) ─── */
 const NIVEL_LABELS = {
-  0: { label: 'Usuario',     cls: 'bg-slate-100 text-slate-600'   },
-  1: { label: 'Admin',       cls: 'bg-blue-100  text-blue-700'    },
-  2: { label: 'Superadmin',  cls: 'bg-purple-100 text-purple-700' },
+  0: { label: 'Usuario',    cls: 'bg-slate-100  text-slate-600'  },
+  1: { label: 'Trabajador', cls: 'bg-green-100  text-green-700'  },
+  2: { label: 'Admin',      cls: 'bg-blue-100   text-blue-700'   },
+  3: { label: 'Superadmin', cls: 'bg-purple-100 text-purple-700' },
 };
 
 const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
@@ -485,8 +494,9 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
                             className="text-xs font-bold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none bg-slate-100 text-slate-700"
                           >
                             <option value={0}>Usuario</option>
-                            <option value={1}>Admin</option>
-                            <option value={2}>Superadmin</option>
+                            <option value={1}>Trabajador</option>
+                            <option value={2}>Admin</option>
+                            <option value={3}>Superadmin</option>
                           </select>
                         )}
                       </td>
@@ -531,7 +541,17 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
   const [activeTab, setActiveTab] = useState('resumen');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isSuperAdmin = currentUser.nivel >= 2;
+
+  const nivel        = currentUser.nivel ?? 0;
+  const isSuperAdmin = nivel >= 3;
+  const isAdmin      = nivel >= 2;
+  const isTrabajador = nivel >= 1;
+
+  // Etiqueta y color del rol en sidebar
+  const rolLabel = isSuperAdmin ? 'Superadmin' : isAdmin ? 'Admin' : 'Trabajador';
+  const rolColor = isSuperAdmin ? 'text-purple-400' : isAdmin ? 'text-blue-400' : 'text-green-400';
+  const avatarBg = isSuperAdmin ? 'bg-purple-600' : isAdmin ? 'bg-blue-600' : 'bg-green-600';
+  const AvatarIcon = isSuperAdmin ? Crown : isAdmin ? Shield : Users;
 
   const navItems = [
     { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />      },
@@ -567,14 +587,12 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
 
         <div className="px-6 py-5 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'}`}>
-              {isSuperAdmin ? <Crown size={18} className="text-white" /> : <Shield size={18} className="text-white" />}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarBg}`}>
+              <AvatarIcon size={18} className="text-white" />
             </div>
             <div className="min-w-0">
               <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${isSuperAdmin ? 'text-purple-400' : 'text-blue-400'}`}>
-                {isSuperAdmin ? 'Superadmin' : 'Administrador'}
-              </p>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${rolColor}`}>{rolLabel}</p>
             </div>
           </div>
         </div>
@@ -618,8 +636,8 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
         </button>
         <h2 className="text-white font-black text-lg">ECG <span className="text-blue-400">ADMIN</span></h2>
         <div className="ml-auto">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'}`}>
-            {isSuperAdmin ? <Crown size={15} className="text-white" /> : <Shield size={15} className="text-white" />}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${avatarBg}`}>
+            <AvatarIcon size={15} className="text-white" />
           </div>
         </div>
       </header>
@@ -631,7 +649,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           {activeTab === 'cotizaciones' && (
             <ItemSection
               title="Cotizaciones"
-              subtitle="Gestión de propuestas y cotizaciones"
+              subtitle={isAdmin ? 'Gestión de propuestas y cotizaciones' : 'Vista de cotizaciones (solo lectura)'}
               storageKey="ecg_cotizaciones"
               formFields={COTIZACION_FORM_FIELDS}
               detailFields={COTIZACION_DETAIL_FIELDS}
@@ -639,12 +657,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
               tableColumns={COTIZACION_TABLE_COLS}
               emptyIcon={<FileText size={38} />}
               newLabel="Nueva Cotización"
+              readOnly={!isAdmin}
             />
           )}
           {activeTab === 'dictaminacion' && (
             <ItemSection
               title="Dictaminación"
-              subtitle="Registro y seguimiento de dictámenes técnicos"
+              subtitle={isAdmin ? 'Registro y seguimiento de dictámenes técnicos' : 'Vista de dictámenes (solo lectura)'}
               storageKey="ecg_dictamenes"
               formFields={DICTAMEN_FORM_FIELDS}
               detailFields={DICTAMEN_DETAIL_FIELDS}
@@ -652,12 +671,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
               tableColumns={DICTAMEN_TABLE_COLS}
               emptyIcon={<ClipboardCheck size={38} />}
               newLabel="Nuevo Dictamen"
+              readOnly={!isAdmin}
             />
           )}
           {activeTab === 'tickets' && (
             <TicketsSection currentUser={currentUser} />
           )}
-          {activeTab === 'usuarios' && isSuperAdmin && (
+          {activeTab === 'usuarios' && nivel >= 3 && (
             <GestionUsuariosSection currentUser={currentUser} onImpersonate={onImpersonate} />
           )}
         </div>
