@@ -34,7 +34,12 @@ function useAuth() {
     setCurrentUser(user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const token = currentUser?.sessionToken;
+    if (token) {
+      try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }); }
+      catch { /* ignorar errores de red al cerrar sesión */ }
+    }
     localStorage.removeItem('ecg_session');
     setCurrentUser(null);
   };

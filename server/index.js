@@ -14,9 +14,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+const SESSION_LIMIT     = 2;
+const SESSION_TTL_HOURS = 24;
+
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
-  const email = req.body.email?.trim();
+  const email    = req.body.email?.trim();
   const password = req.body.password?.trim();
 
   if (!email || !password)
@@ -32,17 +35,52 @@ app.post('/api/auth/login', async (req, res) => {
   if (error || !data)
     return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
 
-  // 'Nombre Completo' es tipo _text (array) en Supabase
-  const rawName = data['Nombre Completo'];
-  const user = {
-    id: data.id,
-    name: Array.isArray(rawName) ? rawName[0] : rawName,
-    email: data['Correo'],
-    role: data.nivel >= 1 ? 'admin' : 'user',
-    nivel: data.nivel,
-  };
+  const userId = data.id;
 
-  return res.json({ user });
+  // Limpiar sesiones expiradas
+  const expiredBefore = new Date(Date.now() - SESSION_TTL_HOURS * 3600 * 1000).toISOString();
+  await supabase.from('sesiones').delete().eq('usuario_id', userId).lt('last_active', expiredBefore);
+
+  // Contar sesiones activas
+  const { count } = await supabase
+    .from('sesiones')
+    .select('*', { count: 'exact', head: true })
+    .eq('usuario_id', userId);
+
+  if (count >= SESSION_LIMIT) {
+    return res.status(403).json({
+      error: `Ya tienes ${count} sesión${count !== 1 ? 'es' : ''} activa${count !== 1 ? 's' : ''}. Cierra una sesión antes de iniciar otra.`,
+      activeSessions: count,
+    });
+  }
+
+  // Crear nueva sesión
+  const token = randomUUID();
+  await supabase.from('sesiones').insert([{
+    usuario_id: userId,
+    token,
+    user_agent: req.headers['user-agent'] || null,
+  }]);
+
+  const rawName = data['Nombre Completo'];
+  return res.json({
+    user: {
+      id:           userId,
+      name:         Array.isArray(rawName) ? rawName[0] : rawName,
+      email:        data['Correo'],
+      role:         data.nivel >= 1 ? 'admin' : 'user',
+      nivel:        data.nivel,
+      sessionToken: token,
+    },
+  });
+});
+
+// ── POST /api/auth/logout ─────────────────────────────────────────────────────
+app.post('/api/auth/logout', async (req, res) => {
+  const token = req.body?.token;
+  if (!token) return res.status(400).json({ error: 'Token requerido.' });
+  await supabase.from('sesiones').delete().eq('token', token);
+  return res.json({ message: 'Sesión cerrada.' });
 });
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────

@@ -9,7 +9,11 @@ export async function apiLogin(email, password) {
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión.');
+  if (!res.ok) {
+    const err = new Error(data.error || 'Error al iniciar sesión.');
+    if (data.activeSessions) err.activeSessions = data.activeSessions;
+    throw err;
+  }
   return data.user;
 }
 

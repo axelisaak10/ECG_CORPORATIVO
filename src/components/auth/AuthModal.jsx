@@ -22,8 +22,9 @@ const AuthModal = ({ onClose, onLogin }) => {
   const [tab, setTab] = useState('login');
 
   const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
-  const [loginError, setLoginError]   = useState('');
+  const [loginError, setLoginError]     = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [sessionLimit, setSessionLimit] = useState(false);
   const [showLoginPwd, setShowLoginPwd] = useState(false);
 
   const [regForm, setRegForm]       = useState({ name: '', email: '', password: '', confirm: '' });
@@ -42,11 +43,13 @@ const AuthModal = ({ onClose, onLogin }) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError('');
+    setSessionLimit(false);
     try {
       const user = await apiLogin(loginForm.email, loginForm.password);
       onLogin(user);
       onClose();
     } catch (err) {
+      if (err.activeSessions) setSessionLimit(true);
       setLoginError(err.message);
     } finally {
       setLoginLoading(false);
@@ -154,9 +157,16 @@ const AuthModal = ({ onClose, onLogin }) => {
             {tab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-5">
                 {loginError && (
-                  <div className="flex items-center gap-2.5 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-[13px] font-semibold">
-                    <AlertCircle size={14} className="flex-shrink-0" />
-                    {loginError}
+                  <div className={`rounded-xl px-4 py-3 text-[13px] font-semibold border ${sessionLimit ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-red-50 border-red-100 text-red-600'}`}>
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                      <span>{loginError}</span>
+                    </div>
+                    {sessionLimit && (
+                      <p className="mt-1.5 text-[12px] font-medium opacity-80 pl-5">
+                        Cierra sesión en otro dispositivo e intenta de nuevo.
+                      </p>
+                    )}
                   </div>
                 )}
 
