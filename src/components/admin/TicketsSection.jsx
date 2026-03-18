@@ -400,7 +400,7 @@ const TicketsSection = ({ currentUser }) => {
       {detailTicket && (
         <div className="fixed inset-0 z-[400] flex">
           <div className="flex-1 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDetailId(null)} />
-          <div className="w-[440px] bg-white shadow-2xl flex flex-col overflow-hidden border-l border-slate-100">
+          <div className="w-full md:w-[440px] bg-white shadow-2xl flex flex-col overflow-hidden border-l border-slate-100">
             <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">

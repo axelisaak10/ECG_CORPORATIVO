@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
-  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown
+  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
@@ -500,72 +500,103 @@ const GestionUsuariosSection = ({ currentUser }) => {
 /* ─── AdminDashboard ─── */
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
   const [activeTab, setActiveTab] = useState('resumen');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const isSuperAdmin = currentUser.nivel >= 2;
 
   const navItems = [
-    { id: 'resumen',       label: 'Resumen',       icon: <BarChart3 size={17} />      },
-    { id: 'cotizaciones',  label: 'Cotizaciones',  icon: <FileText size={17} />       },
-    { id: 'dictaminacion', label: 'Dictaminación', icon: <ClipboardCheck size={17} /> },
-    { id: 'tickets',       label: 'Tickets',       icon: <ClipboardCheck size={17} /> },
+    { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />      },
+    { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />       },
+    { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardCheck size={17} /> },
+    { id: 'tickets',       label: 'Tickets',             icon: <ClipboardCheck size={17} /> },
     ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} /> }] : []),
   ];
 
+  const handleNav = (id) => {
+    setActiveTab(id);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="flex">
-        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col z-50 shadow-2xl">
-          <div className="px-6 pt-8 pb-6 border-b border-slate-700">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col z-50 shadow-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="px-6 pt-8 pb-6 border-b border-slate-700 flex items-center justify-between">
+          <div>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.25em] mb-1">Panel de Control</p>
             <h2 className="text-xl font-black text-white tracking-tight">ECG <span className="text-blue-400">ADMIN</span></h2>
           </div>
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1.5 text-slate-400 hover:text-white">
+            <X size={18} />
+          </button>
+        </div>
 
-          <div className="px-6 py-5 border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'}`}>
-                {isSuperAdmin ? <Crown size={18} className="text-white" /> : <Shield size={18} className="text-white" />}
-              </div>
-              <div className="min-w-0">
-                <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
-                <p className={`text-xs font-semibold uppercase tracking-wide ${isSuperAdmin ? 'text-purple-400' : 'text-blue-400'}`}>
-                  {isSuperAdmin ? 'Superadmin' : 'Administrador'}
-                </p>
-              </div>
+        <div className="px-6 py-5 border-b border-slate-700">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'}`}>
+              {isSuperAdmin ? <Crown size={18} className="text-white" /> : <Shield size={18} className="text-white" />}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${isSuperAdmin ? 'text-purple-400' : 'text-blue-400'}`}>
+                {isSuperAdmin ? 'Superadmin' : 'Administrador'}
+              </p>
             </div>
           </div>
+        </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === item.id
-                    ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-            <div className="pt-2">
-              <button onClick={onGoToPortal} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all text-sm font-semibold">
-                <LayoutGrid size={17} />
-                Ver Portal
-                <ChevronRight size={14} className="ml-auto" />
-              </button>
-            </div>
-          </nav>
-
-          <div className="px-4 pb-6">
-            <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-bold">
-              <LogOut size={17} />
-              Cerrar sesión
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => handleNav(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                activeTab === item.id
+                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+          <div className="pt-2">
+            <button onClick={onGoToPortal} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all text-sm font-semibold">
+              <LayoutGrid size={17} />
+              Ver Portal
+              <ChevronRight size={14} className="ml-auto" />
             </button>
           </div>
-        </aside>
+        </nav>
 
-        <main className="ml-64 flex-1 p-8">
+        <div className="px-4 pb-6">
+          <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-bold">
+            <LogOut size={17} />
+            Cerrar sesión
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-slate-900 px-4 py-3 flex items-center gap-3 shadow-lg">
+        <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-300 hover:text-white -ml-1">
+          <Menu size={22} />
+        </button>
+        <h2 className="text-white font-black text-lg">ECG <span className="text-blue-400">ADMIN</span></h2>
+        <div className="ml-auto">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'}`}>
+            {isSuperAdmin ? <Crown size={15} className="text-white" /> : <Shield size={15} className="text-white" />}
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="md:ml-64 pt-14 md:pt-0 min-h-screen">
+        <div className="p-4 md:p-8">
           {activeTab === 'resumen' && <ResumenSection />}
           {activeTab === 'cotizaciones' && (
             <ItemSection
@@ -599,8 +630,8 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
           {activeTab === 'usuarios' && isSuperAdmin && (
             <GestionUsuariosSection currentUser={currentUser} />
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };
