@@ -83,6 +83,37 @@ app.post('/api/auth/logout', async (req, res) => {
   return res.json({ message: 'Sesión cerrada.' });
 });
 
+// ── POST /api/auth/impersonate ────────────────────────────────────────────────
+app.post('/api/auth/impersonate', async (req, res) => {
+  const { adminToken, targetUserId } = req.body;
+  if (!adminToken || !targetUserId)
+    return res.status(400).json({ error: 'adminToken y targetUserId requeridos.' });
+
+  const { data: session } = await supabase
+    .from('sesiones').select('usuario_id').eq('token', adminToken).maybeSingle();
+  if (!session) return res.status(401).json({ error: 'Sesión de administrador inválida.' });
+
+  const { data: admin } = await supabase
+    .from('Usuarios').select('nivel').eq('id', session.usuario_id).maybeSingle();
+  if (!admin || admin.nivel < 2)
+    return res.status(403).json({ error: 'Se requiere nivel superadmin.' });
+
+  const { data: target } = await supabase
+    .from('Usuarios').select('id, "Nombre Completo", "Correo", nivel').eq('id', targetUserId).maybeSingle();
+  if (!target) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+  const rawName = target['Nombre Completo'];
+  return res.json({
+    user: {
+      id:    target.id,
+      name:  Array.isArray(rawName) ? rawName[0] : rawName,
+      email: target['Correo'],
+      role:  target.nivel >= 1 ? 'admin' : 'user',
+      nivel: target.nivel,
+    },
+  });
+});
+
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
   const name = req.body.name?.trim();

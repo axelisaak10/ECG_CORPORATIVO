@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
-  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu
+  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
@@ -373,10 +373,11 @@ const NIVEL_LABELS = {
   2: { label: 'Superadmin',  cls: 'bg-purple-100 text-purple-700' },
 };
 
-const GestionUsuariosSection = ({ currentUser }) => {
-  const [users, setUsers]       = useState([]);
-  const [loading, setLoading]   = useState(true);
+const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
+  const [users, setUsers]           = useState([]);
+  const [loading, setLoading]       = useState(true);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [impersonating, setImpersonating] = useState(null);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -405,6 +406,24 @@ const GestionUsuariosSection = ({ currentUser }) => {
       body: JSON.stringify({ id, nivel }),
     });
     fetchUsers();
+  };
+
+  const handleImpersonate = async (user) => {
+    setImpersonating(user.id);
+    try {
+      const res = await fetch('/api/auth/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminToken: currentUser.sessionToken, targetUserId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      onImpersonate(data.user);
+    } catch (err) {
+      alert(err.message || 'Error al iniciar sesión como usuario.');
+    } finally {
+      setImpersonating(null);
+    }
   };
 
   return (
@@ -480,9 +499,20 @@ const GestionUsuariosSection = ({ currentUser }) => {
                             <button onClick={() => setConfirmDel(null)} className="text-xs bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-lg">Cancelar</button>
                           </div>
                         ) : (
-                          <button onClick={() => setConfirmDel(user.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                            <Trash2 size={15} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleImpersonate(user)}
+                              disabled={impersonating === user.id}
+                              title="Iniciar sesión como este usuario"
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all disabled:opacity-50"
+                            >
+                              <LogIn size={13} />
+                              {impersonating === user.id ? 'Entrando…' : 'Iniciar como'}
+                            </button>
+                            <button onClick={() => setConfirmDel(user.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -498,7 +528,7 @@ const GestionUsuariosSection = ({ currentUser }) => {
 };
 
 /* ─── AdminDashboard ─── */
-const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
+const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
   const [activeTab, setActiveTab] = useState('resumen');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isSuperAdmin = currentUser.nivel >= 2;
@@ -628,7 +658,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout }) => {
             <TicketsSection currentUser={currentUser} />
           )}
           {activeTab === 'usuarios' && isSuperAdmin && (
-            <GestionUsuariosSection currentUser={currentUser} />
+            <GestionUsuariosSection currentUser={currentUser} onImpersonate={onImpersonate} />
           )}
         </div>
       </main>

@@ -14,7 +14,7 @@ import MainPortal from './components/layout/MainPortal';
 import AuthModal from './components/auth/AuthModal';
 import AdminDashboard from './components/auth/AdminDashboard';
 import UserDashboard from './components/auth/UserDashboard';
-import { Home, LogIn, LogOut, User } from 'lucide-react';
+import { Home, LogIn, LogOut, User, ArrowLeftRight } from 'lucide-react';
 import { companiesData } from './data/companies';
 
 // ── Shared auth state ────────────────────────────────────────────────────────
@@ -44,7 +44,20 @@ function useAuth() {
     setCurrentUser(null);
   };
 
-  return { currentUser, login, logout };
+  const impersonate = (targetUser) => {
+    const impersonated = { ...targetUser, impersonatedBy: currentUser };
+    localStorage.setItem('ecg_session', JSON.stringify(impersonated));
+    setCurrentUser(impersonated);
+  };
+
+  const stopImpersonating = () => {
+    const original = currentUser?.impersonatedBy;
+    if (!original) return;
+    localStorage.setItem('ecg_session', JSON.stringify(original));
+    setCurrentUser(original);
+  };
+
+  return { currentUser, login, logout, impersonate, stopImpersonating };
 }
 
 // ── Portal principal ─────────────────────────────────────────────────────────
@@ -207,17 +220,50 @@ function EmpresaRedirect() {
   return <Navigate to={`/empresa/${id}/inicio`} replace />;
 }
 
+// ── Banner de impersonación ───────────────────────────────────────────────────
+function ImpersonationBanner({ currentUser, onStop }) {
+  if (!currentUser?.impersonatedBy) return null;
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[1000] bg-amber-500 text-white px-4 py-2.5 flex items-center justify-between shadow-lg">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <ArrowLeftRight size={16} />
+        Viendo como: <span className="font-black">{currentUser.name}</span>
+        <span className="opacity-75">({currentUser.email})</span>
+      </div>
+      <button
+        onClick={onStop}
+        className="bg-white text-amber-600 font-black text-xs px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+      >
+        Volver a mi sesión
+      </button>
+    </div>
+  );
+}
+
 // ── App raíz con rutas ───────────────────────────────────────────────────────
 function App() {
   const navigate = useNavigate();
-  const { currentUser, login, logout } = useAuth();
+  const { currentUser, login, logout, impersonate, stopImpersonating } = useAuth();
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
+  const handleImpersonate = (targetUser) => {
+    impersonate(targetUser);
+    if (targetUser.role === 'admin') navigate('/admin');
+    else navigate('/usuario');
+  };
+
+  const handleStopImpersonating = () => {
+    stopImpersonating();
+    navigate('/admin');
+  };
+
   return (
+    <>
+    <ImpersonationBanner currentUser={currentUser} onStop={handleStopImpersonating} />
     <Routes>
       <Route
         path="/"
@@ -235,7 +281,7 @@ function App() {
         path="/admin"
         element={
           currentUser?.role === 'admin'
-            ? <AdminDashboard currentUser={currentUser} onGoToPortal={() => navigate('/')} onLogout={handleLogout} />
+            ? <AdminDashboard currentUser={currentUser} onGoToPortal={() => navigate('/')} onLogout={handleLogout} onImpersonate={handleImpersonate} />
             : <Navigate to="/" replace />
         }
       />
@@ -254,6 +300,7 @@ function App() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
 
