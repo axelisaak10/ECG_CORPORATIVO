@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { randomUUID } = require('crypto');
 
 const app = express();
 app.use(express.json());
@@ -162,40 +163,45 @@ app.post('/api/tickets', async (req, res) => {
 
   const { data, error } = await supabase
     .from('tickets')
-    .insert([{ titulo: titulo.trim(), descripcion: descripcion?.trim() || '', prioridad: prioridad || 'media', estado: estado || 'pendiente', grupo: grupo || 'IT', asignado_a: asignado_a || null, fecha_limite: fecha_limite || null, usuario_id: Number(userId) }])
+    .insert([{ id: randomUUID(), titulo: titulo.trim(), descripcion: descripcion?.trim() || '', prioridad: prioridad || 'media', estado: estado || 'pendiente', grupo: grupo || 'IT', asignado_a: asignado_a || null, fecha_limite: fecha_limite || null, usuario_id: Number(userId) }])
     .select().single();
 
-  if (error) return res.status(500).json({ error: 'Error al crear ticket.' });
+  if (error) { console.error('Supabase tickets insert error:', error); return res.status(500).json({ error: error.message || 'Error al crear ticket.' }); }
   return res.status(201).json({ ticket: data });
 });
 
 // ── PATCH /api/tickets/:id — actualizar ───────────────────────────────────────
 app.patch('/api/tickets/:id', async (req, res) => {
-  const { id } = req.params;
-  const { userId, ...fields } = req.body;
-  if (!userId) return res.status(401).json({ error: 'userId requerido.' });
-  const nivel = await getTicketUserNivel(userId);
-  if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  try {
+    const { id } = req.params;
+    const { userId, ...fields } = req.body;
+    if (!userId) return res.status(401).json({ error: 'userId requerido.' });
+    const nivel = await getTicketUserNivel(userId);
+    if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-  let updateData = {};
-  if (nivel >= 2) {
-    if (fields.titulo      !== undefined) updateData.titulo      = fields.titulo;
-    if (fields.descripcion !== undefined) updateData.descripcion = fields.descripcion;
-    if (fields.prioridad   !== undefined) updateData.prioridad   = fields.prioridad;
-    if (fields.estado      !== undefined) updateData.estado      = fields.estado;
-    if (fields.grupo       !== undefined) updateData.grupo       = fields.grupo;
-    if (fields.asignado_a  !== undefined) updateData.asignado_a  = fields.asignado_a || null;
-    if (fields.fecha_limite !== undefined) updateData.fecha_limite = fields.fecha_limite || null;
-  } else {
-    if (fields.estado === undefined)
-      return res.status(403).json({ error: 'Admin solo puede cambiar el estado del ticket.' });
-    updateData.estado = fields.estado;
+    let updateData = {};
+    if (nivel >= 2) {
+      if (fields.titulo      !== undefined) updateData.titulo      = fields.titulo;
+      if (fields.descripcion !== undefined) updateData.descripcion = fields.descripcion;
+      if (fields.prioridad   !== undefined) updateData.prioridad   = fields.prioridad;
+      if (fields.estado      !== undefined) updateData.estado      = fields.estado;
+      if (fields.grupo       !== undefined) updateData.grupo       = fields.grupo;
+      if (fields.asignado_a  !== undefined) updateData.asignado_a  = fields.asignado_a || null;
+      if (fields.fecha_limite !== undefined) updateData.fecha_limite = fields.fecha_limite || null;
+    } else {
+      if (fields.estado === undefined)
+        return res.status(403).json({ error: 'Admin solo puede cambiar el estado del ticket.' });
+      updateData.estado = fields.estado;
+    }
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase.from('tickets').update(updateData).eq('id', id).select().single();
+    if (error) { console.error('Supabase PATCH error:', error); return res.status(500).json({ error: error.message || 'Error al actualizar ticket.' }); }
+    return res.json({ ticket: data });
+  } catch (err) {
+    console.error('PATCH /api/tickets/:id error:', err);
+    return res.status(500).json({ error: err.message || 'Error interno.' });
   }
-  updateData.updated_at = new Date().toISOString();
-
-  const { data, error } = await supabase.from('tickets').update(updateData).eq('id', id).select().single();
-  if (error) return res.status(500).json({ error: 'Error al actualizar ticket.' });
-  return res.json({ ticket: data });
 });
 
 // ── DELETE /api/tickets/:id — eliminar (nivel >= 2) ───────────────────────────
