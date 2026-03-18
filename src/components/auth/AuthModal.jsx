@@ -44,7 +44,6 @@ const AuthModal = ({ onClose, onLogin }) => {
     setLoginError('');
     try {
       const user = await apiLogin(loginForm.email, loginForm.password);
-      localStorage.setItem('ecg_session', JSON.stringify(user));
       onLogin(user);
       onClose();
     } catch (err) {

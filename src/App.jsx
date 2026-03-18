@@ -20,11 +20,19 @@ import { companiesData } from './data/companies';
 // ── Shared auth state ────────────────────────────────────────────────────────
 function useAuth() {
   const [currentUser, setCurrentUser] = useState(() => {
-    const session = localStorage.getItem('ecg_session');
-    return session ? JSON.parse(session) : null;
+    try {
+      const session = localStorage.getItem('ecg_session');
+      return session ? JSON.parse(session) : null;
+    } catch {
+      localStorage.removeItem('ecg_session');
+      return null;
+    }
   });
 
-  const login = (user) => setCurrentUser(user);
+  const login = (user) => {
+    localStorage.setItem('ecg_session', JSON.stringify(user));
+    setCurrentUser(user);
+  };
 
   const logout = () => {
     localStorage.removeItem('ecg_session');
