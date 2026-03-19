@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
-  Plus, X, Eye, Trash2, Edit2, Clock,
+  Plus, X, Eye, Trash2, Edit2, Clock, Lock,
   LayoutGrid, List, AlertTriangle, CheckCircle2, Ban,
   Loader2, Circle,
 } from 'lucide-react';
@@ -41,29 +41,42 @@ const getPrio = (v) => PRIORITIES.find(p => p.value === v) ?? PRIORITIES[3];
 const getCol  = (v) => KANBAN_COLS.find(c => c.value === v);
 
 // ── Kanban card ────────────────────────────────────────────────────────────
+const isTicketExpired = (t) => {
+  if (!t.fecha_limite) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return new Date(t.fecha_limite) < today;
+};
+
 const TicketCard = ({ ticket, isDragging, canEditState, onOpen, onDragStart, onDragEnd, onTouchStart, onTouchMove, onTouchEnd }) => {
-  const prio = getPrio(ticket.prioridad);
+  const prio    = getPrio(ticket.prioridad);
+  const expired = isTicketExpired(ticket);
+  const movable = canEditState && !expired;
   return (
     <div
-      draggable={canEditState}
-      onDragStart={() => onDragStart(ticket)}
+      draggable={movable}
+      onDragStart={() => movable && onDragStart(ticket)}
       onDragEnd={onDragEnd}
-      onTouchStart={canEditState ? () => onTouchStart(ticket) : undefined}
-      onTouchMove={canEditState ? onTouchMove : undefined}
-      onTouchEnd={canEditState ? onTouchEnd : undefined}
+      onTouchStart={movable ? () => onTouchStart(ticket) : undefined}
+      onTouchMove={movable ? onTouchMove : undefined}
+      onTouchEnd={movable ? onTouchEnd : undefined}
       onClick={() => onOpen(ticket)}
-      className={`bg-white rounded-xl border border-slate-100 p-4 shadow-sm cursor-pointer hover:shadow-md transition-all select-none touch-none ${isDragging ? 'opacity-40 scale-95' : ''}`}
+      className={`bg-white rounded-xl border p-4 shadow-sm cursor-pointer hover:shadow-md transition-all select-none touch-none
+        ${isDragging ? 'opacity-40 scale-95' : ''}
+        ${expired ? 'opacity-60 border-red-200 bg-red-50/30' : 'border-slate-100'}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-bold text-slate-800 line-clamp-2 flex-1">{ticket.titulo}</span>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
-          style={{ color: prio.color, background: prio.bg }}>{prio.label}</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
+            style={{ color: prio.color, background: prio.bg }}>{prio.label}</span>
+          {expired && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 flex items-center gap-0.5 whitespace-nowrap"><Lock size={8} /> Vencido</span>}
+        </div>
       </div>
       <p className="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">{ticket.descripcion}</p>
       <div className="flex items-center justify-between">
         <span className="text-[10px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded">{ticket.grupo}</span>
         {ticket.fecha_limite && (
-          <span className="flex items-center gap-1 text-[10px] text-slate-400">
+          <span className={`flex items-center gap-1 text-[10px] ${expired ? 'text-red-400 font-semibold' : 'text-slate-400'}`}>
             <Clock size={10} /> {fmtDate(ticket.fecha_limite)}
           </span>
         )}
@@ -153,7 +166,7 @@ const TicketsSection = ({ currentUser }) => {
   const forCol = (col) => filtered.filter(t => t.estado === col);
 
   // ── Drag & drop ───────────────────────────────────────────────────────────
-  const onDragStart = (ticket) => { if (canEditState) setDraggingId(ticket.id); };
+  const onDragStart = (ticket) => { if (canEditState && !isTicketExpired(ticket)) setDraggingId(ticket.id); };
   const onDragEnd   = () => { setDraggingId(null); setDragOverCol(null); };
   const onDragOver  = (e, col) => { e.preventDefault(); setDragOverCol(col); };
 
@@ -162,6 +175,7 @@ const TicketsSection = ({ currentUser }) => {
     if (!id) return;
     const ticket = tickets.find(t => t.id === id);
     if (!ticket || ticket.estado === col) return;
+    if (isTicketExpired(ticket)) return;
     setTickets(prev => prev.map(t => t.id === id ? { ...t, estado: col } : t));
     try {
       await apiUpdateTicket(currentUser.id, id, { estado: col });
@@ -394,19 +408,23 @@ const TicketsSection = ({ currentUser }) => {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {filtered.map(ticket => {
-                        const prio = getPrio(ticket.prioridad);
-                        const col  = getCol(ticket.estado);
+                        const prio    = getPrio(ticket.prioridad);
+                        const col     = getCol(ticket.estado);
+                        const expired = isTicketExpired(ticket);
                         return (
-                          <tr key={ticket.id} className="hover:bg-slate-50/50 transition-colors">
+                          <tr key={ticket.id} className={`hover:bg-slate-50/50 transition-colors ${expired ? 'bg-red-50/20' : ''}`}>
                             <td className="px-5 py-3.5">
-                              <button onClick={() => { setDetailId(ticket.id); setEditing(null); }}
-                                className="font-semibold text-slate-800 text-sm hover:text-blue-600 text-left line-clamp-1 max-w-[200px]">{ticket.titulo}</button>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => { setDetailId(ticket.id); setEditing(null); }}
+                                  className="font-semibold text-slate-800 text-sm hover:text-blue-600 text-left line-clamp-1 max-w-[180px]">{ticket.titulo}</button>
+                                {expired && <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 flex-shrink-0"><Lock size={8} /> Vencido</span>}
+                              </div>
                             </td>
                             <td className="px-5 py-3.5">
                               <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: prio.color, background: prio.bg }}>{prio.label}</span>
                             </td>
                             <td className="px-5 py-3.5">
-                              {canEditState ? (
+                              {canEditState && !expired ? (
                                 <select value={ticket.estado} onChange={e => handleEstadoChange(ticket.id, e.target.value)}
                                   className="text-xs font-bold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none"
                                   style={{ background: (col?.color ?? '#94a3b8') + '20', color: col?.color ?? '#94a3b8' }}>
@@ -417,12 +435,12 @@ const TicketsSection = ({ currentUser }) => {
                               )}
                             </td>
                             <td className="px-5 py-3.5 text-sm text-slate-500">{ticket.grupo}</td>
-                            <td className="px-5 py-3.5 text-sm text-slate-400">{fmtDate(ticket.fecha_limite)}</td>
+                            <td className={`px-5 py-3.5 text-sm ${expired ? 'text-red-400 font-semibold' : 'text-slate-400'}`}>{fmtDate(ticket.fecha_limite)}</td>
                             <td className="px-5 py-3.5 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <button onClick={() => { setDetailId(ticket.id); setEditing(null); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Eye size={15} /></button>
-                                {canEdit   && <button onClick={() => openEdit(ticket)} className="p-1.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"><Edit2 size={15} /></button>}
-                                {canDelete && <button onClick={() => deleteTicket(ticket.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={15} /></button>}
+                                {canEdit   && !expired && <button onClick={() => openEdit(ticket)} className="p-1.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"><Edit2 size={15} /></button>}
+                                {canDelete && !expired && <button onClick={() => deleteTicket(ticket.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={15} /></button>}
                               </div>
                             </td>
                           </tr>
