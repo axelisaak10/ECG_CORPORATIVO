@@ -29,7 +29,7 @@ function verifyToken(req) {
   try {
     return jwt.verify(auth.slice(7), getSecret());
   } catch {
-    return null;
+    return null; // token inválido, expirado o JWT_SECRET no configurado
   }
 }
 
