@@ -1,9 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
+const { verifyToken }  = require('./lib/jwt');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
@@ -11,8 +12,13 @@ module.exports = async function handler(req, res) {
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-  // GET — listar todos los usuarios
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+  // GET — listar todos los usuarios (nivel >= 1)
   if (req.method === 'GET') {
+    if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
     const { data, error } = await supabase
       .from('Usuarios')
       .select('id, "Nombre Completo", "Correo", nivel')
@@ -34,8 +40,10 @@ module.exports = async function handler(req, res) {
     return res.json({ users });
   }
 
-  // PUT — cambiar nivel de un usuario
+  // PUT — cambiar nivel de un usuario (nivel >= 3)
   if (req.method === 'PUT') {
+    if (payload.nivel < 3) return res.status(403).json({ error: 'Se requiere superadmin.' });
+
     const { id, nivel } = req.body;
     if (id == null || nivel == null) return res.status(400).json({ error: 'id y nivel requeridos.' });
 
@@ -48,8 +56,10 @@ module.exports = async function handler(req, res) {
     return res.json({ message: 'Nivel actualizado.' });
   }
 
-  // DELETE — eliminar un usuario
+  // DELETE — eliminar un usuario (nivel >= 3)
   if (req.method === 'DELETE') {
+    if (payload.nivel < 3) return res.status(403).json({ error: 'Se requiere superadmin.' });
+
     const { id } = req.body;
     if (!id) return res.status(400).json({ error: 'id requerido.' });
 

@@ -1,7 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 const { randomUUID }   = require('crypto');
+const bcrypt           = require('bcryptjs');
+const { signToken }    = require('../lib/jwt');
 
-const SESSION_LIMIT    = 2;
+const SESSION_LIMIT     = 2;
 const SESSION_TTL_HOURS = 24;
 
 module.exports = async function handler(req, res) {
@@ -22,24 +24,41 @@ module.exports = async function handler(req, res) {
   if (!email || !password)
     return res.status(400).json({ error: 'Correo y contraseña requeridos.' });
 
-  // 1. Validar credenciales
+  // 1. Buscar usuario por correo
   const { data, error } = await supabase
     .from('Usuarios')
     .select('*')
     .eq('Correo', email)
-    .eq('Contraseña', password)
     .single();
 
   if (error || !data)
     return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
 
+  // 2. Verificar contraseña con soporte de migración automática desde texto plano
+  const stored = data['Contraseña'];
+  let passwordValid = false;
+
+  if (stored?.startsWith('$2b$') || stored?.startsWith('$2a$')) {
+    passwordValid = await bcrypt.compare(password, stored);
+  } else {
+    // Texto plano — comparar y migrar al vuelo
+    passwordValid = stored === password;
+    if (passwordValid) {
+      const hash = await bcrypt.hash(password, 12);
+      await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('id', data.id);
+    }
+  }
+
+  if (!passwordValid)
+    return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
+
   const userId = data.id;
 
-  // 2. Limpiar sesiones expiradas (> SESSION_TTL_HOURS horas sin actividad)
+  // 3. Limpiar sesiones expiradas
   const expiredBefore = new Date(Date.now() - SESSION_TTL_HOURS * 3600 * 1000).toISOString();
   await supabase.from('sesiones').delete().eq('usuario_id', userId).lt('last_active', expiredBefore);
 
-  // 3. Contar sesiones activas
+  // 4. Contar sesiones activas
   const { count } = await supabase
     .from('sesiones')
     .select('*', { count: 'exact', head: true })
@@ -52,22 +71,24 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // 4. Crear nueva sesión
-  const token = randomUUID();
+  // 5. Crear sesión: el jti del JWT se almacena en sesiones para control de límite/revocación
+  const jti = randomUUID();
   await supabase.from('sesiones').insert([{
     usuario_id: userId,
-    token,
+    token:      jti,
     user_agent: req.headers['user-agent'] || null,
   }]);
 
-  // 5. Responder con usuario + token de sesión
+  // 6. Firmar JWT (contiene userId, nivel y jti para revocación)
+  const token = signToken({ userId, nivel: data.nivel, jti });
+
   const rawName = data['Nombre Completo'];
   return res.json({
     user: {
       id:           userId,
       name:         Array.isArray(rawName) ? rawName[0] : rawName,
       email:        data['Correo'],
-      role:         data.nivel >= 1 ? 'admin' : 'user', // nivel>=1 accede al panel admin
+      role:         data.nivel >= 1 ? 'admin' : 'user',
       nivel:        data.nivel,
       sessionToken: token,
     },

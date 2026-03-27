@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt           = require('bcryptjs');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,13 +37,15 @@ module.exports = async function handler(req, res) {
     .maybeSingle();
   const nextId = maxRow ? (maxRow.id + 1) : 1;
 
+  const hash = await bcrypt.hash(password, 12);
+
   const { error } = await supabase
     .from('Usuarios')
     .insert([{
       id: nextId,
       'Nombre Completo': [name],
       'Correo': email,
-      'Contraseña': password,
+      'Contraseña': hash,
       'nivel': 0,
     }]);
 

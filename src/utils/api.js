@@ -2,6 +2,16 @@
 // En desarrollo local se usa el proxy de Vite hacia Express.
 const BASE_URL = '';
 
+function authHeaders(includeContentType = true) {
+  const headers = {};
+  if (includeContentType) headers['Content-Type'] = 'application/json';
+  try {
+    const session = JSON.parse(localStorage.getItem('ecg_session') || 'null');
+    if (session?.sessionToken) headers['Authorization'] = `Bearer ${session.sessionToken}`;
+  } catch { /* ignorar */ }
+  return headers;
+}
+
 export async function apiLogin(email, password) {
   const res = await fetch(`${BASE_URL}/api/auth/login`, {
     method: 'POST',
@@ -29,40 +39,41 @@ export async function apiResetPassword(email, newPassword) {
 }
 
 // ── Tickets ────────────────────────────────────────────────────────────────
-export async function apiGetTickets(userId) {
-  const res = await fetch(`${BASE_URL}/api/tickets?userId=${userId}`);
+export async function apiGetTickets() {
+  const res = await fetch(`${BASE_URL}/api/tickets`, {
+    headers: authHeaders(false),
+  });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener tickets.');
   return data;
 }
 
-export async function apiCreateTicket(userId, ticket) {
+export async function apiCreateTicket(_userId, ticket) {
   const res = await fetch(`${BASE_URL}/api/tickets`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, ...ticket }),
+    headers: authHeaders(),
+    body: JSON.stringify(ticket),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al crear ticket.');
   return data;
 }
 
-export async function apiUpdateTicket(userId, ticketId, fields) {
+export async function apiUpdateTicket(_userId, ticketId, fields) {
   const res = await fetch(`${BASE_URL}/api/tickets/${ticketId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, ...fields }),
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al actualizar ticket.');
   return data;
 }
 
-export async function apiDeleteTicket(userId, ticketId) {
+export async function apiDeleteTicket(_userId, ticketId) {
   const res = await fetch(`${BASE_URL}/api/tickets/${ticketId}`, {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId }),
+    headers: authHeaders(false),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al eliminar ticket.');

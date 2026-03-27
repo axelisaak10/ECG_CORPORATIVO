@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const jwt              = require('jsonwebtoken');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,22 +17,15 @@ module.exports = async function handler(req, res) {
   if (!adminToken || !targetUserId)
     return res.status(400).json({ error: 'adminToken y targetUserId requeridos.' });
 
-  // Verificar que el token pertenece a un superadmin activo
-  const { data: session } = await supabase
-    .from('sesiones')
-    .select('usuario_id')
-    .eq('token', adminToken)
-    .maybeSingle();
+  // Verificar JWT del admin
+  let payload;
+  try {
+    payload = jwt.verify(adminToken, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ error: 'Sesión de administrador inválida.' });
+  }
 
-  if (!session) return res.status(401).json({ error: 'Sesión de administrador inválida.' });
-
-  const { data: admin } = await supabase
-    .from('Usuarios')
-    .select('nivel')
-    .eq('id', session.usuario_id)
-    .maybeSingle();
-
-  if (!admin || admin.nivel < 3)
+  if (payload.nivel < 3)
     return res.status(403).json({ error: 'Se requiere nivel superadmin.' });
 
   // Obtener datos del usuario objetivo
