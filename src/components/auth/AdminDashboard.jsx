@@ -725,13 +725,18 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
                   : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              {item.icon}
+              <span className="relative flex-shrink-0">
+                {item.icon}
+                {item.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
+                    <span className="absolute inline-flex w-full h-full rounded-full bg-red-400 opacity-75 animate-ping" />
+                    <span className="relative flex items-center justify-center bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 px-1 leading-none shadow-lg">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  </span>
+                )}
+              </span>
               <span className="flex-1 text-left">{item.label}</span>
-              {item.badge > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight">
-                  {item.badge > 99 ? '99+' : item.badge}
-                </span>
-              )}
             </button>
           ))}
           <div className="pt-2">

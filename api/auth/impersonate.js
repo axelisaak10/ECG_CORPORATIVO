@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const jwt              = require('jsonwebtoken');
+const { randomUUID }   = require('crypto');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +12,9 @@ module.exports = async function handler(req, res) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
     return res.status(500).json({ error: 'Variables de entorno no configuradas.' });
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return res.status(500).json({ error: 'JWT_SECRET no configurado.' });
+
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
   const { adminToken, targetUserId } = req.body;
@@ -20,7 +24,7 @@ module.exports = async function handler(req, res) {
   // Verificar JWT del admin
   let payload;
   try {
-    payload = jwt.verify(adminToken, process.env.JWT_SECRET);
+    payload = jwt.verify(adminToken, secret);
   } catch {
     return res.status(401).json({ error: 'Sesión de administrador inválida.' });
   }
@@ -37,14 +41,23 @@ module.exports = async function handler(req, res) {
 
   if (!target) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
+  // Generar JWT para el usuario impersonado
+  const jti   = randomUUID();
+  const token = jwt.sign(
+    { sub: target.id, nivel: target.nivel, jti },
+    secret,
+    { expiresIn: '24h' }
+  );
+
   const rawName = target['Nombre Completo'];
   return res.json({
     user: {
-      id:    target.id,
-      name:  Array.isArray(rawName) ? rawName[0] : rawName,
-      email: target['Correo'],
-      role:  target.nivel >= 1 ? 'admin' : 'user',
-      nivel: target.nivel,
+      id:           target.id,
+      name:         Array.isArray(rawName) ? rawName[0] : rawName,
+      email:        target['Correo'],
+      role:         target.nivel >= 1 ? 'admin' : 'user',
+      nivel:        target.nivel,
+      sessionToken: token,
     },
   });
 };

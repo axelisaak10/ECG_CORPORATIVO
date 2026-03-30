@@ -4,7 +4,7 @@ import {
   LayoutGrid, List, AlertTriangle, CheckCircle2, Ban,
   Loader2, Circle,
 } from 'lucide-react';
-import { apiGetTickets, apiCreateTicket, apiUpdateTicket, apiDeleteTicket } from '../../utils/api';
+import { apiGetTickets, apiCreateTicket, apiUpdateTicket, apiDeleteTicket, authHeaders } from '../../utils/api';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 export const PRIORITIES = [
@@ -114,7 +114,7 @@ const TicketsSection = ({ currentUser }) => {
 
   // Cargar lista de usuarios para el selector "Asignado a"
   useEffect(() => {
-    fetch('/api/users')
+    fetch('/api/users', { headers: authHeaders(false) })
       .then(r => r.json())
       .then(d => setUsuarios(d.users || []))
       .catch(() => {});
