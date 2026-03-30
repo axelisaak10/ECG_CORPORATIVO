@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
+import { authHeaders } from '../../utils/api';
 import TicketsSection from '../admin/TicketsSection';
 
 /* ─── Status maps ─── */
@@ -390,7 +391,7 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
 
   const fetchUsers = () => {
     setLoading(true);
-    fetch('/api/users')
+    fetch('/api/users', { headers: authHeaders(false) })
       .then(r => r.json())
       .then(d => { setUsers(d.users || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -401,7 +402,7 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   const handleDelete = async (id) => {
     await fetch('/api/users', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ id }),
     });
     setConfirmDel(null);
@@ -411,7 +412,7 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   const handleNivel = async (id, nivel) => {
     await fetch('/api/users', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ id, nivel }),
     });
     fetchUsers();

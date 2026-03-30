@@ -2,7 +2,7 @@
 // En desarrollo local se usa el proxy de Vite hacia Express.
 const BASE_URL = '';
 
-function authHeaders(includeContentType = true) {
+export function authHeaders(includeContentType = true) {
   const headers = {};
   if (includeContentType) headers['Content-Type'] = 'application/json';
   try {
