@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
-  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn
+  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
+  MessageSquare, CheckCheck
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
-import { authHeaders } from '../../utils/api';
+import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje } from '../../utils/api';
 import TicketsSection from '../admin/TicketsSection';
 
 /* ─── Status maps ─── */
@@ -383,6 +384,96 @@ const NIVEL_LABELS = {
   3: { label: 'Superadmin', cls: 'bg-purple-100 text-purple-700' },
 };
 
+/* ─── MensajesSection ─── */
+const MensajesSection = ({ isAdmin }) => {
+  const [mensajes, setMensajes] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [expanded, setExpanded] = useState(null);
+
+  const fetchMensajes = async () => {
+    setLoading(true);
+    try { const d = await apiGetMensajes(); setMensajes(d.mensajes || []); }
+    catch { /* ignorar */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchMensajes(); }, []);
+
+  const handleLeido = async (id) => {
+    await apiMarkMensajeLeido(id);
+    setMensajes(ms => ms.map(m => m.id === id ? { ...m, leido: true } : m));
+  };
+
+  const handleDelete = async (id) => {
+    await apiDeleteMensaje(id);
+    setMensajes(ms => ms.filter(m => m.id !== id));
+    if (expanded === id) setExpanded(null);
+  };
+
+  const noLeidos = mensajes.filter(m => !m.leido).length;
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-black text-slate-800">Mensajes de Contacto</h1>
+        <p className="text-slate-500 mt-1">Formularios enviados desde el portal</p>
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <span className="font-bold text-slate-700">
+            {loading ? 'Cargando...' : `${mensajes.length} total`}
+          </span>
+          {noLeidos > 0 && (
+            <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">{noLeidos} sin leer</span>
+          )}
+        </div>
+        {!loading && mensajes.length === 0 && (
+          <div className="py-16 flex flex-col items-center text-slate-400 gap-3">
+            <MessageSquare size={38} />
+            <p>No hay mensajes aún.</p>
+          </div>
+        )}
+        <ul className="divide-y divide-slate-100">
+          {mensajes.map(m => (
+            <li key={m.id} className={`px-6 py-4 ${!m.leido ? 'bg-blue-50/40' : ''}`}>
+              <div
+                className="flex items-start justify-between gap-4 cursor-pointer"
+                onClick={() => { setExpanded(expanded === m.id ? null : m.id); if (!m.leido) handleLeido(m.id); }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {!m.leido && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                    <span className="font-semibold text-slate-800 truncate">{m.nombre}</span>
+                    <span className="text-slate-400 text-sm truncate">{m.correo}</span>
+                    {m.empresa && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{m.empresa}</span>}
+                  </div>
+                  <p className="text-slate-500 text-sm mt-1 truncate">{m.mensaje}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-slate-400 hidden sm:block">
+                    {new Date(m.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                  {m.leido && <CheckCheck size={15} className="text-green-500" />}
+                  {isAdmin && (
+                    <button onClick={e => { e.stopPropagation(); handleDelete(m.id); }} className="p-1.5 text-slate-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {expanded === m.id && (
+                <div className="mt-3 pt-3 border-t border-slate-100 text-slate-700 text-sm whitespace-pre-wrap">
+                  {m.mensaje}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   const [users, setUsers]           = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -559,6 +650,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
     { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />       },
     { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardCheck size={17} /> },
     { id: 'tickets',       label: 'Tickets',             icon: <ClipboardCheck size={17} /> },
+    { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} /> },
     ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} /> }] : []),
   ];
 
@@ -677,6 +769,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           )}
           {activeTab === 'tickets' && (
             <TicketsSection currentUser={currentUser} />
+          )}
+          {activeTab === 'mensajes' && (
+            <MensajesSection isAdmin={isAdmin} />
           )}
           {activeTab === 'usuarios' && nivel >= 3 && (
             <GestionUsuariosSection currentUser={currentUser} onImpersonate={onImpersonate} />

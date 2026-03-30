@@ -80,6 +80,45 @@ export async function apiDeleteTicket(_userId, ticketId) {
   return data;
 }
 
+// ── Contacto ────────────────────────────────────────────────────────────────
+export async function apiSendContacto(nombre, correo, mensaje, empresa) {
+  const res = await fetch(`${BASE_URL}/api/contacto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, correo, mensaje, empresa }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al enviar el mensaje.');
+  return data;
+}
+
+export async function apiGetMensajes() {
+  const res = await fetch(`${BASE_URL}/api/contacto`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener mensajes.');
+  return data;
+}
+
+export async function apiMarkMensajeLeido(id) {
+  const res = await fetch(`${BASE_URL}/api/contacto/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al marcar como leído.');
+  return data;
+}
+
+export async function apiDeleteMensaje(id) {
+  const res = await fetch(`${BASE_URL}/api/contacto/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar mensaje.');
+  return data;
+}
+
 export async function apiRegister(name, email, password) {
   const res = await fetch(`${BASE_URL}/api/auth/register`, {
     method: 'POST',

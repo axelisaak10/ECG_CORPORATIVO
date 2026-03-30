@@ -358,6 +358,58 @@ app.delete('/api/tickets/:id', async (req, res) => {
   return res.json({ message: 'Ticket eliminado.' });
 });
 
+// ── POST /api/contacto ────────────────────────────────────────────────────────
+app.post('/api/contacto', async (req, res) => {
+  const { nombre, correo, mensaje, empresa } = req.body;
+  if (!nombre?.trim() || !correo?.trim() || !mensaje?.trim())
+    return res.status(400).json({ error: 'nombre, correo y mensaje son requeridos.' });
+
+  const { error } = await supabase.from('mensajes_contacto').insert([{
+    nombre:  nombre.trim(),
+    correo:  correo.trim(),
+    mensaje: mensaje.trim(),
+    empresa: empresa?.trim() || null,
+  }]);
+  if (error) return res.status(500).json({ error: 'Error al guardar el mensaje.' });
+  return res.json({ message: 'Mensaje enviado correctamente.' });
+});
+
+// ── GET /api/contacto ─────────────────────────────────────────────────────────
+app.get('/api/contacto', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { data, error } = await supabase
+    .from('mensajes_contacto').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener mensajes.' });
+  return res.json({ mensajes: data || [] });
+});
+
+// ── PATCH /api/contacto/:id ───────────────────────────────────────────────────
+app.patch('/api/contacto/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { id } = req.params;
+  const { error } = await supabase.from('mensajes_contacto').update({ leido: true }).eq('id', id);
+  if (error) return res.status(500).json({ error: 'Error al marcar como leído.' });
+  return res.json({ message: 'Marcado como leído.' });
+});
+
+// ── DELETE /api/contacto/:id ──────────────────────────────────────────────────
+app.delete('/api/contacto/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+  const { id } = req.params;
+  const { error } = await supabase.from('mensajes_contacto').delete().eq('id', id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar mensaje.' });
+  return res.json({ message: 'Mensaje eliminado.' });
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
