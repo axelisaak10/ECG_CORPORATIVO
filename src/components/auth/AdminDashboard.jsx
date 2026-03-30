@@ -631,8 +631,9 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
 
 /* ─── AdminDashboard ─── */
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
-  const [activeTab, setActiveTab] = useState('resumen');
+  const [activeTab, setActiveTab]   = useState('resumen');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [badges, setBadges]         = useState({ mensajes: 0, tickets: 0 });
 
   const nivel        = currentUser.nivel ?? 0;
   const isSuperAdmin = nivel >= 3;
@@ -645,18 +646,41 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
   const avatarBg = isSuperAdmin ? 'bg-purple-600' : isAdmin ? 'bg-blue-600' : 'bg-green-600';
   const AvatarIcon = isSuperAdmin ? Crown : isAdmin ? Shield : Users;
 
+  // Polling de badges cada 30 segundos
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const [msgRes, tktRes] = await Promise.all([
+          fetch('/api/contacto',  { headers: authHeaders(false) }),
+          fetch('/api/tickets',   { headers: authHeaders(false) }),
+        ]);
+        const [msgData, tktData] = await Promise.all([msgRes.json(), tktRes.json()]);
+        setBadges({
+          mensajes: (msgData.mensajes  || []).filter(m => !m.leido).length,
+          tickets:  (tktData.tickets   || []).filter(t => t.estado === 'pendiente').length,
+        });
+      } catch { /* ignorar */ }
+    };
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const navItems = [
     { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />      },
     { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />       },
     { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardCheck size={17} /> },
-    { id: 'tickets',       label: 'Tickets',             icon: <ClipboardCheck size={17} /> },
-    { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} /> },
+    { id: 'tickets',       label: 'Tickets',             icon: <ClipboardCheck size={17} />, badge: badges.tickets  },
+    { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,  badge: badges.mensajes },
     ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} /> }] : []),
   ];
 
   const handleNav = (id) => {
     setActiveTab(id);
     setSidebarOpen(false);
+    // Limpiar badge al entrar a la sección
+    if (id === 'mensajes') setBadges(b => ({ ...b, mensajes: 0 }));
+    if (id === 'tickets')  setBadges(b => ({ ...b, tickets:  0 }));
   };
 
   return (
@@ -702,7 +726,12 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
               }`}
             >
               {item.icon}
-              {item.label}
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </button>
           ))}
           <div className="pt-2">
