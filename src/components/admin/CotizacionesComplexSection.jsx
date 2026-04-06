@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText } from 'lucide-react';
 
 const COSTOS_TIEMPO = {
-  'Renta oficina':   { dia: 116.67,  semana: 875.00,   mes: 3500.00   },
-  'Renta de bodega': { dia: 600.00,  semana: 4500.00,  mes: 18000.00  },
-  'Luz':             { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
-  'Agua':            { dia: 30.00,   semana: 225.00,   mes: 900.00    },
-  'Equipo':          { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
-  'Insumos':         { dia: 16.67,   semana: 125.00,   mes: 500.00    },
-  'Sueldos':         { dia: 5666.67, semana: 34000.00, mes: 136000.00 },
-  'Gasolina':        { dia: 166.67,  semana: 1250.00,  mes: 5000.00   },
-  'Seguro':          { dia: 916.67,  semana: 6875.00,  mes: 27500.00  },
-  'Carro':           { dia: 266.67,  semana: 2000.00,  mes: 8000.00   },
-  'Varios':          { dia: 333.33,  semana: 2500.00,  mes: 10000.00  },
+  'Renta oficina':   { hr: 14.58,  dia: 116.67,  semana: 875.00,   mes: 3500.00   },
+  'Renta de bodega': { hr: 25.00,  dia: 600.00,  semana: 4500.00,  mes: 18000.00  },
+  'Luz':             { hr: 4.17,   dia: 100.00,  semana: 750.00,   mes: 3000.00   },
+  'Agua':            { hr: 1.25,   dia: 30.00,   semana: 225.00,   mes: 900.00    },
+  'Equipo':          { hr: 4.17,   dia: 100.00,  semana: 750.00,   mes: 3000.00   },
+  'Insumos':         { hr: 0.69,   dia: 16.67,   semana: 125.00,   mes: 500.00    },
+  'Sueldos':         { hr: 708.33, dia: 5666.67, semana: 34000.00, mes: 136000.00 },
+  'Gasolina':        { hr: 6.94,   dia: 166.67,  semana: 1250.00,  mes: 5000.00   },
+  'Seguro':          { hr: 114.58, dia: 916.67,  semana: 6875.00,  mes: 27500.00  },
+  'Carro':           { hr: 33.33,  dia: 266.67,  semana: 2000.00,  mes: 8000.00   },
+  'Varios':          { hr: 41.67,  dia: 333.33,  semana: 2500.00,  mes: 10000.00  },
 };
 
 const uid  = () => Math.random().toString(36).slice(2);
@@ -170,13 +170,14 @@ const NuevaCotizacionForm = ({ onSave, onCancel }) => {
   const [articulos,   setArticulos]   = useState([]);
   const [herramientas, setHerramientas] = useState([]);
   const [empleados,   setEmpleados]   = useState([]);
+  const [horas,   setHoras]   = useState(0);
   const [dias,    setDias]    = useState(0);
   const [semanas, setSemanas] = useState(0);
   const [meses,   setMeses]   = useState(0);
   const [modal,   setModal]   = useState(null); // 'articulo' | 'herramienta' | 'empleado'
   const [error,   setError]   = useState('');
 
-  const totalTiempo      = Object.values(COSTOS_TIEMPO).reduce((s, c) => s + c.dia * dias + c.semana * semanas + c.mes * meses, 0);
+  const totalTiempo      = Object.values(COSTOS_TIEMPO).reduce((s, c) => s + c.hr * horas + c.dia * dias + c.semana * semanas + c.mes * meses, 0);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * a.cantidad, 0);
   const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * dias, 0);
   const total             = totalArticulos + totalHerramientas + totalTiempo;
@@ -190,7 +191,7 @@ const NuevaCotizacionForm = ({ onSave, onCancel }) => {
       articulos,
       herramientas,
       empleados,
-      dias, semanas, meses,
+      horas, dias, semanas, meses,
       totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo },
       total,
       createdAt: new Date().toISOString(),
@@ -297,11 +298,12 @@ const NuevaCotizacionForm = ({ onSave, onCancel }) => {
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
           <Clock size={16} className="text-blue-500" /> Tiempo de Trabajo
         </h2>
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           {[
-            { label: 'Días',    value: dias,    set: setDias,    key: 'dia'    },
-            { label: 'Semanas', value: semanas, set: setSemanas, key: 'semana' },
-            { label: 'Meses',   value: meses,   set: setMeses,   key: 'mes'    },
+            { label: 'Horas',   value: horas,   set: setHoras,   key: 'hr'     },
+            { label: 'Días',    value: dias,     set: setDias,    key: 'dia'    },
+            { label: 'Semanas', value: semanas,  set: setSemanas, key: 'semana' },
+            { label: 'Meses',   value: meses,    set: setMeses,   key: 'mes'    },
           ].map(({ label, value, set, key }) => {
             const sub = Object.values(COSTOS_TIEMPO).reduce((s, c) => s + c[key] * value, 0);
             return (
