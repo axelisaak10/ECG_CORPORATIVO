@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText } from 'lucide-react';
 
 const COSTOS_TIEMPO = {
-  'Renta oficina':  { dia: 116.67,  semana: 875.00,   mes: 3500.00   },
-  'Renta bodega':   { dia: 66.67,   semana: 500.00,   mes: 2000.00   },
-  'Luz':            { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
-  'Agua':           { dia: 30.00,   semana: 225.00,   mes: 900.00    },
-  'Equipo':         { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
-  'Insumos':        { dia: 16.67,   semana: 125.00,   mes: 500.00    },
-  'Sueldos':        { dia: 7583.33, semana: 45500.00, mes: 182000.00 },
-  'Gasolina':       { dia: 166.67,  semana: 1250.00,  mes: 5000.00   },
-  'Seguro':         { dia: 1000.00, semana: 7500.00,  mes: 30000.00  },
-  'Carro':          { dia: 266.67,  semana: 2000.00,  mes: 8000.00   },
-  'Varios':         { dia: 333.33,  semana: 2500.00,  mes: 10000.00  },
+  'Renta oficina':   { dia: 116.67,  semana: 875.00,   mes: 3500.00   },
+  'Renta de bodega': { dia: 600.00,  semana: 4500.00,  mes: 18000.00  },
+  'Luz':             { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
+  'Agua':            { dia: 30.00,   semana: 225.00,   mes: 900.00    },
+  'Equipo':          { dia: 100.00,  semana: 750.00,   mes: 3000.00   },
+  'Insumos':         { dia: 16.67,   semana: 125.00,   mes: 500.00    },
+  'Sueldos':         { dia: 5666.67, semana: 34000.00, mes: 136000.00 },
+  'Gasolina':        { dia: 166.67,  semana: 1250.00,  mes: 5000.00   },
+  'Seguro':          { dia: 916.67,  semana: 6875.00,  mes: 27500.00  },
+  'Carro':           { dia: 266.67,  semana: 2000.00,  mes: 8000.00   },
+  'Varios':          { dia: 333.33,  semana: 2500.00,  mes: 10000.00  },
 };
 
 const uid  = () => Math.random().toString(36).slice(2);
