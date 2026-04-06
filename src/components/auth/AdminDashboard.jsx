@@ -9,6 +9,7 @@ import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
 import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje } from '../../utils/api';
 import TicketsSection from '../admin/TicketsSection';
+import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 
 /* ─── Status maps ─── */
 const STATUS_COTIZACION = {
@@ -774,18 +775,20 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
         <div className="p-4 md:p-8">
           {activeTab === 'resumen' && <ResumenSection />}
           {activeTab === 'cotizaciones' && (
-            <ItemSection
-              title="Cotizaciones"
-              subtitle={isAdmin ? 'Gestión de propuestas y cotizaciones' : 'Vista de cotizaciones (solo lectura)'}
-              storageKey="ecg_cotizaciones"
-              formFields={COTIZACION_FORM_FIELDS}
-              detailFields={COTIZACION_DETAIL_FIELDS}
-              statusEnum={STATUS_COTIZACION}
-              tableColumns={COTIZACION_TABLE_COLS}
-              emptyIcon={<FileText size={38} />}
-              newLabel="Nueva Cotización"
-              readOnly={!isAdmin}
-            />
+            isAdmin
+              ? <CotizacionesComplexSection />
+              : <ItemSection
+                  title="Cotizaciones"
+                  subtitle="Vista de cotizaciones (solo lectura)"
+                  storageKey="ecg_cotizaciones"
+                  formFields={COTIZACION_FORM_FIELDS}
+                  detailFields={COTIZACION_DETAIL_FIELDS}
+                  statusEnum={STATUS_COTIZACION}
+                  tableColumns={COTIZACION_TABLE_COLS}
+                  emptyIcon={<FileText size={38} />}
+                  newLabel="Nueva Cotización"
+                  readOnly={true}
+                />
           )}
           {activeTab === 'dictaminacion' && (
             <ItemSection
