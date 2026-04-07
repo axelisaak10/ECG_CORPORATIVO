@@ -484,7 +484,7 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   const handleImpersonate = async (user) => {
     setImpersonating(user.id);
     try {
-      const res = await fetch('/api/auth/impersonate', {
+      const res = await fetch('/api/auth/impersonate?action=impersonate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminToken: currentUser.sessionToken, targetUserId: user.id }),
