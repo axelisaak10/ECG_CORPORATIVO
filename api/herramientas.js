@@ -24,11 +24,11 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'POST') {
     if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
-    const { nombre, precio_renta_diaria } = req.body;
+    const { nombre, precio_renta_diaria, unidad } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
     const { data, error } = await supabase
       .from('herramientas_catalogo')
-      .insert([{ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0 }])
+      .insert([{ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0, unidad: unidad?.trim() || 'pza' }])
       .select().single();
     if (error) return res.status(500).json({ error: 'Error al crear herramienta.' });
     return res.status(201).json({ herramienta: data });

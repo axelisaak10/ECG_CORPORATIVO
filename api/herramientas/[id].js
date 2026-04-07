@@ -15,11 +15,11 @@ module.exports = async function handler(req, res) {
   const { id } = req.query;
 
   if (req.method === 'PUT') {
-    const { nombre, precio_renta_diaria } = req.body;
+    const { nombre, precio_renta_diaria, unidad } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
     const { data, error } = await supabase
       .from('herramientas_catalogo')
-      .update({ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0 })
+      .update({ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0, unidad: unidad?.trim() || 'pza' })
       .eq('id', id).select().single();
     if (error) return res.status(500).json({ error: 'Error al actualizar herramienta.' });
     return res.json({ herramienta: data });

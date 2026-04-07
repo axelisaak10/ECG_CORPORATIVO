@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText,
-  Pencil, AlertCircle, Loader2,
+  Pencil, AlertCircle, Loader2, ClipboardList,
 } from 'lucide-react';
 import {
   authHeaders,
@@ -9,6 +9,7 @@ import {
   apiGetArticulos, apiCreateArticulo, apiUpdateArticulo, apiDeleteArticulo,
   apiGetHerramientas, apiCreateHerramienta, apiUpdateHerramienta, apiDeleteHerramienta,
   apiGetCotizaciones, apiCreateCotizacion, apiUpdateCotizacion, apiDeleteCotizacion,
+  apiCreateTicket,
 } from '../../utils/api';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
@@ -32,9 +33,13 @@ const ESTADO_MAP = {
   rechazada: { label: 'Rechazada', cls: 'bg-red-100    text-red-700'    },
 };
 
-const uid  = () => Math.random().toString(36).slice(2);
-const fmt  = (n) => `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+// Convierte todos los periodos de tiempo a días equivalentes para renta de herramientas
+const calcTotalDias = (horas, dias, semanas, meses) =>
+  (horas / 8) + dias + (semanas * 7) + (meses * 30);
+
+const uid      = () => Math.random().toString(36).slice(2);
+const fmt      = (n) => `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtDate  = (d) => d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 const inputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const Field = ({ label, children }) => (
@@ -44,7 +49,7 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-// ── Loading / Error helpers ───────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const Spinner = () => <div className="flex justify-center py-12"><Loader2 size={28} className="animate-spin text-blue-500" /></div>;
 const ErrorMsg = ({ msg }) => (
   <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm font-semibold">
@@ -54,8 +59,8 @@ const ErrorMsg = ({ msg }) => (
 
 // ── Catálogo genérico CRUD ────────────────────────────────────────────────────
 const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit, onDelete, addForm }) => {
-  const [showAdd, setShowAdd]     = useState(false);
-  const [editItem, setEditItem]   = useState(null);
+  const [showAdd,    setShowAdd]    = useState(false);
+  const [editItem,   setEditItem]   = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
 
   return (
@@ -67,19 +72,9 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
           <Plus size={14} /> Agregar
         </button>
       </div>
-
       {error && <ErrorMsg msg={error} />}
-
-      {showAdd && addForm({
-        onSave: async (data) => { await onAdd(data); setShowAdd(false); },
-        onClose: () => setShowAdd(false),
-      })}
-      {editItem && addForm({
-        initial: editItem,
-        onSave: async (data) => { await onEdit(editItem.id, data); setEditItem(null); },
-        onClose: () => setEditItem(null),
-        isEdit: true,
-      })}
+      {showAdd && addForm({ onSave: async (d) => { await onAdd(d); setShowAdd(false); }, onClose: () => setShowAdd(false) })}
+      {editItem && addForm({ initial: editItem, isEdit: true, onSave: async (d) => { await onEdit(editItem.id, d); setEditItem(null); }, onClose: () => setEditItem(null) })}
 
       {loading ? <Spinner /> : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -89,9 +84,7 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100">
-                  {columns.map(c => (
-                    <th key={c.key} className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider px-5 py-3">{c.label}</th>
-                  ))}
+                  {columns.map(c => <th key={c.key} className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider px-5 py-3">{c.label}</th>)}
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
@@ -106,10 +99,8 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
                     <td className="px-5 py-3">
                       {confirmDel === item.id ? (
                         <div className="flex items-center gap-2 justify-end">
-                          <button onClick={() => { onDelete(item.id); setConfirmDel(null); }}
-                            className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-red-700">Confirmar</button>
-                          <button onClick={() => setConfirmDel(null)}
-                            className="text-xs bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-lg">Cancelar</button>
+                          <button onClick={() => { onDelete(item.id); setConfirmDel(null); }} className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-red-700">Confirmar</button>
+                          <button onClick={() => setConfirmDel(null)} className="text-xs bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-lg">Cancelar</button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 justify-end">
@@ -129,11 +120,10 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
   );
 };
 
-// ── Formulario simple en modal ────────────────────────────────────────────────
+// ── Modal genérico ────────────────────────────────────────────────────────────
 const SimpleModal = ({ title, fields, initial = {}, onSave, onClose }) => {
   const [data, setData] = useState(() => Object.fromEntries(fields.map(f => [f.key, initial[f.key] ?? ''])));
   const set = (k, v) => setData(d => ({ ...d, [k]: v }));
-
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
@@ -161,9 +151,11 @@ const SimpleModal = ({ title, fields, initial = {}, onSave, onClose }) => {
 
 // ── Modal detalle cotización ───────────────────────────────────────────────────
 const DetalleCotizacionModal = ({ cot, onClose }) => {
+  const totalDias   = calcTotalDias(cot.horas || 0, cot.dias || 0, cot.semanas || 0, cot.meses || 0);
   const totalTiempo = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * (cot.horas || 0) + c.dia * (cot.dias || 0) + c.semana * (cot.semanas || 0) + c.mes * (cot.meses || 0), 0
   );
+  const totalHer = (cot.herramientas || []).reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * totalDias, 0);
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
@@ -190,6 +182,7 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
               </span>
             </div>
           </div>
+
           {cot.descripcion && (
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Descripción</p>
@@ -217,8 +210,8 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
               <div className="space-y-1">
                 {cot.herramientas.map((h, i) => (
                   <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-                    <span className="text-slate-700">{h.nombre} × {h.cantidad} × {cot.dias || 0}d</span>
-                    <span className="font-bold text-slate-800">{fmt((h.precio_renta_diaria || 0) * h.cantidad * (cot.dias || 0))}</span>
+                    <span className="text-slate-700">{h.nombre} × {h.cantidad} × {totalDias.toFixed(1)}d</span>
+                    <span className="font-bold text-slate-800">{fmt((h.precio_renta_diaria || 0) * h.cantidad * totalDias)}</span>
                   </div>
                 ))}
               </div>
@@ -227,7 +220,7 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
 
           {(cot.empleados || []).length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Empleados</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Empleados asignados</p>
               <div className="flex flex-wrap gap-2">
                 {cot.empleados.map((e, i) => (
                   <span key={i} className="text-xs bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">{e.nombre}</span>
@@ -242,14 +235,14 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
               <div key={l} className="flex justify-between text-sm text-slate-600"><span>{l}: {v}</span></div>
             ))}
             <div className="flex justify-between text-sm font-bold text-slate-700 pt-1 border-t border-slate-200">
-              <span>Subtotal tiempo</span><span>{fmt(totalTiempo)}</span>
+              <span>Total equivalente</span><span>{totalDias.toFixed(1)} días</span>
             </div>
           </div>
 
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 text-white space-y-1.5">
             {[
               { l: 'Artículos',    v: cot.totales?.articulos    || 0 },
-              { l: 'Herramientas', v: cot.totales?.herramientas || 0 },
+              { l: 'Herramientas', v: totalHer },
               { l: 'Tiempo',       v: cot.totales?.tiempo       || totalTiempo },
             ].map(({ l, v }) => (
               <div key={l} className="flex justify-between text-sm text-blue-100">
@@ -266,27 +259,29 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
   );
 };
 
-// ── Formulario nueva cotización ───────────────────────────────────────────────
-const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas, trabajadores, onSave, onCancel }) => {
-  const [clienteId,    setClienteId]    = useState('');
-  const [descripcion,  setDescripcion]  = useState('');
-  const [articulos,    setArticulos]    = useState([]);
-  const [herramientas, setHerramientas] = useState([]);
-  const [empleados,    setEmpleados]    = useState([]);
-  const [horas,   setHoras]   = useState(0);
-  const [dias,    setDias]    = useState(0);
-  const [semanas, setSemanas] = useState(0);
-  const [meses,   setMeses]   = useState(0);
+// ── Formulario nueva/editar cotización ────────────────────────────────────────
+const CotizacionForm = ({
+  clientes, catalogoArticulos, catalogoHerramientas, trabajadores,
+  initial = null, isEdit = false, onSave, onCancel,
+}) => {
+  const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
+  const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
+  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: uid() })));
+  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: uid() })));
+  const [empleados,    setEmpleados]    = useState(initial?.empleados     || []);
+  const [horas,   setHoras]   = useState(initial?.horas   || 0);
+  const [dias,    setDias]    = useState(initial?.dias    || 0);
+  const [semanas, setSemanas] = useState(initial?.semanas || 0);
+  const [meses,   setMeses]   = useState(initial?.meses   || 0);
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
-
-  // Selectores de catálogo
   const [selArt,  setSelArt]  = useState('');
   const [selHer,  setSelHer]  = useState('');
   const [selEmp,  setSelEmp]  = useState('');
 
+  const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * a.cantidad, 0);
-  const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * dias, 0);
+  const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * totalDias, 0);
   const totalTiempo       = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * horas + c.dia * dias + c.semana * semanas + c.mes * meses, 0
   );
@@ -309,7 +304,7 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
     if (herramientas.find(h => h.catalogo_id === cat.id)) {
       setHerramientas(p => p.map(h => h.catalogo_id === cat.id ? { ...h, cantidad: h.cantidad + 1 } : h));
     } else {
-      setHerramientas(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio_renta_diaria: cat.precio_renta_diaria, cantidad: 1 }]);
+      setHerramientas(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio_renta_diaria: cat.precio_renta_diaria, unidad: cat.unidad || 'pza', cantidad: 1 }]);
     }
     setSelHer('');
   };
@@ -323,11 +318,11 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
 
   const handleSave = async () => {
     if (!clienteId) { setError('Selecciona un cliente.'); return; }
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     try {
-      await onSave({
-        cliente_id: clienteId,
+      const clienteNombre = clientes.find(c => c.id === clienteId)?.nombre || 'Cliente';
+      const payload = {
+        cliente_id:   clienteId,
         descripcion,
         articulos:    articulos.map(({ _id, ...rest }) => rest),
         herramientas: herramientas.map(({ _id, ...rest }) => rest),
@@ -335,7 +330,25 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
         horas, dias, semanas, meses,
         totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo },
         total,
-      });
+      };
+      await onSave(payload);
+
+      // Crear un ticket por cada empleado asignado (solo en nueva cotización)
+      if (!isEdit && empleados.length > 0) {
+        for (const emp of empleados) {
+          try {
+            await apiCreateTicket(null, {
+              titulo:       `Cotización: ${clienteNombre}`,
+              descripcion:  descripcion || `Trabajo asignado desde cotización para ${clienteNombre}`,
+              prioridad:    'media',
+              estado:       'pendiente',
+              grupo:        'General',
+              asignado_a:   emp.nombre,
+              fecha_limite: null,
+            });
+          } catch { /* no bloquear si falla ticket */ }
+        }
+      }
     } catch (e) {
       setError(e.message);
       setSaving(false);
@@ -348,13 +361,13 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
 
       {/* Info básica */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3">Información Básica</h2>
+        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3">
+          {isEdit ? 'Editar Cotización' : 'Información Básica'}
+        </h2>
         <Field label="Cliente *">
           <select className={inputCls} value={clienteId} onChange={e => setClienteId(e.target.value)}>
             <option value="">— Selecciona un cliente —</option>
-            {clientes.map(c => (
-              <option key={c.id} value={c.id}>{c.nombre}{c.empresa ? ` — ${c.empresa}` : ''}</option>
-            ))}
+            {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.empresa ? ` — ${c.empresa}` : ''}</option>)}
           </select>
         </Field>
         <Field label="Descripción">
@@ -392,7 +405,7 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
                 <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
               </div>
             ))}
-            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Total artículos: {fmt(totalArticulos)}</div>
+            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalArticulos)}</div>
           </div>
         )}
       </div>
@@ -401,11 +414,12 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
           <Wrench size={15} className="text-amber-500" /> Herramientas
+          {totalDias > 0 && <span className="ml-auto text-xs text-slate-400 font-medium">Renta por {totalDias.toFixed(1)} días equiv.</span>}
         </h2>
         <div className="flex gap-2 mb-3">
           <select className={inputCls} value={selHer} onChange={e => setSelHer(e.target.value)}>
             <option value="">— Selecciona del catálogo —</option>
-            {catalogoHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día)</option>)}
+            {catalogoHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día · {h.unidad || 'pza'})</option>)}
           </select>
           <button onClick={addHerramienta} disabled={!selHer}
             className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-40 flex-shrink-0">
@@ -418,7 +432,9 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
               <div key={h._id} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-2.5">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">{h.nombre}</p>
-                  <p className="text-xs text-slate-400">{fmt(h.precio_renta_diaria)}/día × {h.cantidad} × {dias}d = {fmt((h.precio_renta_diaria || 0) * h.cantidad * dias)}</p>
+                  <p className="text-xs text-slate-400">
+                    {fmt(h.precio_renta_diaria)}/día × {h.cantidad} {h.unidad || 'pza'} × {totalDias.toFixed(1)}d = {fmt((h.precio_renta_diaria || 0) * h.cantidad * totalDias)}
+                  </p>
                 </div>
                 <input type="number" min="1" value={h.cantidad}
                   onChange={e => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
@@ -426,7 +442,7 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
                 <button onClick={() => setHerramientas(p => p.filter(i => i._id !== h._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
               </div>
             ))}
-            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Total herramientas: {fmt(totalHerramientas)}</div>
+            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalHerramientas)}</div>
           </div>
         )}
       </div>
@@ -435,6 +451,11 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
           <Users size={15} className="text-green-500" /> Empleados
+          {!isEdit && empleados.length > 0 && (
+            <span className="ml-auto flex items-center gap-1 text-xs text-green-600 font-medium">
+              <ClipboardList size={12} /> Se crearán {empleados.length} ticket{empleados.length > 1 ? 's' : ''}
+            </span>
+          )}
         </h2>
         <div className="flex gap-2 mb-3">
           <select className={inputCls} value={selEmp} onChange={e => setSelEmp(e.target.value)}>
@@ -509,7 +530,7 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-2.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 text-sm disabled:opacity-60 flex items-center justify-center gap-2">
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'Guardando…' : 'Guardar Cotización'}
+            {saving ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Guardar Cotización'}
           </button>
         </div>
       </div>
@@ -518,8 +539,8 @@ const NuevaCotizacionForm = ({ clientes, catalogoArticulos, catalogoHerramientas
 };
 
 // ── Tab: Lista de cotizaciones ────────────────────────────────────────────────
-const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, onDelete, onEstado }) => {
-  const [confirmDel, setConfirmDel] = useState(null);
+const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, onEdit, onDelete, onEstado }) => {
+  const [confirmDel,   setConfirmDel]   = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('todos');
 
   const filtered = filtroEstado === 'todos' ? cotizaciones : cotizaciones.filter(c => c.estado === filtroEstado);
@@ -528,7 +549,6 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
 
   return (
     <div>
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {Object.entries(ESTADO_MAP).map(([k, v]) => (
           <div key={k} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center cursor-pointer hover:border-slate-200 transition-all"
@@ -539,7 +559,6 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
         ))}
       </div>
 
-      {/* Filtro */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {['todos', ...Object.keys(ESTADO_MAP)].map(k => (
           <button key={k} onClick={() => setFiltroEstado(k)}
@@ -552,8 +571,7 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
       {error && <ErrorMsg msg={error} />}
       {loading ? <Spinner /> : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-20 text-slate-400 gap-3">
-          <FileText size={38} />
-          <p>No hay cotizaciones</p>
+          <FileText size={38} /><p>No hay cotizaciones</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -582,8 +600,7 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
                         {ESTADO_MAP[cot.estado]?.label}
                       </span>
                     ) : (
-                      <select value={cot.estado}
-                        onChange={e => onEstado(cot.id, e.target.value)}
+                      <select value={cot.estado} onChange={e => onEstado(cot.id, e.target.value)}
                         className={`text-xs font-bold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-200 ${ESTADO_MAP[cot.estado]?.cls}`}>
                         {Object.entries(ESTADO_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                       </select>
@@ -600,10 +617,11 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => onView(cot)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Eye size={14} /></button>
-                        {!readOnly && (
-                          <button onClick={() => setConfirmDel(cot.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
-                        )}
+                        <button onClick={() => onView(cot)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Ver detalle"><Eye size={14} /></button>
+                        {!readOnly && <>
+                          <button onClick={() => onEdit(cot)} className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg" title="Editar"><Pencil size={14} /></button>
+                          <button onClick={() => setConfirmDel(cot.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={14} /></button>
+                        </>}
                       </div>
                     )}
                   </td>
@@ -621,16 +639,15 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
 const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   const [activeTab, setActiveTab] = useState('cotizaciones');
   const [showForm,  setShowForm]  = useState(false);
+  const [editCot,   setEditCot]   = useState(null);
   const [viewCot,   setViewCot]   = useState(null);
 
-  // Data
-  const [cotizaciones,   setCotizaciones]   = useState([]);
-  const [clientes,       setClientes]       = useState([]);
-  const [catArticulos,   setCatArticulos]   = useState([]);
+  const [cotizaciones,    setCotizaciones]    = useState([]);
+  const [clientes,        setClientes]        = useState([]);
+  const [catArticulos,    setCatArticulos]    = useState([]);
   const [catHerramientas, setCatHerramientas] = useState([]);
-  const [trabajadores,   setTrabajadores]   = useState([]);
+  const [trabajadores,    setTrabajadores]    = useState([]);
 
-  // Loading/error state per resource
   const [loadingCot, setLoadingCot] = useState(true);
   const [loadingCat, setLoadingCat] = useState(true);
   const [errorCot,   setErrorCot]   = useState('');
@@ -661,15 +678,19 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   }, []);
 
   useEffect(() => {
-    fetchCotizaciones();
-    fetchCatalogos();
-    fetchTrabajadores();
+    fetchCotizaciones(); fetchCatalogos(); fetchTrabajadores();
   }, [fetchCotizaciones, fetchCatalogos, fetchTrabajadores]);
 
   const handleSaveCot = async (fields) => {
     await apiCreateCotizacion(fields);
     await fetchCotizaciones();
     setShowForm(false);
+  };
+
+  const handleUpdateCot = async (fields) => {
+    await apiUpdateCotizacion(editCot.id, fields);
+    await fetchCotizaciones();
+    setEditCot(null);
   };
 
   const handleDeleteCot = async (id) => {
@@ -682,20 +703,25 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
     setCotizaciones(p => p.map(c => c.id === id ? updated : c));
   };
 
+  const formProps = {
+    clientes, catalogoArticulos: catArticulos, catalogoHerramientas: catHerramientas, trabajadores,
+  };
+
   const tabs = [
-    { id: 'cotizaciones',  label: 'Cotizaciones',  icon: <FileText size={14} />  },
+    { id: 'cotizaciones',   label: 'Cotizaciones',  icon: <FileText size={14} />  },
     ...(!readOnly ? [
-      { id: 'clientes',    label: 'Clientes',      icon: <Users size={14} />    },
-      { id: 'articulos',   label: 'Artículos',     icon: <Package size={14} />  },
-      { id: 'herramientas',label: 'Herramientas',  icon: <Wrench size={14} />   },
+      { id: 'clientes',     label: 'Clientes',      icon: <Users size={14} />     },
+      { id: 'articulos',    label: 'Artículos',     icon: <Package size={14} />   },
+      { id: 'herramientas', label: 'Herramientas',  icon: <Wrench size={14} />    },
     ] : []),
   ];
+
+  const inFormMode = showForm || editCot;
 
   return (
     <div>
       {viewCot && <DetalleCotizacionModal cot={viewCot} onClose={() => setViewCot(null)} />}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Cotizaciones</h1>
@@ -703,7 +729,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
             {readOnly ? 'Vista de cotizaciones (solo lectura)' : 'Gestión completa de cotizaciones y catálogos'}
           </p>
         </div>
-        {!readOnly && activeTab === 'cotizaciones' && !showForm && (
+        {!readOnly && activeTab === 'cotizaciones' && !inFormMode && (
           <button onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm text-sm transition-all">
             <Plus size={16} /> Nueva Cotización
@@ -711,10 +737,9 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
         )}
       </div>
 
-      {/* Sub-tabs */}
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6 w-fit">
         {tabs.map(t => (
-          <button key={t.id} onClick={() => { setActiveTab(t.id); setShowForm(false); }}
+          <button key={t.id} onClick={() => { setActiveTab(t.id); setShowForm(false); setEditCot(null); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
               activeTab === t.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}>
@@ -723,16 +748,14 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
         ))}
       </div>
 
-      {/* Content */}
       {activeTab === 'cotizaciones' && (
-        showForm ? (
-          <NuevaCotizacionForm
-            clientes={clientes}
-            catalogoArticulos={catArticulos}
-            catalogoHerramientas={catHerramientas}
-            trabajadores={trabajadores}
-            onSave={handleSaveCot}
-            onCancel={() => setShowForm(false)}
+        inFormMode ? (
+          <CotizacionForm
+            {...formProps}
+            initial={editCot}
+            isEdit={!!editCot}
+            onSave={editCot ? handleUpdateCot : handleSaveCot}
+            onCancel={() => { setShowForm(false); setEditCot(null); }}
           />
         ) : (
           <CotizacionesListTab
@@ -741,6 +764,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
             error={errorCot}
             readOnly={readOnly}
             onView={setViewCot}
+            onEdit={(cot) => setEditCot(cot)}
             onDelete={handleDeleteCot}
             onEstado={handleEstado}
           />
@@ -749,10 +773,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
 
       {activeTab === 'clientes' && (
         <CatalogoManager
-          title="Clientes"
-          items={clientes}
-          loading={loadingCat}
-          error={errorCat}
+          title="Clientes" items={clientes} loading={loadingCat} error={errorCat}
           columns={[
             { key: 'nombre',   label: 'Nombre'   },
             { key: 'empresa',  label: 'Empresa'  },
@@ -763,28 +784,21 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
           onEdit={async (id, d) => { const c = await apiUpdateCliente(id, d); setClientes(p => p.map(i => i.id === id ? c : i)); }}
           onDelete={async (id) => { await apiDeleteCliente(id); setClientes(p => p.filter(i => i.id !== id)); }}
           addForm={({ initial, onSave, onClose, isEdit }) => (
-            <SimpleModal
-              title={isEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
+            <SimpleModal title={isEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
               fields={[
                 { key: 'nombre',   label: 'Nombre *',   placeholder: 'Nombre completo' },
                 { key: 'empresa',  label: 'Empresa',    placeholder: 'Empresa o razón social' },
                 { key: 'correo',   label: 'Correo',     placeholder: 'correo@ejemplo.com', type: 'email' },
                 { key: 'telefono', label: 'Teléfono',   placeholder: '+52 555 000 0000', type: 'tel' },
               ]}
-              initial={initial || {}}
-              onSave={onSave}
-              onClose={onClose}
-            />
+              initial={initial || {}} onSave={onSave} onClose={onClose} />
           )}
         />
       )}
 
       {activeTab === 'articulos' && (
         <CatalogoManager
-          title="Catálogo de Artículos"
-          items={catArticulos}
-          loading={loadingCat}
-          error={errorCat}
+          title="Catálogo de Artículos" items={catArticulos} loading={loadingCat} error={errorCat}
           columns={[
             { key: 'nombre', label: 'Nombre' },
             { key: 'precio', label: 'Precio', render: v => <span className="font-bold">{fmt(v)}</span> },
@@ -794,45 +808,36 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
           onEdit={async (id, d) => { const a = await apiUpdateArticulo(id, d); setCatArticulos(p => p.map(i => i.id === id ? a : i)); }}
           onDelete={async (id) => { await apiDeleteArticulo(id); setCatArticulos(p => p.filter(i => i.id !== id)); }}
           addForm={({ initial, onSave, onClose, isEdit }) => (
-            <SimpleModal
-              title={isEdit ? 'Editar Artículo' : 'Nuevo Artículo'}
+            <SimpleModal title={isEdit ? 'Editar Artículo' : 'Nuevo Artículo'}
               fields={[
-                { key: 'nombre', label: 'Nombre *', placeholder: 'Nombre del artículo' },
-                { key: 'precio', label: 'Precio ($)', placeholder: '0.00', type: 'number' },
-                { key: 'unidad', label: 'Unidad',    placeholder: 'pza, kg, m, etc.' },
+                { key: 'nombre', label: 'Nombre *',    placeholder: 'Nombre del artículo' },
+                { key: 'precio', label: 'Precio ($)',   placeholder: '0.00', type: 'number' },
+                { key: 'unidad', label: 'Unidad',      placeholder: 'pza, kg, m, etc.' },
               ]}
-              initial={initial || {}}
-              onSave={onSave}
-              onClose={onClose}
-            />
+              initial={initial || {}} onSave={onSave} onClose={onClose} />
           )}
         />
       )}
 
       {activeTab === 'herramientas' && (
         <CatalogoManager
-          title="Catálogo de Herramientas"
-          items={catHerramientas}
-          loading={loadingCat}
-          error={errorCat}
+          title="Catálogo de Herramientas" items={catHerramientas} loading={loadingCat} error={errorCat}
           columns={[
             { key: 'nombre',              label: 'Nombre' },
             { key: 'precio_renta_diaria', label: 'Precio/día', render: v => <span className="font-bold">{fmt(v)}</span> },
+            { key: 'unidad',              label: 'Unidad' },
           ]}
           onAdd={async (d) => { const h = await apiCreateHerramienta(d); setCatHerramientas(p => [...p, h].sort((a, b) => a.nombre.localeCompare(b.nombre))); }}
           onEdit={async (id, d) => { const h = await apiUpdateHerramienta(id, d); setCatHerramientas(p => p.map(i => i.id === id ? h : i)); }}
           onDelete={async (id) => { await apiDeleteHerramienta(id); setCatHerramientas(p => p.filter(i => i.id !== id)); }}
           addForm={({ initial, onSave, onClose, isEdit }) => (
-            <SimpleModal
-              title={isEdit ? 'Editar Herramienta' : 'Nueva Herramienta'}
+            <SimpleModal title={isEdit ? 'Editar Herramienta' : 'Nueva Herramienta'}
               fields={[
-                { key: 'nombre',              label: 'Nombre *',        placeholder: 'Nombre de la herramienta' },
+                { key: 'nombre',              label: 'Nombre *',         placeholder: 'Nombre de la herramienta' },
                 { key: 'precio_renta_diaria', label: 'Precio renta/día', placeholder: '0.00', type: 'number' },
+                { key: 'unidad',              label: 'Unidad',           placeholder: 'pza, juego, kit, etc.' },
               ]}
-              initial={initial || {}}
-              onSave={onSave}
-              onClose={onClose}
-            />
+              initial={initial || {}} onSave={onSave} onClose={onClose} />
           )}
         />
       )}

@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS herramientas_catalogo (
   id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre              TEXT          NOT NULL,
   precio_renta_diaria NUMERIC(12,2) NOT NULL DEFAULT 0,
+  unidad              TEXT          DEFAULT 'pza',
   created_at          TIMESTAMPTZ   DEFAULT now()
 );
+
+-- Si ya existe la tabla sin la columna unidad, agrégala:
+ALTER TABLE herramientas_catalogo ADD COLUMN IF NOT EXISTS unidad TEXT DEFAULT 'pza';
 
 -- Cotizaciones (items guardados como JSONB para preservar precios históricos)
 CREATE TABLE IF NOT EXISTS cotizaciones (
