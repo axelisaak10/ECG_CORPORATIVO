@@ -12,11 +12,6 @@ import TicketsSection from '../admin/TicketsSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 
 /* ─── Status maps ─── */
-const STATUS_COTIZACION = {
-  pendiente: { label: 'Pendiente', cls: 'bg-yellow-100 text-yellow-700' },
-  aprobada:  { label: 'Aprobada',  cls: 'bg-green-100  text-green-700'  },
-  rechazada: { label: 'Rechazada', cls: 'bg-red-100    text-red-700'    },
-};
 
 const STATUS_DICTAMEN = {
   en_proceso: { label: 'En proceso', cls: 'bg-blue-100  text-blue-700'  },
@@ -25,30 +20,6 @@ const STATUS_DICTAMEN = {
 };
 
 /* ─── Section configs ─── */
-const COTIZACION_FORM_FIELDS = [
-  { name: 'cliente',  label: 'Cliente',           placeholder: 'Nombre del cliente' },
-  { name: 'empresa',  label: 'Empresa ECG',        type: 'select', options: companiesData.map(c => ({ value: c.name, label: c.name })), default: companiesData[0].name },
-  { name: 'servicio', label: 'Servicio cotizado',  placeholder: 'Ej. Capacitación industrial' },
-  { name: 'monto',    label: 'Monto estimado ($)', type: 'number', placeholder: '0.00' },
-  { name: 'estado',   label: 'Estado',             type: 'select', options: Object.entries(STATUS_COTIZACION).map(([k, v]) => ({ value: k, label: v.label })), default: 'pendiente' },
-  { name: 'notas',    label: 'Notas',              type: 'textarea', placeholder: 'Observaciones adicionales...' },
-];
-
-const COTIZACION_DETAIL_FIELDS = [
-  { name: 'cliente',  label: 'Cliente'   },
-  { name: 'empresa',  label: 'Empresa'   },
-  { name: 'servicio', label: 'Servicio'  },
-  { name: 'monto',    label: 'Monto ($)' },
-  { name: 'estado',   label: 'Estado'    },
-  { name: 'notas',    label: 'Notas'     },
-];
-
-const COTIZACION_TABLE_COLS = [
-  { key: 'cliente',  label: 'Cliente',  render: v => <span className="font-semibold text-slate-800">{v}</span> },
-  { key: 'servicio', label: 'Servicio' },
-  { key: 'monto',    label: 'Monto',    render: v => <span className="font-bold text-slate-700">${Number(v || 0).toLocaleString('es-MX')}</span> },
-];
-
 const DICTAMEN_FORM_FIELDS = [
   { name: 'cliente',     label: 'Cliente',               placeholder: 'Nombre del cliente' },
   { name: 'empresa',     label: 'Empresa ECG',            type: 'select', options: companiesData.map(c => ({ value: c.name, label: c.name })), default: companiesData[0].name },
@@ -775,20 +746,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
         <div className="p-4 md:p-8">
           {activeTab === 'resumen' && <ResumenSection />}
           {activeTab === 'cotizaciones' && (
-            isAdmin
-              ? <CotizacionesComplexSection />
-              : <ItemSection
-                  title="Cotizaciones"
-                  subtitle="Vista de cotizaciones (solo lectura)"
-                  storageKey="ecg_cotizaciones"
-                  formFields={COTIZACION_FORM_FIELDS}
-                  detailFields={COTIZACION_DETAIL_FIELDS}
-                  statusEnum={STATUS_COTIZACION}
-                  tableColumns={COTIZACION_TABLE_COLS}
-                  emptyIcon={<FileText size={38} />}
-                  newLabel="Nueva Cotización"
-                  readOnly={true}
-                />
+            <CotizacionesComplexSection currentUser={currentUser} readOnly={!isAdmin} />
           )}
           {activeTab === 'dictaminacion' && (
             <ItemSection

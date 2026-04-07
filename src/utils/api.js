@@ -129,3 +129,143 @@ export async function apiRegister(name, email, password) {
   if (!res.ok) throw new Error(data.error || 'Error al registrarse.');
   return data;
 }
+
+// ── Clientes ─────────────────────────────────────────────────────────────────
+export async function apiGetClientes() {
+  const res = await fetch(`${BASE_URL}/api/clientes`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener clientes.');
+  return data.clientes;
+}
+
+export async function apiCreateCliente(fields) {
+  const res = await fetch(`${BASE_URL}/api/clientes`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear cliente.');
+  return data.cliente;
+}
+
+export async function apiUpdateCliente(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/clientes/${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar cliente.');
+  return data.cliente;
+}
+
+export async function apiDeleteCliente(id) {
+  const res = await fetch(`${BASE_URL}/api/clientes/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar cliente.');
+  return data;
+}
+
+// ── Artículos catálogo ────────────────────────────────────────────────────────
+export async function apiGetArticulos() {
+  const res = await fetch(`${BASE_URL}/api/articulos`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener artículos.');
+  return data.articulos;
+}
+
+export async function apiCreateArticulo(fields) {
+  const res = await fetch(`${BASE_URL}/api/articulos`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear artículo.');
+  return data.articulo;
+}
+
+export async function apiUpdateArticulo(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/articulos/${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar artículo.');
+  return data.articulo;
+}
+
+export async function apiDeleteArticulo(id) {
+  const res = await fetch(`${BASE_URL}/api/articulos/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar artículo.');
+  return data;
+}
+
+// ── Herramientas catálogo ─────────────────────────────────────────────────────
+export async function apiGetHerramientas() {
+  const res = await fetch(`${BASE_URL}/api/herramientas`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener herramientas.');
+  return data.herramientas;
+}
+
+export async function apiCreateHerramienta(fields) {
+  const res = await fetch(`${BASE_URL}/api/herramientas`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear herramienta.');
+  return data.herramienta;
+}
+
+export async function apiUpdateHerramienta(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/herramientas/${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar herramienta.');
+  return data.herramienta;
+}
+
+export async function apiDeleteHerramienta(id) {
+  const res = await fetch(`${BASE_URL}/api/herramientas/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar herramienta.');
+  return data;
+}
+
+// ── Cotizaciones ──────────────────────────────────────────────────────────────
+export async function apiGetCotizaciones() {
+  const res = await fetch(`${BASE_URL}/api/cotizaciones`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener cotizaciones.');
+  return data.cotizaciones;
+}
+
+export async function apiCreateCotizacion(fields) {
+  const res = await fetch(`${BASE_URL}/api/cotizaciones`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear cotización.');
+  return data.cotizacion;
+}
+
+export async function apiUpdateCotizacion(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/cotizaciones/${id}`, {
+    method: 'PATCH', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar cotización.');
+  return data.cotizacion;
+}
+
+export async function apiDeleteCotizacion(id) {
+  const res = await fetch(`${BASE_URL}/api/cotizaciones/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar cotización.');
+  return data;
+}

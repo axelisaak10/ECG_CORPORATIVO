@@ -410,6 +410,201 @@ app.delete('/api/contacto/:id', async (req, res) => {
   return res.json({ message: 'Mensaje eliminado.' });
 });
 
+// ── GET/POST /api/clientes ────────────────────────────────────────────────────
+app.get('/api/clientes', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase.from('clientes').select('*').order('nombre', { ascending: true });
+  if (error) return res.status(500).json({ error: 'Error al obtener clientes.' });
+  return res.json({ clientes: data || [] });
+});
+
+app.post('/api/clientes', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, empresa, correo, telefono } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('clientes')
+    .insert([{ nombre: nombre.trim(), empresa: empresa?.trim() || null, correo: correo?.trim() || null, telefono: telefono?.trim() || null }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al crear cliente.' });
+  return res.status(201).json({ cliente: data });
+});
+
+app.put('/api/clientes/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, empresa, correo, telefono } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('clientes')
+    .update({ nombre: nombre.trim(), empresa: empresa?.trim() || null, correo: correo?.trim() || null, telefono: telefono?.trim() || null })
+    .eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar cliente.' });
+  return res.json({ cliente: data });
+});
+
+app.delete('/api/clientes/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { error } = await supabase.from('clientes').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar cliente.' });
+  return res.json({ message: 'Cliente eliminado.' });
+});
+
+// ── GET/POST /api/articulos ───────────────────────────────────────────────────
+app.get('/api/articulos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase.from('articulos_catalogo').select('*').order('nombre', { ascending: true });
+  if (error) return res.status(500).json({ error: 'Error al obtener artículos.' });
+  return res.json({ articulos: data || [] });
+});
+
+app.post('/api/articulos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, precio, unidad } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('articulos_catalogo')
+    .insert([{ nombre: nombre.trim(), precio: Number(precio) || 0, unidad: unidad?.trim() || 'pza' }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al crear artículo.' });
+  return res.status(201).json({ articulo: data });
+});
+
+app.put('/api/articulos/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, precio, unidad } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('articulos_catalogo')
+    .update({ nombre: nombre.trim(), precio: Number(precio) || 0, unidad: unidad?.trim() || 'pza' })
+    .eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar artículo.' });
+  return res.json({ articulo: data });
+});
+
+app.delete('/api/articulos/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { error } = await supabase.from('articulos_catalogo').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar artículo.' });
+  return res.json({ message: 'Artículo eliminado.' });
+});
+
+// ── GET/POST /api/herramientas ────────────────────────────────────────────────
+app.get('/api/herramientas', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase.from('herramientas_catalogo').select('*').order('nombre', { ascending: true });
+  if (error) return res.status(500).json({ error: 'Error al obtener herramientas.' });
+  return res.json({ herramientas: data || [] });
+});
+
+app.post('/api/herramientas', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, precio_renta_diaria } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('herramientas_catalogo')
+    .insert([{ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0 }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al crear herramienta.' });
+  return res.status(201).json({ herramienta: data });
+});
+
+app.put('/api/herramientas/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { nombre, precio_renta_diaria } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+  const { data, error } = await supabase.from('herramientas_catalogo')
+    .update({ nombre: nombre.trim(), precio_renta_diaria: Number(precio_renta_diaria) || 0 })
+    .eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar herramienta.' });
+  return res.json({ herramienta: data });
+});
+
+app.delete('/api/herramientas/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { error } = await supabase.from('herramientas_catalogo').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar herramienta.' });
+  return res.json({ message: 'Herramienta eliminada.' });
+});
+
+// ── GET/POST /api/cotizaciones ────────────────────────────────────────────────
+app.get('/api/cotizaciones', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase
+    .from('cotizaciones')
+    .select('*, clientes(nombre, empresa)')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener cotizaciones.' });
+  return res.json({ cotizaciones: data || [] });
+});
+
+app.post('/api/cotizaciones', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { cliente_id, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses, totales, total } = req.body;
+  if (!cliente_id) return res.status(400).json({ error: 'El cliente es requerido.' });
+  const { data, error } = await supabase.from('cotizaciones')
+    .insert([{
+      cliente_id, usuario_id: payload.sub,
+      descripcion: descripcion?.trim() || null, estado: 'pendiente',
+      articulos: articulos || [], herramientas: herramientas || [], empleados: empleados || [],
+      horas: Number(horas) || 0, dias: Number(dias) || 0, semanas: Number(semanas) || 0, meses: Number(meses) || 0,
+      totales: totales || {}, total: Number(total) || 0,
+    }])
+    .select('*, clientes(nombre, empresa)').single();
+  if (error) return res.status(500).json({ error: 'Error al crear cotización.' });
+  return res.status(201).json({ cotizacion: data });
+});
+
+app.patch('/api/cotizaciones/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const fields = req.body;
+  let update = { updated_at: new Date().toISOString() };
+  if (payload.nivel >= 2) {
+    ['estado','cliente_id','descripcion','articulos','herramientas','empleados','horas','dias','semanas','meses','totales','total']
+      .forEach(k => { if (fields[k] !== undefined) update[k] = fields[k]; });
+  } else {
+    if (fields.estado === undefined) return res.status(403).json({ error: 'Solo puedes cambiar el estado.' });
+    update.estado = fields.estado;
+  }
+  const { data, error } = await supabase.from('cotizaciones')
+    .update(update).eq('id', req.params.id).select('*, clientes(nombre, empresa)').single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar cotización.' });
+  return res.json({ cotizacion: data });
+});
+
+app.delete('/api/cotizaciones/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { error } = await supabase.from('cotizaciones').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar cotización.' });
+  return res.json({ message: 'Cotización eliminada.' });
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
