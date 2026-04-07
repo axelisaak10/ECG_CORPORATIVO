@@ -1,47 +1,45 @@
 /**
- * Catch-all para catálogos y cotizaciones.
- * Rutas manejadas (slug[0] = recurso, slug[1] = id opcional):
- *   GET    /api/catalogo/clientes
- *   POST   /api/catalogo/clientes
- *   PUT    /api/catalogo/clientes/:id
- *   DELETE /api/catalogo/clientes/:id
- *   (igual para articulos, herramientas, cotizaciones — PATCH para cotizaciones)
+ * /api/catalogo — maneja clientes, articulos, herramientas y cotizaciones
+ * El recurso e id se pasan como query params desde el frontend:
+ *   GET    /api/catalogo?r=clientes
+ *   POST   /api/catalogo?r=clientes
+ *   PUT    /api/catalogo?r=clientes&id=UUID
+ *   DELETE /api/catalogo?r=clientes&id=UUID
+ *   PATCH  /api/catalogo?r=cotizaciones&id=UUID
  */
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('../lib/jwt');
+const { verifyToken }  = require('./lib/jwt');
 
-const CORS_HEADERS = {
+const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 module.exports = async function handler(req, res) {
-  Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
+  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
 
-  const supabase  = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  const slug      = req.query.slug || [];
-  const resource  = slug[0];
-  const id        = slug[1];
+  const supabase         = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const { nivel, sub: userId } = payload;
+  const resource         = req.query.r;
+  const id               = req.query.id;
 
   // ── CLIENTES ───────────────────────────────────────────────────────────────
   if (resource === 'clientes') {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-    if (req.method === 'GET' && !id) {
+    if (req.method === 'GET') {
       const { data, error } = await supabase.from('clientes').select('*').order('nombre');
       if (error) return res.status(500).json({ error: 'Error al obtener clientes.' });
       return res.json({ clientes: data || [] });
     }
-
     if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
 
-    if (req.method === 'POST' && !id) {
+    if (req.method === 'POST') {
       const { nombre, empresa, correo, telefono } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
       const { data, error } = await supabase.from('clientes')
@@ -50,7 +48,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al crear cliente.' });
       return res.status(201).json({ cliente: data });
     }
-
     if (req.method === 'PUT' && id) {
       const { nombre, empresa, correo, telefono } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
@@ -60,7 +57,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al actualizar cliente.' });
       return res.json({ cliente: data });
     }
-
     if (req.method === 'DELETE' && id) {
       const { error } = await supabase.from('clientes').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar cliente.' });
@@ -72,15 +68,14 @@ module.exports = async function handler(req, res) {
   if (resource === 'articulos') {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-    if (req.method === 'GET' && !id) {
+    if (req.method === 'GET') {
       const { data, error } = await supabase.from('articulos_catalogo').select('*').order('nombre');
       if (error) return res.status(500).json({ error: 'Error al obtener artículos.' });
       return res.json({ articulos: data || [] });
     }
-
     if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
 
-    if (req.method === 'POST' && !id) {
+    if (req.method === 'POST') {
       const { nombre, precio, unidad } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
       const { data, error } = await supabase.from('articulos_catalogo')
@@ -89,7 +84,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al crear artículo.' });
       return res.status(201).json({ articulo: data });
     }
-
     if (req.method === 'PUT' && id) {
       const { nombre, precio, unidad } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
@@ -99,7 +93,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al actualizar artículo.' });
       return res.json({ articulo: data });
     }
-
     if (req.method === 'DELETE' && id) {
       const { error } = await supabase.from('articulos_catalogo').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar artículo.' });
@@ -111,15 +104,14 @@ module.exports = async function handler(req, res) {
   if (resource === 'herramientas') {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-    if (req.method === 'GET' && !id) {
+    if (req.method === 'GET') {
       const { data, error } = await supabase.from('herramientas_catalogo').select('*').order('nombre');
       if (error) return res.status(500).json({ error: 'Error al obtener herramientas.' });
       return res.json({ herramientas: data || [] });
     }
-
     if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
 
-    if (req.method === 'POST' && !id) {
+    if (req.method === 'POST') {
       const { nombre, precio_renta_diaria, unidad } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
       const { data, error } = await supabase.from('herramientas_catalogo')
@@ -128,7 +120,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al crear herramienta.' });
       return res.status(201).json({ herramienta: data });
     }
-
     if (req.method === 'PUT' && id) {
       const { nombre, precio_renta_diaria, unidad } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
@@ -138,7 +129,6 @@ module.exports = async function handler(req, res) {
       if (error) return res.status(500).json({ error: 'Error al actualizar herramienta.' });
       return res.json({ herramienta: data });
     }
-
     if (req.method === 'DELETE' && id) {
       const { error } = await supabase.from('herramientas_catalogo').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar herramienta.' });
@@ -150,14 +140,14 @@ module.exports = async function handler(req, res) {
   if (resource === 'cotizaciones') {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-    if (req.method === 'GET' && !id) {
+    if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('cotizaciones').select('*, clientes(nombre, empresa)').order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: 'Error al obtener cotizaciones.' });
       return res.json({ cotizaciones: data || [] });
     }
 
-    if (req.method === 'POST' && !id) {
+    if (req.method === 'POST') {
       if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
       const { cliente_id, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses, totales, total } = req.body;
       if (!cliente_id) return res.status(400).json({ error: 'El cliente es requerido.' });
@@ -175,8 +165,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'PATCH' && id) {
-      const fields  = req.body;
-      let update    = { updated_at: new Date().toISOString() };
+      const fields = req.body;
+      let update   = { updated_at: new Date().toISOString() };
       if (nivel >= 2) {
         ['estado','cliente_id','descripcion','articulos','herramientas','empleados','horas','dias','semanas','meses','totales','total']
           .forEach(k => { if (fields[k] !== undefined) update[k] = fields[k]; });

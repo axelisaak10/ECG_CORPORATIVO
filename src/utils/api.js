@@ -132,14 +132,14 @@ export async function apiRegister(name, email, password) {
 
 // ── Clientes ─────────────────────────────────────────────────────────────────
 export async function apiGetClientes() {
-  const res = await fetch(`${BASE_URL}/api/catalogo/clientes`, { headers: authHeaders(false) });
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=clientes`, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener clientes.');
   return data.clientes;
 }
 
 export async function apiCreateCliente(fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/clientes`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=clientes`, {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -148,7 +148,7 @@ export async function apiCreateCliente(fields) {
 }
 
 export async function apiUpdateCliente(id, fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/clientes/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=clientes&id=${id}`, {
     method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -157,7 +157,7 @@ export async function apiUpdateCliente(id, fields) {
 }
 
 export async function apiDeleteCliente(id) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/clientes/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=clientes&id=${id}`, {
     method: 'DELETE', headers: authHeaders(false),
   });
   const data = await res.json();
@@ -167,14 +167,14 @@ export async function apiDeleteCliente(id) {
 
 // ── Artículos catálogo ────────────────────────────────────────────────────────
 export async function apiGetArticulos() {
-  const res = await fetch(`${BASE_URL}/api/catalogo/articulos`, { headers: authHeaders(false) });
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos`, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener artículos.');
   return data.articulos;
 }
 
 export async function apiCreateArticulo(fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/articulos`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos`, {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -183,7 +183,7 @@ export async function apiCreateArticulo(fields) {
 }
 
 export async function apiUpdateArticulo(id, fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/articulos/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos&id=${id}`, {
     method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -192,7 +192,7 @@ export async function apiUpdateArticulo(id, fields) {
 }
 
 export async function apiDeleteArticulo(id) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/articulos/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos&id=${id}`, {
     method: 'DELETE', headers: authHeaders(false),
   });
   const data = await res.json();
@@ -202,14 +202,14 @@ export async function apiDeleteArticulo(id) {
 
 // ── Herramientas catálogo ─────────────────────────────────────────────────────
 export async function apiGetHerramientas() {
-  const res = await fetch(`${BASE_URL}/api/catalogo/herramientas`, { headers: authHeaders(false) });
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=herramientas`, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener herramientas.');
   return data.herramientas;
 }
 
 export async function apiCreateHerramienta(fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/herramientas`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=herramientas`, {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -218,7 +218,7 @@ export async function apiCreateHerramienta(fields) {
 }
 
 export async function apiUpdateHerramienta(id, fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/herramientas/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=herramientas&id=${id}`, {
     method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -227,7 +227,7 @@ export async function apiUpdateHerramienta(id, fields) {
 }
 
 export async function apiDeleteHerramienta(id) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/herramientas/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=herramientas&id=${id}`, {
     method: 'DELETE', headers: authHeaders(false),
   });
   const data = await res.json();
@@ -237,14 +237,14 @@ export async function apiDeleteHerramienta(id) {
 
 // ── Cotizaciones ──────────────────────────────────────────────────────────────
 export async function apiGetCotizaciones() {
-  const res = await fetch(`${BASE_URL}/api/catalogo/cotizaciones`, { headers: authHeaders(false) });
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=cotizaciones`, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener cotizaciones.');
   return data.cotizaciones;
 }
 
 export async function apiCreateCotizacion(fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/cotizaciones`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=cotizaciones`, {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -253,7 +253,7 @@ export async function apiCreateCotizacion(fields) {
 }
 
 export async function apiUpdateCotizacion(id, fields) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/cotizaciones/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=cotizaciones&id=${id}`, {
     method: 'PATCH', headers: authHeaders(), body: JSON.stringify(fields),
   });
   const data = await res.json();
@@ -262,7 +262,7 @@ export async function apiUpdateCotizacion(id, fields) {
 }
 
 export async function apiDeleteCotizacion(id) {
-  const res = await fetch(`${BASE_URL}/api/catalogo/cotizaciones/${id}`, {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=cotizaciones&id=${id}`, {
     method: 'DELETE', headers: authHeaders(false),
   });
   const data = await res.json();
