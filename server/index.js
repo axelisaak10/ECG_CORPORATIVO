@@ -168,6 +168,9 @@ app.post('/api/auth/register', async (req, res) => {
   const name     = req.body.name?.trim();
   const email    = req.body.email?.trim();
   const password = req.body.password?.trim();
+  const telefono = req.body.telefono?.trim() || null;
+  const rfcCurp  = req.body.rfc_curp?.trim().toUpperCase() || null;
+  const empresa  = req.body.empresa?.trim() || null;
 
   if (!name || !email || !password)
     return res.status(400).json({ error: 'Todos los campos son requeridos.' });
@@ -189,6 +192,9 @@ app.post('/api/auth/register', async (req, res) => {
     'Correo': email,
     'Contraseña': hash,
     'nivel': 0,
+    'Telefono': telefono,
+    'RFC_CURP': rfcCurp,
+    'Empresa': empresa,
   }]);
 
   if (error) {

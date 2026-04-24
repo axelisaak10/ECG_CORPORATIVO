@@ -1,9 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X, Eye, EyeOff, AlertCircle, CheckCircle, LogIn, UserPlus,
   Mail, Lock, User, KeyRound, ArrowLeft, Zap, Shield, Globe,
+  Phone, Building2, CreditCard, Check,
 } from 'lucide-react';
 import { apiLogin, apiRegister, apiResetPassword } from '../../utils/api';
+
+// ── Validaciones ───────────────────────────────────────────────────────────
+const RFC_RE  = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/i;
+const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]{2}$/i;
+const TEL_RE  = /^(\+?52\s?)?(\d[\s.-]?){10}$/;
+
+const validateRfcCurp = (v) => {
+  if (!v) return null;
+  const clean = v.replace(/\s/g, '').toUpperCase();
+  if (RFC_RE.test(clean))  return 'RFC válido';
+  if (CURP_RE.test(clean)) return 'CURP válido';
+  return 'Formato inválido (RFC: 12-13 chars · CURP: 18 chars)';
+};
+
+const pwdRules = (pwd) => [
+  { label: 'Mínimo 6 caracteres',    ok: pwd.length >= 6           },
+  { label: 'Al menos una mayúscula', ok: /[A-Z]/.test(pwd)         },
+  { label: 'Al menos un número',     ok: /\d/.test(pwd)            },
+  { label: 'Al menos un símbolo',    ok: /[^A-Za-z0-9]/.test(pwd) },
+];
+
+const pwdStrength = (pwd) => {
+  const score = pwdRules(pwd).filter(r => r.ok).length;
+  if (!pwd)        return null;
+  if (score <= 1)  return { label: 'Muy débil', color: 'bg-red-500',    w: 'w-1/4'  };
+  if (score === 2) return { label: 'Débil',     color: 'bg-orange-400', w: 'w-2/4'  };
+  if (score === 3) return { label: 'Buena',     color: 'bg-yellow-400', w: 'w-3/4'  };
+  return             { label: 'Fuerte',     color: 'bg-green-500',  w: 'w-full' };
+};
 
 /* ── Input con icono integrado ──────────────────────────────── */
 const InputIcon = ({ icon: Icon, type = 'text', value, onChange, placeholder, required, children, error }) => (
@@ -57,11 +87,14 @@ const AuthModal = ({ onClose, onLogin }) => {
   const [sessionLimit, setSessionLimit] = useState(false);
   const [showLoginPwd, setShowLoginPwd] = useState(false);
 
-  const [regForm, setRegForm]       = useState({ name: '', email: '', password: '', confirm: '' });
+  const [regForm, setRegForm]       = useState({ name: '', email: '', password: '', confirm: '', telefono: '', rfc_curp: '', empresa: '' });
   const [regError, setRegError]     = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
   const [showRegPwd, setShowRegPwd] = useState(false);
+  const regStrength = useMemo(() => pwdStrength(regForm.password), [regForm.password]);
+  const regRules    = useMemo(() => pwdRules(regForm.password),    [regForm.password]);
+  const rfcStatus   = useMemo(() => validateRfcCurp(regForm.rfc_curp), [regForm.rfc_curp]);
 
   const [recForm, setRecForm]       = useState({ email: '', password: '', confirm: '' });
   const [recError, setRecError]     = useState('');
@@ -105,11 +138,19 @@ const AuthModal = ({ onClose, onLogin }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setRegError('');
-    if (regForm.password.length < 6)         { setRegError('La contraseña debe tener al menos 6 caracteres.'); return; }
-    if (regForm.password !== regForm.confirm) { setRegError('Las contraseñas no coinciden.'); return; }
+    if (regForm.password.length < 6)                          { setRegError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (regForm.password !== regForm.confirm)                 { setRegError('Las contraseñas no coinciden.'); return; }
+    if (regForm.telefono && !TEL_RE.test(regForm.telefono))   { setRegError('Número de teléfono inválido (10 dígitos).'); return; }
+    if (regForm.rfc_curp && rfcStatus === 'Formato inválido (RFC: 12-13 chars · CURP: 18 chars)') {
+      setRegError('El RFC o CURP ingresado no tiene un formato válido.'); return;
+    }
     setRegLoading(true);
     try {
-      await apiRegister(regForm.name, regForm.email, regForm.password);
+      await apiRegister(regForm.name, regForm.email, regForm.password, {
+        telefono: regForm.telefono || undefined,
+        rfc_curp: regForm.rfc_curp || undefined,
+        empresa:  regForm.empresa  || undefined,
+      });
       setRegSuccess(true);
     } catch (err) {
       setRegError(err.message);
@@ -312,7 +353,7 @@ const AuthModal = ({ onClose, onLogin }) => {
 
               {/* ── REGISTER ── */}
               {tab === 'register' && !regSuccess && (
-                <form onSubmit={handleRegister} className="space-y-4 max-w-sm mx-auto md:max-w-none">
+                <form onSubmit={handleRegister} className="space-y-3 max-w-sm mx-auto md:max-w-none">
                   <div>
                     <h3 className="text-lg font-extrabold text-slate-800">Crear cuenta</h3>
                     <p className="text-slate-400 text-sm mt-0.5">Completa el formulario para registrarte.</p>
@@ -320,52 +361,95 @@ const AuthModal = ({ onClose, onLogin }) => {
 
                   {regError && <ErrorBanner msg={regError} />}
 
-                  <div className="space-y-3">
+                  {/* Nombre + Teléfono */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Nombre completo</label>
-                      <InputIcon
-                        icon={User}
-                        value={regForm.name}
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Nombre completo *</label>
+                      <InputIcon icon={User} value={regForm.name}
                         onChange={e => { setRegForm({ ...regForm, name: e.target.value }); setRegError(''); }}
-                        placeholder="Tu nombre completo"
-                        required
-                      />
+                        placeholder="Tu nombre" required />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Correo electrónico</label>
-                      <InputIcon
-                        icon={Mail}
-                        type="email"
-                        value={regForm.email}
-                        onChange={e => { setRegForm({ ...regForm, email: e.target.value.replace(/\s/g, '') }); setRegError(''); }}
-                        placeholder="correo@empresa.com"
-                        required
-                      />
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Teléfono *</label>
+                      <InputIcon icon={Phone} type="tel" value={regForm.telefono}
+                        onChange={e => { setRegForm({ ...regForm, telefono: e.target.value }); setRegError(''); }}
+                        placeholder="10 dígitos" required />
+                    </div>
+                  </div>
+
+                  {/* Correo */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Correo electrónico *</label>
+                    <InputIcon icon={Mail} type="email" value={regForm.email}
+                      onChange={e => { setRegForm({ ...regForm, email: e.target.value.replace(/\s/g, '') }); setRegError(''); }}
+                      placeholder="correo@empresa.com" required />
+                  </div>
+
+                  {/* RFC/CURP + Empresa */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">RFC o CURP</label>
+                      <InputIcon icon={CreditCard} value={regForm.rfc_curp}
+                        onChange={e => { setRegForm({ ...regForm, rfc_curp: e.target.value.toUpperCase() }); setRegError(''); }}
+                        placeholder="RFC o CURP" />
+                      {regForm.rfc_curp && (
+                        <p className={`text-[11px] font-semibold mt-1 pl-1 ${rfcStatus?.includes('válido') ? 'text-green-500' : 'text-red-400'}`}>
+                          {rfcStatus}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Contraseña</label>
-                      <InputIcon
-                        icon={Lock}
-                        type={showRegPwd ? 'text' : 'password'}
-                        value={regForm.password}
-                        onChange={e => { setRegForm({ ...regForm, password: e.target.value }); setRegError(''); }}
-                        placeholder="Mínimo 6 caracteres"
-                        required
-                      >
-                        <PwdToggle show={showRegPwd} onToggle={() => setShowRegPwd(p => !p)} />
-                      </InputIcon>
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Empresa <span className="normal-case font-normal">(opcional)</span></label>
+                      <InputIcon icon={Building2} value={regForm.empresa}
+                        onChange={e => { setRegForm({ ...regForm, empresa: e.target.value }); setRegError(''); }}
+                        placeholder="Nombre de empresa" />
                     </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Confirmar contraseña</label>
-                      <InputIcon
-                        icon={Lock}
-                        type={showRegPwd ? 'text' : 'password'}
-                        value={regForm.confirm}
-                        onChange={e => { setRegForm({ ...regForm, confirm: e.target.value }); setRegError(''); }}
-                        placeholder="Repite tu contraseña"
-                        required
-                      />
-                    </div>
+                  </div>
+
+                  {/* Contraseña */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Contraseña *</label>
+                    <InputIcon icon={Lock} type={showRegPwd ? 'text' : 'password'} value={regForm.password}
+                      onChange={e => { setRegForm({ ...regForm, password: e.target.value }); setRegError(''); }}
+                      placeholder="Mínimo 6 caracteres" required>
+                      <PwdToggle show={showRegPwd} onToggle={() => setShowRegPwd(p => !p)} />
+                    </InputIcon>
+                    {/* Barra de fuerza */}
+                    {regForm.password && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-300 ${regStrength?.color} ${regStrength?.w}`} />
+                          </div>
+                          <span className={`text-[11px] font-bold ml-3 w-16 text-right ${regStrength?.color?.replace('bg-', 'text-')}`}>
+                            {regStrength?.label}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                          {regRules.map(r => (
+                            <div key={r.label} className={`flex items-center gap-1.5 text-[11px] font-medium ${r.ok ? 'text-green-500' : 'text-slate-400'}`}>
+                              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${r.ok ? 'bg-green-100' : 'bg-slate-100'}`}>
+                                {r.ok ? <Check size={8} strokeWidth={3} /> : <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />}
+                              </div>
+                              {r.label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirmar */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Confirmar contraseña *</label>
+                    <InputIcon icon={Lock} type={showRegPwd ? 'text' : 'password'} value={regForm.confirm}
+                      onChange={e => { setRegForm({ ...regForm, confirm: e.target.value }); setRegError(''); }}
+                      placeholder="Repite tu contraseña" required />
+                    {regForm.confirm && regForm.password && (
+                      <p className={`text-[11px] font-semibold mt-1 pl-1 ${regForm.password === regForm.confirm ? 'text-green-500' : 'text-red-400'}`}>
+                        {regForm.password === regForm.confirm ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+                      </p>
+                    )}
                   </div>
 
                   <PrimaryBtn loading={regLoading} loadingLabel="Creando cuenta…" label="Crear Cuenta" />
@@ -472,7 +556,7 @@ const AuthModal = ({ onClose, onLogin }) => {
                     Tu cuenta fue creada exitosamente.<br />Ya puedes iniciar sesión.
                   </p>
                   <button
-                    onClick={() => { setTab('login'); setRegSuccess(false); setRegForm({ name: '', email: '', password: '', confirm: '' }); }}
+                    onClick={() => { setTab('login'); setRegSuccess(false); setRegForm({ name: '', email: '', password: '', confirm: '', telefono: '', rfc_curp: '', empresa: '' }); }}
                     className="w-full py-3.5 rounded-2xl text-white text-sm font-bold tracking-wide transition-all hover:opacity-90 active:scale-[0.98]"
                     style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6)' }}
                   >

@@ -119,11 +119,11 @@ export async function apiDeleteMensaje(id) {
   return data;
 }
 
-export async function apiRegister(name, email, password) {
+export async function apiRegister(name, email, password, extras = {}) {
   const res = await fetch(`${BASE_URL}/api/auth/register?action=register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, ...extras }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al registrarse.');
