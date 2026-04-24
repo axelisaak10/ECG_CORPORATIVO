@@ -9,7 +9,7 @@ import {
   apiGetArticulos, apiCreateArticulo, apiUpdateArticulo, apiDeleteArticulo,
   apiGetHerramientas, apiCreateHerramienta, apiUpdateHerramienta, apiDeleteHerramienta,
   apiGetCotizaciones, apiCreateCotizacion, apiUpdateCotizacion, apiDeleteCotizacion,
-  apiCreateTicket,
+  apiCreateTarea,
 } from '../../utils/api';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
@@ -337,7 +337,7 @@ const CotizacionForm = ({
       if (!isEdit && empleados.length > 0) {
         for (const emp of empleados) {
           try {
-            await apiCreateTicket(null, {
+            await apiCreateTarea(null, {
               titulo:       `Cotización: ${clienteNombre}`,
               descripcion:  descripcion || `Trabajo asignado desde cotización para ${clienteNombre}`,
               prioridad:    'media',
@@ -453,7 +453,7 @@ const CotizacionForm = ({
           <Users size={15} className="text-green-500" /> Empleados
           {!isEdit && empleados.length > 0 && (
             <span className="ml-auto flex items-center gap-1 text-xs text-green-600 font-medium">
-              <ClipboardList size={12} /> Se crearán {empleados.length} ticket{empleados.length > 1 ? 's' : ''}
+              <ClipboardList size={12} /> Se crearán {empleados.length} tarea{empleados.length > 1 ? 's' : ''}
             </span>
           )}
         </h2>

@@ -38,45 +38,45 @@ export async function apiResetPassword(email, newPassword) {
   return data;
 }
 
-// ── Tickets ────────────────────────────────────────────────────────────────
-export async function apiGetTickets() {
-  const res = await fetch(`${BASE_URL}/api/tickets`, {
+// ── Tareas ─────────────────────────────────────────────────────────────────
+export async function apiGetTareas() {
+  const res = await fetch(`${BASE_URL}/api/tareas`, {
     headers: authHeaders(false),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Error al obtener tickets.');
+  if (!res.ok) throw new Error(data.error || 'Error al obtener tareas.');
   return data;
 }
 
-export async function apiCreateTicket(_userId, ticket) {
-  const res = await fetch(`${BASE_URL}/api/tickets`, {
+export async function apiCreateTarea(_userId, tarea) {
+  const res = await fetch(`${BASE_URL}/api/tareas`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify(ticket),
+    body: JSON.stringify(tarea),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Error al crear ticket.');
+  if (!res.ok) throw new Error(data.error || 'Error al crear tarea.');
   return data;
 }
 
-export async function apiUpdateTicket(_userId, ticketId, fields) {
-  const res = await fetch(`${BASE_URL}/api/tickets/${ticketId}`, {
+export async function apiUpdateTarea(_userId, tareaId, fields) {
+  const res = await fetch(`${BASE_URL}/api/tareas/${tareaId}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify(fields),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Error al actualizar ticket.');
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar tarea.');
   return data;
 }
 
-export async function apiDeleteTicket(_userId, ticketId) {
-  const res = await fetch(`${BASE_URL}/api/tickets/${ticketId}`, {
+export async function apiDeleteTarea(_userId, tareaId) {
+  const res = await fetch(`${BASE_URL}/api/tareas/${tareaId}`, {
     method: 'DELETE',
     headers: authHeaders(false),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Error al eliminar ticket.');
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar tarea.');
   return data;
 }
 

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
-  ClipboardCheck, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
-  MessageSquare, CheckCheck
+  ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
+  MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
 import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje } from '../../utils/api';
-import TicketsSection from '../admin/TicketsSection';
+import TareasSection from '../admin/TareasSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 
 /* ─── Status maps ─── */
@@ -605,7 +605,7 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
   const [activeTab, setActiveTab]   = useState('resumen');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [badges, setBadges]         = useState({ mensajes: 0, tickets: 0 });
+  const [badges, setBadges]         = useState({ mensajes: 0, tareas: 0 });
 
   const nivel        = currentUser.nivel ?? 0;
   const isSuperAdmin = nivel >= 3;
@@ -616,20 +616,18 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
   const rolLabel = isSuperAdmin ? 'Superadmin' : isAdmin ? 'Admin' : 'Trabajador';
   const rolColor = isSuperAdmin ? 'text-purple-400' : isAdmin ? 'text-blue-400' : 'text-green-400';
   const avatarBg = isSuperAdmin ? 'bg-purple-600' : isAdmin ? 'bg-blue-600' : 'bg-green-600';
-  const AvatarIcon = isSuperAdmin ? Crown : isAdmin ? Shield : Users;
-
   // Polling de badges cada 30 segundos
   useEffect(() => {
     const fetchBadges = async () => {
       try {
         const [msgRes, tktRes] = await Promise.all([
           fetch('/api/contacto',  { headers: authHeaders(false) }),
-          fetch('/api/tickets',   { headers: authHeaders(false) }),
+          fetch('/api/tareas',    { headers: authHeaders(false) }),
         ]);
         const [msgData, tktData] = await Promise.all([msgRes.json(), tktRes.json()]);
         setBadges({
-          mensajes: (msgData.mensajes  || []).filter(m => !m.leido).length,
-          tickets:  (tktData.tickets   || []).filter(t => t.estado === 'pendiente').length,
+          mensajes: (msgData.mensajes || []).filter(m => !m.leido).length,
+          tareas:   (tktData.tareas   || []).filter(t => t.estado === 'pendiente').length,
         });
       } catch { /* ignorar */ }
     };
@@ -639,12 +637,12 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
   }, []);
 
   const navItems = [
-    { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />      },
-    { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />       },
-    { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardCheck size={17} /> },
-    { id: 'tickets',       label: 'Tickets',             icon: <ClipboardCheck size={17} />, badge: badges.tickets  },
-    { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,  badge: badges.mensajes },
-    ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} /> }] : []),
+    { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />,    color: 'text-sky-400'    },
+    { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />,     color: 'text-emerald-400'},
+    { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardList size={17} />,color: 'text-amber-400'  },
+    { id: 'tareas',        label: 'Tareas',              icon: <ListChecks size={17} />,   color: 'text-violet-400', badge: badges.tareas   },
+    { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,color: 'text-rose-400',   badge: badges.mensajes },
+    ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' }] : []),
   ];
 
   const handleNav = (id) => {
@@ -652,97 +650,137 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
     setSidebarOpen(false);
     // Limpiar badge al entrar a la sección
     if (id === 'mensajes') setBadges(b => ({ ...b, mensajes: 0 }));
-    if (id === 'tickets')  setBadges(b => ({ ...b, tickets:  0 }));
+    if (id === 'tareas')   setBadges(b => ({ ...b, tareas:   0 }));
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50/80">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col z-50 shadow-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <div className="px-6 pt-8 pb-6 border-b border-slate-700 flex items-center justify-between">
-          <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.25em] mb-1">Panel de Control</p>
-            <h2 className="text-xl font-black text-white tracking-tight">ECG <span className="text-blue-400">ADMIN</span></h2>
+      <aside className={`fixed left-0 top-0 bottom-0 w-64 bg-slate-950 flex flex-col z-50 shadow-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+
+        {/* Brand */}
+        <div className="px-5 pt-6 pb-5 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/40">
+              <span className="text-white font-black text-xs tracking-tight">ECG</span>
+            </div>
+            <div>
+              <p className="text-white font-extrabold text-sm leading-none">ECG Admin</p>
+              <p className="text-slate-500 text-[10px] font-medium mt-0.5">Panel de Control</p>
+            </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1.5 text-slate-400 hover:text-white">
-            <X size={18} />
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+            <ChevronLeft size={16} />
           </button>
         </div>
 
-        <div className="px-6 py-5 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarBg}`}>
-              <AvatarIcon size={18} className="text-white" />
+        {/* User profile */}
+        <div className="px-4 py-4 border-b border-white/5">
+          <div className="flex items-center gap-3 bg-white/5 rounded-xl px-3 py-2.5">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-black text-sm ${avatarBg}`}>
+              {currentUser.name?.charAt(0)?.toUpperCase()}
             </div>
-            <div className="min-w-0">
-              <p className="text-white font-bold text-sm truncate">{currentUser.name}</p>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${rolColor}`}>{rolLabel}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-white font-bold text-xs truncate leading-tight">{currentUser.name}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${rolColor}`}>{rolLabel}</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => handleNav(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                activeTab === item.id
-                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-              }`}
-            >
-              <span className="relative flex-shrink-0">
-                {item.icon}
-                {item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
-                    <span className="absolute inline-flex w-full h-full rounded-full bg-red-400 opacity-75 animate-ping" />
-                    <span className="relative flex items-center justify-center bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 px-1 leading-none shadow-lg">
-                      {item.badge > 99 ? '99+' : item.badge}
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 pb-2">Módulos</p>
+          {navItems.map(item => {
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNav(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group relative ${
+                  active
+                    ? 'bg-white/10 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r bg-blue-400" />}
+                <span className={`relative flex-shrink-0 transition-colors ${active ? item.color : 'text-slate-500 group-hover:text-slate-300'}`}>
+                  {item.icon}
+                  {item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
+                      <span className="absolute inline-flex w-full h-full rounded-full bg-red-400 opacity-75 animate-ping" />
+                      <span className="relative flex items-center justify-center bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 px-1 leading-none">
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </span>
                     </span>
-                  </span>
-                )}
-              </span>
-              <span className="flex-1 text-left">{item.label}</span>
-            </button>
-          ))}
-          <div className="pt-2">
-            <button onClick={onGoToPortal} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all text-sm font-semibold">
-              <LayoutGrid size={17} />
-              Ver Portal
-              <ChevronRight size={14} className="ml-auto" />
+                  )}
+                </span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />}
+              </button>
+            );
+          })}
+
+          <div className="pt-3 mt-1 border-t border-white/5">
+            <button onClick={onGoToPortal} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all text-sm font-semibold">
+              <Home size={16} />
+              <span className="flex-1 text-left">Ver Portal</span>
+              <ChevronRight size={13} />
             </button>
           </div>
         </nav>
 
-        <div className="px-4 pb-6">
-          <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all text-sm font-bold">
-            <LogOut size={17} />
+        {/* Logout */}
+        <div className="px-3 pb-5">
+          <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500/80 hover:bg-red-500/10 hover:text-red-400 transition-all text-sm font-semibold group">
+            <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
             Cerrar sesión
           </button>
         </div>
       </aside>
 
       {/* Mobile top bar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-slate-900 px-4 py-3 flex items-center gap-3 shadow-lg">
-        <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-300 hover:text-white -ml-1">
-          <Menu size={22} />
+      <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-slate-950 px-4 py-3 flex items-center gap-3 border-b border-white/5">
+        <button onClick={() => setSidebarOpen(true)} className="p-1.5 text-slate-400 hover:text-white -ml-1 rounded-lg hover:bg-white/5 transition-colors">
+          <Menu size={20} />
         </button>
-        <h2 className="text-white font-black text-lg">ECG <span className="text-blue-400">ADMIN</span></h2>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
+            <span className="text-white font-black text-[9px]">ECG</span>
+          </div>
+          <span className="text-white font-extrabold text-base">Admin</span>
+        </div>
         <div className="ml-auto">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${avatarBg}`}>
-            <AvatarIcon size={15} className="text-white" />
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs ${avatarBg}`}>
+            {currentUser.name?.charAt(0)?.toUpperCase()}
           </div>
         </div>
       </header>
 
       {/* Main content */}
       <main className="md:ml-64 pt-14 md:pt-0 min-h-screen">
+        {/* Top bar (desktop) */}
+        <div className="hidden md:flex items-center gap-4 px-8 py-4 bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-slate-400 font-medium">
+            <span className="text-slate-700 font-bold">
+              {navItems.find(n => n.id === activeTab)?.label ?? 'Resumen'}
+            </span>
+          </div>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs ${avatarBg}`}>
+                {currentUser.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <span className="text-slate-600 font-semibold">{currentUser.name}</span>
+              <span className={`text-[10px] font-bold uppercase tracking-wide ${rolColor}`}>{rolLabel}</span>
+            </div>
+          </div>
+        </div>
+
         <div className="p-4 md:p-8">
           {activeTab === 'resumen' && <ResumenSection />}
           {activeTab === 'cotizaciones' && (
@@ -757,13 +795,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
               detailFields={DICTAMEN_DETAIL_FIELDS}
               statusEnum={STATUS_DICTAMEN}
               tableColumns={DICTAMEN_TABLE_COLS}
-              emptyIcon={<ClipboardCheck size={38} />}
+              emptyIcon={<ClipboardList size={38} />}
               newLabel="Nuevo Dictamen"
               readOnly={!isAdmin}
             />
           )}
-          {activeTab === 'tickets' && (
-            <TicketsSection currentUser={currentUser} />
+          {activeTab === 'tareas' && (
+            <TareasSection currentUser={currentUser} />
           )}
           {activeTab === 'mensajes' && (
             <MensajesSection isAdmin={isAdmin} />

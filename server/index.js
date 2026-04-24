@@ -272,22 +272,22 @@ app.delete('/api/users', async (req, res) => {
   return res.json({ message: 'Usuario eliminado.' });
 });
 
-// ── GET /api/tickets ──────────────────────────────────────────────────────────
-app.get('/api/tickets', async (req, res) => {
+// ── GET /api/tareas ───────────────────────────────────────────────────────────
+app.get('/api/tareas', async (req, res) => {
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
   if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
   const { data, error } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: 'Error al obtener tickets.' });
-  return res.json({ tickets: data || [] });
+  if (error) return res.status(500).json({ error: 'Error al obtener tareas.' });
+  return res.json({ tareas: data || [] });
 });
 
-// ── POST /api/tickets ─────────────────────────────────────────────────────────
-app.post('/api/tickets', async (req, res) => {
+// ── POST /api/tareas ──────────────────────────────────────────────────────────
+app.post('/api/tareas', async (req, res) => {
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
-  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para crear tickets.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para crear tareas.' });
 
   const { titulo, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
   if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
@@ -307,12 +307,12 @@ app.post('/api/tickets', async (req, res) => {
     }])
     .select().single();
 
-  if (error) { console.error('Supabase tickets insert error:', error); return res.status(500).json({ error: error.message || 'Error al crear ticket.' }); }
-  return res.status(201).json({ ticket: data });
+  if (error) { console.error('Supabase tareas insert error:', error); return res.status(500).json({ error: error.message || 'Error al crear tarea.' }); }
+  return res.status(201).json({ tarea: data });
 });
 
-// ── PATCH /api/tickets/:id ────────────────────────────────────────────────────
-app.patch('/api/tickets/:id', async (req, res) => {
+// ── PATCH /api/tareas/:id ─────────────────────────────────────────────────────
+app.patch('/api/tareas/:id', async (req, res) => {
   try {
     const payload = verifyToken(req);
     if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
@@ -332,30 +332,30 @@ app.patch('/api/tickets/:id', async (req, res) => {
       if (fields.fecha_limite !== undefined) updateData.fecha_limite = fields.fecha_limite || null;
     } else {
       if (fields.estado === undefined)
-        return res.status(403).json({ error: 'Admin solo puede cambiar el estado del ticket.' });
+        return res.status(403).json({ error: 'Admin solo puede cambiar el estado de la tarea.' });
       updateData.estado = fields.estado;
     }
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase.from('tickets').update(updateData).eq('id', id).select().single();
-    if (error) { console.error('Supabase PATCH error:', error); return res.status(500).json({ error: error.message || 'Error al actualizar ticket.' }); }
-    return res.json({ ticket: data });
+    if (error) { console.error('Supabase PATCH error:', error); return res.status(500).json({ error: error.message || 'Error al actualizar tarea.' }); }
+    return res.json({ tarea: data });
   } catch (err) {
-    console.error('PATCH /api/tickets/:id error:', err);
+    console.error('PATCH /api/tareas/:id error:', err);
     return res.status(500).json({ error: err.message || 'Error interno.' });
   }
 });
 
-// ── DELETE /api/tickets/:id ───────────────────────────────────────────────────
-app.delete('/api/tickets/:id', async (req, res) => {
+// ── DELETE /api/tareas/:id ────────────────────────────────────────────────────
+app.delete('/api/tareas/:id', async (req, res) => {
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
-  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para eliminar tickets.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para eliminar tareas.' });
 
   const { id } = req.params;
   const { error } = await supabase.from('tickets').delete().eq('id', id);
-  if (error) return res.status(500).json({ error: 'Error al eliminar ticket.' });
-  return res.json({ message: 'Ticket eliminado.' });
+  if (error) return res.status(500).json({ error: 'Error al eliminar tarea.' });
+  return res.json({ message: 'Tarea eliminada.' });
 });
 
 // ── POST /api/contacto ────────────────────────────────────────────────────────
