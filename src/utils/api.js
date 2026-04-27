@@ -253,7 +253,7 @@ export async function apiCreateTrabajo(fields) {
 }
 
 export async function apiGetTrabajoByCodigo(codigo) {
-  const res = await fetch(`${BASE_URL}/api/trabajo-publico?codigo=${encodeURIComponent(codigo)}`);
+  const res = await fetch(`${BASE_URL}/api/trabajos?codigo=${encodeURIComponent(codigo)}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Código no encontrado.');
   return data;

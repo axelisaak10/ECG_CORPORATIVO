@@ -62,7 +62,7 @@ const SeguimientoModal = ({ onClose }) => {
     if (!codigo.trim()) return;
     setLoading(true); setError(''); setTrabajo(null);
     try {
-      const res  = await fetch(`/api/trabajo-publico?codigo=${encodeURIComponent(codigo.trim().toUpperCase())}`);
+      const res  = await fetch(`/api/trabajos?codigo=${encodeURIComponent(codigo.trim().toUpperCase())}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se encontró el trabajo.');
       setTrabajo(data.trabajo);
