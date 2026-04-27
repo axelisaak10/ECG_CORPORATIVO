@@ -293,3 +293,73 @@ export async function apiDeleteCotizacion(id) {
   if (!res.ok) throw new Error(data.error || 'Error al eliminar cotización.');
   return data;
 }
+
+// ── Gantt Proyectos ───────────────────────────────────────────────────────────
+export async function apiGetGanttProyectos() {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener proyectos.');
+  return data.proyectos;
+}
+
+export async function apiCreateGanttProyecto(fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear proyecto.');
+  return data.proyecto;
+}
+
+export async function apiUpdateGanttProyecto(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos&id=${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar proyecto.');
+  return data.proyecto;
+}
+
+export async function apiDeleteGanttProyecto(id) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos&id=${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar proyecto.');
+  return data;
+}
+
+// ── Gantt Tareas ──────────────────────────────────────────────────────────────
+export async function apiGetGanttTareas(proyectoId) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-tareas&proyecto_id=${proyectoId}`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener tareas.');
+  return data.tareas;
+}
+
+export async function apiCreateGanttTarea(fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-tareas`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear tarea.');
+  return data.tarea;
+}
+
+export async function apiUpdateGanttTarea(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-tareas&id=${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar tarea.');
+  return data.tarea;
+}
+
+export async function apiDeleteGanttTarea(id) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-tareas&id=${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar tarea.');
+  return data;
+}

@@ -570,6 +570,70 @@ app.all('/api/catalogo', async (req, res) => {
     }
   }
 
+  // ── Gantt proyectos ───────────────────────────────────────────────────────
+  if (r === 'gantt-proyectos') {
+    if (method === 'GET') {
+      const { data, error } = await supabase.from('gantt_proyectos').select('*').order('created_at');
+      if (error) return res.status(500).json({ error: 'Error al obtener proyectos.' });
+      return res.json({ proyectos: data || [] });
+    }
+    if (p.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+    if (method === 'POST') {
+      const { nombre, descripcion, color } = req.body;
+      const { data, error } = await supabase.from('gantt_proyectos')
+        .insert([{ nombre: nombre?.trim(), descripcion: descripcion?.trim() || '', color: color || '#3b82f6' }]).select().single();
+      if (error) return res.status(500).json({ error: 'Error al crear proyecto.' });
+      return res.status(201).json({ proyecto: data });
+    }
+    if (method === 'PUT' && id) {
+      const { nombre, descripcion, color } = req.body;
+      const { data, error } = await supabase.from('gantt_proyectos')
+        .update({ nombre: nombre?.trim(), descripcion: descripcion?.trim() || '', color: color || '#3b82f6' })
+        .eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: 'Error al actualizar proyecto.' });
+      return res.json({ proyecto: data });
+    }
+    if (method === 'DELETE' && id) {
+      const { error } = await supabase.from('gantt_proyectos').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: 'Error al eliminar proyecto.' });
+      return res.json({ message: 'Proyecto eliminado.' });
+    }
+  }
+
+  // ── Gantt tareas ──────────────────────────────────────────────────────────
+  if (r === 'gantt-tareas') {
+    if (method === 'GET') {
+      const proyId = req.query.proyecto_id;
+      let q = supabase.from('gantt_tareas').select('*').order('orden').order('created_at');
+      if (proyId) q = q.eq('proyecto_id', proyId);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: 'Error al obtener tareas.' });
+      return res.json({ tareas: data || [] });
+    }
+    if (p.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+    if (method === 'POST') {
+      const { proyecto_id, nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden } = req.body;
+      const { data, error } = await supabase.from('gantt_tareas')
+        .insert([{ proyecto_id, nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0 }])
+        .select().single();
+      if (error) return res.status(500).json({ error: 'Error al crear tarea.' });
+      return res.status(201).json({ tarea: data });
+    }
+    if (method === 'PUT' && id) {
+      const { nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden } = req.body;
+      const { data, error } = await supabase.from('gantt_tareas')
+        .update({ nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0 })
+        .eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: 'Error al actualizar tarea.' });
+      return res.json({ tarea: data });
+    }
+    if (method === 'DELETE' && id) {
+      const { error } = await supabase.from('gantt_tareas').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: 'Error al eliminar tarea.' });
+      return res.json({ message: 'Tarea eliminada.' });
+    }
+  }
+
   return res.status(400).json({ error: 'Recurso no válido.' });
 });
 
