@@ -612,17 +612,17 @@ app.all('/api/catalogo', async (req, res) => {
     }
     if (p.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
     if (method === 'POST') {
-      const { proyecto_id, nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden } = req.body;
+      const { proyecto_id, nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden, descripcion, prioridad, area } = req.body;
       const { data, error } = await supabase.from('gantt_tareas')
-        .insert([{ proyecto_id, nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0 }])
+        .insert([{ proyecto_id, nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0, descripcion: descripcion?.trim() || '', prioridad: prioridad || 'media', area: area?.trim() || '' }])
         .select().single();
       if (error) return res.status(500).json({ error: 'Error al crear tarea.' });
       return res.status(201).json({ tarea: data });
     }
     if (method === 'PUT' && id) {
-      const { nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden } = req.body;
+      const { nombre, responsable, fecha_inicio, fecha_fin, porcentaje, color, orden, descripcion, prioridad, area } = req.body;
       const { data, error } = await supabase.from('gantt_tareas')
-        .update({ nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0 })
+        .update({ nombre: nombre?.trim(), responsable: responsable?.trim() || '', fecha_inicio, fecha_fin, porcentaje: Number(porcentaje) || 0, color: color || '#3b82f6', orden: Number(orden) || 0, descripcion: descripcion?.trim() || '', prioridad: prioridad || 'media', area: area?.trim() || '' })
         .eq('id', id).select().single();
       if (error) return res.status(500).json({ error: 'Error al actualizar tarea.' });
       return res.json({ tarea: data });

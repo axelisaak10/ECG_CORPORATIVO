@@ -294,6 +294,14 @@ export async function apiDeleteCotizacion(id) {
   return data;
 }
 
+// ── Usuarios ──────────────────────────────────────────────────────────────────
+export async function apiGetUsers() {
+  const res = await fetch(`${BASE_URL}/api/users`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener usuarios.');
+  return data.users;
+}
+
 // ── Gantt Proyectos ───────────────────────────────────────────────────────────
 export async function apiGetGanttProyectos() {
   const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos`, { headers: authHeaders(false) });
