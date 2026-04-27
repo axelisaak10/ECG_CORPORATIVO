@@ -3,12 +3,13 @@ import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
   ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
-  MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft,
+  MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
 import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje } from '../../utils/api';
 import TareasSection from '../admin/TareasSection';
+import TrabajosSection from '../admin/TrabajosSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 
 /* ─── Status maps ─── */
@@ -640,6 +641,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
     { id: 'resumen',       label: 'Resumen',             icon: <BarChart3 size={17} />,    color: 'text-sky-400'    },
     { id: 'cotizaciones',  label: 'Cotizaciones',        icon: <FileText size={17} />,     color: 'text-emerald-400'},
     { id: 'dictaminacion', label: 'Dictaminación',       icon: <ClipboardList size={17} />,color: 'text-amber-400'  },
+    { id: 'trabajos',      label: 'Trabajos',            icon: <Hammer size={17} />,       color: 'text-orange-400'  },
     { id: 'tareas',        label: 'Tareas',              icon: <ListChecks size={17} />,   color: 'text-violet-400', badge: badges.tareas   },
     { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,color: 'text-rose-400',   badge: badges.mensajes },
     ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' }] : []),
@@ -799,6 +801,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
               newLabel="Nuevo Dictamen"
               readOnly={!isAdmin}
             />
+          )}
+          {activeTab === 'trabajos' && (
+            <TrabajosSection currentUser={currentUser} />
           )}
           {activeTab === 'tareas' && (
             <TareasSection currentUser={currentUser} />

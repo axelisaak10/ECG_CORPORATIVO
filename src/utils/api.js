@@ -235,6 +235,30 @@ export async function apiDeleteHerramienta(id) {
   return data;
 }
 
+// ── Trabajos ──────────────────────────────────────────────────────────────────
+export async function apiGetTrabajos() {
+  const res = await fetch(`${BASE_URL}/api/trabajos`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener trabajos.');
+  return data;
+}
+
+export async function apiCreateTrabajo(fields) {
+  const res = await fetch(`${BASE_URL}/api/trabajos`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear trabajo.');
+  return data;
+}
+
+export async function apiGetTrabajoByCodigo(codigo) {
+  const res = await fetch(`${BASE_URL}/api/trabajo-publico?codigo=${encodeURIComponent(codigo)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Código no encontrado.');
+  return data;
+}
+
 // ── Cotizaciones ──────────────────────────────────────────────────────────────
 export async function apiGetCotizaciones() {
   const res = await fetch(`${BASE_URL}/api/catalogo?r=cotizaciones`, { headers: authHeaders(false) });

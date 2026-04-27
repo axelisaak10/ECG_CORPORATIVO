@@ -9,7 +9,7 @@ import {
   apiGetArticulos, apiCreateArticulo, apiUpdateArticulo, apiDeleteArticulo,
   apiGetHerramientas, apiCreateHerramienta, apiUpdateHerramienta, apiDeleteHerramienta,
   apiGetCotizaciones, apiCreateCotizacion, apiUpdateCotizacion, apiDeleteCotizacion,
-  apiCreateTarea,
+  apiCreateTarea, apiCreateTrabajo,
 } from '../../utils/api';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
@@ -698,9 +698,27 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
     setCotizaciones(p => p.filter(c => c.id !== id));
   };
 
+  const [trabajoCreado, setTrabajoCreado] = useState(null);
+
   const handleEstado = async (id, estado) => {
     const updated = await apiUpdateCotizacion(id, { estado });
     setCotizaciones(p => p.map(c => c.id === id ? updated : c));
+    // Al aprobar, crear trabajo automáticamente
+    if (estado === 'aprobada') {
+      try {
+        const cot = cotizaciones.find(c => c.id === id) || updated;
+        const result = await apiCreateTrabajo({
+          cotizacion_id: String(id),
+          folio:         cot.folio || '',
+          cliente:       cot.cliente_nombre || cot.cliente || 'Cliente',
+          descripcion:   `Cotización ${cot.folio || id} aprobada.`,
+        });
+        setTrabajoCreado(result.trabajo);
+      } catch (e) {
+        // Si ya existía (409), ignorar silenciosamente
+        if (!e.message?.includes('Ya existe')) console.warn('Trabajo:', e.message);
+      }
+    }
   };
 
   const formProps = {
@@ -721,6 +739,22 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   return (
     <div>
       {viewCot && <DetalleCotizacionModal cot={viewCot} onClose={() => setViewCot(null)} />}
+
+      {/* Toast: trabajo creado */}
+      {trabajoCreado && (
+        <div className="fixed bottom-6 right-6 z-[600] flex items-center gap-3 bg-green-600 text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-green-900/20 animate-fade-in">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <ClipboardList size={16} />
+          </div>
+          <div>
+            <p className="font-bold text-sm">¡Trabajo creado!</p>
+            <p className="text-xs text-green-100">Código: <span className="font-mono font-black tracking-wider">{trabajoCreado.codigo}</span></p>
+          </div>
+          <button onClick={() => setTrabajoCreado(null)} className="ml-2 p-1 rounded-lg hover:bg-white/20 transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-6">
         <div>

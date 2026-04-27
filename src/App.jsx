@@ -12,9 +12,10 @@ import PoliticasSection from './components/sections/PoliticasSection';
 import ContactoSection from './components/sections/ContactoSection';
 import MainPortal from './components/layout/MainPortal';
 import AuthModal from './components/auth/AuthModal';
+import SeguimientoModal from './components/portal/SeguimientoModal';
 import AdminDashboard from './components/auth/AdminDashboard';
 import UserDashboard from './components/auth/UserDashboard';
-import { Home, LogIn, LogOut, User, ArrowLeftRight } from 'lucide-react';
+import { Home, LogIn, LogOut, User, ArrowLeftRight, Search } from 'lucide-react';
 import { companiesData } from './data/companies';
 
 // ── Shared auth state ────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ function useAuth() {
 function PortalView({ currentUser, onLogin, onLogout }) {
   const navigate = useNavigate();
   const [showAuth, setShowAuth] = useState(false);
+  const [showSeguimiento, setShowSeguimiento] = useState(false);
 
   const handleLogin = (user) => {
     onLogin(user);
@@ -78,6 +80,13 @@ function PortalView({ currentUser, onLogin, onLogout }) {
   return (
     <>
       <div className="fixed top-4 right-4 z-[200] flex items-center gap-2">
+        <button
+          onClick={() => setShowSeguimiento(true)}
+          className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm text-sm font-semibold text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all"
+        >
+          <Search size={14} />
+          Rastrear trabajo
+        </button>
         {currentUser ? (
           <>
             <button
@@ -109,6 +118,7 @@ function PortalView({ currentUser, onLogin, onLogout }) {
       <MainPortal companies={companiesData} onSelectCompany={handleSelectCompany} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={handleLogin} />}
+      {showSeguimiento && <SeguimientoModal onClose={() => setShowSeguimiento(false)} />}
     </>
   );
 }

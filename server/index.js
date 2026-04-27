@@ -611,6 +611,111 @@ app.delete('/api/cotizaciones/:id', async (req, res) => {
   return res.json({ message: 'Cotización eliminada.' });
 });
 
+// ── Trabajos ──────────────────────────────────────────────────────────────────
+const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function genCodigo() {
+  let c = 'ECG-';
+  for (let i = 0; i < 6; i++) c += CHARS[Math.floor(Math.random() * CHARS.length)];
+  return c;
+}
+
+app.get('/api/trabajos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase
+    .from('trabajos')
+    .select('*, trabajo_actualizaciones(*)')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener trabajos.' });
+  return res.json({ trabajos: data || [] });
+});
+
+app.post('/api/trabajos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { cotizacion_id, folio, cliente, descripcion } = req.body;
+  if (!cotizacion_id || !cliente)
+    return res.status(400).json({ error: 'cotizacion_id y cliente son requeridos.' });
+
+  const { data: existing } = await supabase
+    .from('trabajos').select('id, codigo').eq('cotizacion_id', String(cotizacion_id)).maybeSingle();
+  if (existing)
+    return res.status(409).json({ error: 'Ya existe un trabajo para esta cotización.', trabajo: existing });
+
+  let codigo, attempts = 0;
+  do {
+    codigo = genCodigo();
+    const { data: conflict } = await supabase.from('trabajos').select('id').eq('codigo', codigo).maybeSingle();
+    if (!conflict) break;
+  } while (++attempts < 10);
+
+  const { data: trabajo, error } = await supabase.from('trabajos')
+    .insert([{ codigo, cotizacion_id: String(cotizacion_id), folio: folio || '', cliente, descripcion: descripcion || '', etapa_actual: 'recibido' }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al crear trabajo.' });
+
+  await supabase.from('trabajo_actualizaciones').insert([{
+    trabajo_id: trabajo.id,
+    etapa: 'recibido',
+    descripcion: 'Trabajo creado a partir de cotización aprobada.',
+    usuario_nombre: 'Sistema',
+  }]);
+
+  return res.status(201).json({ trabajo });
+});
+
+app.get('/api/trabajos/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+  const { data, error } = await supabase
+    .from('trabajos').select('*, trabajo_actualizaciones(*)').eq('id', req.params.id).single();
+  if (error) return res.status(404).json({ error: 'Trabajo no encontrado.' });
+  return res.json({ trabajo: data });
+});
+
+app.patch('/api/trabajos/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { etapa, descripcion, inconveniente, usuario_nombre } = req.body;
+  if (!etapa) return res.status(400).json({ error: 'La etapa es requerida.' });
+
+  const { data: trabajo, error: e1 } = await supabase
+    .from('trabajos').update({ etapa_actual: etapa, updated_at: new Date().toISOString() })
+    .eq('id', req.params.id).select().single();
+  if (e1) return res.status(500).json({ error: 'Error al actualizar trabajo.' });
+
+  const { error: e2 } = await supabase.from('trabajo_actualizaciones').insert([{
+    trabajo_id: req.params.id, etapa,
+    descripcion: descripcion || null,
+    inconveniente: inconveniente || null,
+    usuario_nombre: usuario_nombre || 'Admin',
+  }]);
+  if (e2) console.warn('Error al insertar actualizacion:', e2);
+
+  return res.json({ trabajo });
+});
+
+// ── GET /api/trabajo-publico ──────────────────────────────────────────────────
+app.get('/api/trabajo-publico', async (req, res) => {
+  const { codigo } = req.query;
+  if (!codigo) return res.status(400).json({ error: 'Código requerido.' });
+
+  const { data, error } = await supabase
+    .from('trabajos')
+    .select('codigo, folio, cliente, descripcion, etapa_actual, created_at, updated_at, trabajo_actualizaciones(etapa, descripcion, inconveniente, created_at)')
+    .eq('codigo', codigo.toUpperCase())
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'No se encontró un trabajo con ese código.' });
+  return res.json({ trabajo: data });
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
