@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Hammer, Paintbrush, Wrench, Sparkles, CheckCircle2,
   Clock, Plus, X, AlertTriangle, ChevronRight, Eye,
@@ -30,23 +30,30 @@ const fmtDateShort = (d) => {
 };
 
 // ── Stepper horizontal ─────────────────────────────────────────────────────
-const Stepper = ({ etapaActual }) => {
-  const idx = ETAPAS.findIndex(e => e.value === etapaActual);
+const Stepper = ({ etapaActual, onStepClick, selectedEtapa }) => {
+  const idx      = ETAPAS.findIndex(e => e.value === etapaActual);
+  const editable = !!onStepClick;
   return (
     <div className="flex items-center w-full">
       {ETAPAS.map((e, i) => {
-        const done    = i < idx;
-        const current = i === idx;
+        const done      = i < idx;
+        const current   = i === idx;
+        const selected  = editable && e.value === selectedEtapa;
         return (
           <div key={e.value} className="flex items-center flex-1 min-w-0">
             <div className="flex flex-col items-center flex-shrink-0">
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                  current ? 'ring-2 ring-offset-1' : ''
-                }`}
+                onClick={() => onStepClick?.(e.value)}
+                title={editable ? `Ir a: ${e.label}` : undefined}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all
+                  ${current ? 'ring-2 ring-offset-1' : ''}
+                  ${selected ? 'ring-2 ring-offset-2 scale-110 shadow-md' : ''}
+                  ${editable ? 'cursor-pointer hover:scale-110 hover:shadow-md' : ''}`}
                 style={{
-                  background: done || current ? e.color : '#e2e8f0',
-                  ringColor:  current ? e.color : 'transparent',
+                  background:  done || current ? e.color : '#e2e8f0',
+                  outlineColor: selected ? e.color : undefined,
+                  outlineWidth: selected ? 2 : 0,
+                  outlineStyle: selected ? 'solid' : undefined,
                 }}
               >
                 {done
@@ -54,7 +61,9 @@ const Stepper = ({ etapaActual }) => {
                   : <e.Icon size={12} className={done || current ? 'text-white' : 'text-slate-400'} />
                 }
               </div>
-              <span className={`text-[9px] font-bold mt-0.5 whitespace-nowrap ${current ? 'text-slate-700' : done ? 'text-slate-400' : 'text-slate-300'}`}>
+              <span className={`text-[9px] font-bold mt-0.5 whitespace-nowrap transition-colors
+                ${selected ? 'text-slate-900' : current ? 'text-slate-700' : done ? 'text-slate-400' : 'text-slate-300'}
+                ${editable ? 'cursor-pointer' : ''}`}>
                 {e.label}
               </span>
             </div>
@@ -133,6 +142,17 @@ const DetallePanel = ({ trabajo, currentUser, onClose, onUpdated }) => {
   const [saving, setSaving] = useState(false);
   const [err, setErr]       = useState('');
   const [copied, setCopied] = useState(false);
+  const descRef = useRef(null);
+  const formRef = useRef(null);
+
+  const handleStepClick = (etapaValue) => {
+    setForm(f => ({ ...f, etapa: etapaValue }));
+    setErr('');
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      descRef.current?.focus();
+    }, 50);
+  };
 
   const copyCode = () => {
     navigator.clipboard.writeText(trabajo.codigo);
@@ -206,15 +226,22 @@ const DetallePanel = ({ trabajo, currentUser, onClose, onUpdated }) => {
             </span>
           </div>
 
-          {/* Stepper */}
+          {/* Stepper — clickeable para seleccionar etapa */}
           <div className="mt-4 overflow-x-auto">
-            <Stepper etapaActual={trabajo.etapa_actual} />
+            <Stepper
+              etapaActual={trabajo.etapa_actual}
+              onStepClick={handleStepClick}
+              selectedEtapa={form.etapa}
+            />
           </div>
+          <p className="text-[10px] text-slate-400 text-center mt-1.5">
+            Haz clic en una etapa para seleccionarla
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col">
           {/* Formulario de actualización */}
-          <form onSubmit={handleSubmit} className="px-6 py-5 border-b border-slate-50 space-y-3 flex-shrink-0">
+          <form ref={formRef} onSubmit={handleSubmit} className="px-6 py-5 border-b border-slate-50 space-y-3 flex-shrink-0">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Registrar avance</p>
 
             {err && (
