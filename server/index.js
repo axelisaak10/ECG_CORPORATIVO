@@ -419,9 +419,16 @@ app.delete('/api/contacto/:id', async (req, res) => {
 // ── GET/POST/PUT/DELETE /api/catalogo ────────────────────────────────────────
 // Versión local que replica api/catalogo.js de Vercel
 app.all('/api/catalogo', async (req, res) => {
-  const r  = req.query.r;
-  const id = req.query.id;
+  const r      = req.query.r;
+  const id     = req.query.id;
   const method = req.method;
+
+  // Etapas GET es público (sin auth)
+  if (r === 'etapas' && method === 'GET') {
+    const { data, error } = await supabase.from('etapas_config').select('*').order('orden').order('created_at');
+    if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
+    return res.json({ etapas: data || [] });
+  }
 
   const p = verifyToken(req);
   if (!p) return res.status(401).json({ error: 'Token inválido o expirado.' });
@@ -631,6 +638,39 @@ app.all('/api/catalogo', async (req, res) => {
       const { error } = await supabase.from('gantt_tareas').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar tarea.' });
       return res.json({ message: 'Tarea eliminada.' });
+    }
+  }
+
+  // ── Etapas (CRUD admin) ───────────────────────────────────────────────────
+  if (r === 'etapas') {
+    if (p.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+    if (method === 'POST') {
+      const { value, label, color, bg, icon_name, orden } = req.body;
+      if (!value?.trim() || !label?.trim()) return res.status(400).json({ error: 'value y label son requeridos.' });
+      const { data, error } = await supabase.from('etapas_config')
+        .insert([{ value: value.trim(), label: label.trim(), color: color || '#94a3b8', bg: bg || '#f1f5f9', icon_name: icon_name || 'Clock', orden: Number(orden) || 0 }])
+        .select().single();
+      if (error) return res.status(500).json({ error: error.code === '23505' ? 'Ya existe una etapa con ese identificador.' : 'Error al crear etapa.' });
+      return res.status(201).json({ etapa: data });
+    }
+    if (method === 'PUT' && id) {
+      const { label, color, bg, icon_name, orden } = req.body;
+      if (!label?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+      const { data, error } = await supabase.from('etapas_config')
+        .update({ label: label.trim(), color: color || '#94a3b8', bg: bg || '#f1f5f9', icon_name: icon_name || 'Clock', orden: Number(orden) || 0 })
+        .eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: 'Error al actualizar etapa.' });
+      return res.json({ etapa: data });
+    }
+    if (method === 'DELETE' && id) {
+      const { data: etapa } = await supabase.from('etapas_config').select('value').eq('id', id).single();
+      if (etapa) {
+        const { count } = await supabase.from('trabajos').select('id', { count: 'exact', head: true }).eq('etapa_actual', etapa.value);
+        if (count > 0) return res.status(409).json({ error: `No se puede eliminar: ${count} trabajo(s) están en esta etapa.` });
+      }
+      const { error } = await supabase.from('etapas_config').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: 'Error al eliminar etapa.' });
+      return res.json({ message: 'Etapa eliminada.' });
     }
   }
 

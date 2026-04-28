@@ -4,16 +4,19 @@ import {
   Paintbrush, Wrench, Sparkles, Check, AlertTriangle, Search,
 } from 'lucide-react';
 
-const ETAPAS = [
-  { value: 'recibido',    label: 'Recibido',    color: '#94a3b8', bg: '#f1f5f9', Icon: Clock        },
-  { value: 'armado',      label: 'Armado',      color: '#3b82f6', bg: '#eff6ff', Icon: Hammer       },
-  { value: 'pintura',     label: 'Pintura',     color: '#f59e0b', bg: '#fffbeb', Icon: Paintbrush   },
-  { value: 'instalacion', label: 'Instalación', color: '#f97316', bg: '#fff7ed', Icon: Wrench       },
-  { value: 'detallado',   label: 'Detallado',   color: '#8b5cf6', bg: '#f5f3ff', Icon: Sparkles     },
-  { value: 'completado',  label: 'Completado',  color: '#10b981', bg: '#f0fdf4', Icon: CheckCircle2 },
+const ICON_MAP = { Clock, Hammer, Paintbrush, Wrench, Sparkles, CheckCircle2 };
+const getIcon = (name) => ICON_MAP[name] ?? Clock;
+
+const DEFAULT_ETAPAS = [
+  { value: 'recibido',    label: 'Recibido',    color: '#94a3b8', bg: '#f1f5f9', icon_name: 'Clock'        },
+  { value: 'armado',      label: 'Armado',      color: '#3b82f6', bg: '#eff6ff', icon_name: 'Hammer'       },
+  { value: 'pintura',     label: 'Pintura',     color: '#f59e0b', bg: '#fffbeb', icon_name: 'Paintbrush'   },
+  { value: 'instalacion', label: 'Instalación', color: '#f97316', bg: '#fff7ed', icon_name: 'Wrench'       },
+  { value: 'detallado',   label: 'Detallado',   color: '#8b5cf6', bg: '#f5f3ff', icon_name: 'Sparkles'     },
+  { value: 'completado',  label: 'Completado',  color: '#10b981', bg: '#f0fdf4', icon_name: 'CheckCircle2' },
 ];
 
-const getEtapa = (v) => ETAPAS.find(e => e.value === v) ?? ETAPAS[0];
+const getEtapa = (etapas, v) => etapas.find(e => e.value === v) ?? etapas[0] ?? DEFAULT_ETAPAS[0];
 
 const fmtDate = (d) => {
   if (!d) return '—';
@@ -28,36 +31,39 @@ const fmtDateTime = (d) => {
 };
 
 // ── Stepper compacto ──────────────────────────────────────────────────────────
-const Stepper = ({ etapaActual }) => {
-  const idx = ETAPAS.findIndex(e => e.value === etapaActual);
+const Stepper = ({ etapaActual, etapas }) => {
+  const idx = etapas.findIndex(e => e.value === etapaActual);
   return (
     <div className="flex items-start w-full overflow-x-auto pb-1 mt-3">
-      {ETAPAS.map((e, i) => (
-        <div key={e.value} className="flex items-center flex-1 min-w-0">
-          <div className="flex flex-col items-center flex-shrink-0">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${i === idx ? 'ring-2 ring-offset-1' : ''}`}
-              style={{ background: i <= idx ? e.color : '#e2e8f0', ringColor: i === idx ? e.color : 'transparent' }}>
-              {i < idx
-                ? <Check size={12} className="text-white" strokeWidth={3} />
-                : <e.Icon size={12} className={i <= idx ? 'text-white' : 'text-slate-400'} />}
+      {etapas.map((e, i) => {
+        const IconComp = getIcon(e.icon_name);
+        return (
+          <div key={e.value} className="flex items-center flex-1 min-w-0">
+            <div className="flex flex-col items-center flex-shrink-0">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${i === idx ? 'ring-2 ring-offset-1' : ''}`}
+                style={{ background: i <= idx ? e.color : '#e2e8f0' }}>
+                {i < idx
+                  ? <Check size={12} className="text-white" strokeWidth={3} />
+                  : <IconComp size={12} className={i <= idx ? 'text-white' : 'text-slate-400'} />}
+              </div>
+              <span className={`text-[8px] font-bold mt-1 whitespace-nowrap ${i === idx ? 'text-slate-800' : i < idx ? 'text-slate-400' : 'text-slate-300'}`}>
+                {e.label}
+              </span>
             </div>
-            <span className={`text-[8px] font-bold mt-1 whitespace-nowrap ${i === idx ? 'text-slate-800' : i < idx ? 'text-slate-400' : 'text-slate-300'}`}>
-              {e.label}
-            </span>
+            {i < etapas.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-1 mb-4 rounded-full ${i < idx ? 'bg-green-400' : 'bg-slate-200'}`} />
+            )}
           </div>
-          {i < ETAPAS.length - 1 && (
-            <div className={`flex-1 h-0.5 mx-1 mb-4 rounded-full ${i < idx ? 'bg-green-400' : 'bg-slate-200'}`} />
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
 
 // ── Tarjeta de trabajo (mensaje del bot) ──────────────────────────────────────
-const TrabajoCard = ({ trabajo }) => {
+const TrabajoCard = ({ trabajo, etapas }) => {
   const [showHistory, setShowHistory] = useState(false);
-  const etapa = getEtapa(trabajo.etapa_actual);
+  const etapa = getEtapa(etapas, trabajo.etapa_actual);
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden w-full max-w-sm">
       {/* Header */}
@@ -86,7 +92,7 @@ const TrabajoCard = ({ trabajo }) => {
       </div>
       {/* Stepper */}
       <div className="px-4 pb-2">
-        <Stepper etapaActual={trabajo.etapa_actual} />
+        <Stepper etapaActual={trabajo.etapa_actual} etapas={etapas} />
       </div>
       {/* Historial toggle */}
       {trabajo.trabajo_actualizaciones?.length > 0 && (
@@ -98,11 +104,12 @@ const TrabajoCard = ({ trabajo }) => {
           {showHistory && (
             <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
               {[...trabajo.trabajo_actualizaciones].reverse().map((a, i) => {
-                const ae = getEtapa(a.etapa);
+                const ae = getEtapa(etapas, a.etapa);
+                const AeIcon = getIcon(ae.icon_name);
                 return (
                   <div key={i} className="flex gap-2">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: ae.bg }}>
-                      <ae.Icon size={11} style={{ color: ae.color }} />
+                      <AeIcon size={11} style={{ color: ae.color }} />
                     </div>
                     <div className="flex-1 pb-2 border-b border-slate-50 last:border-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
@@ -162,12 +169,12 @@ const UserMsg = ({ text }) => (
 );
 
 // ── Burbuja de tarjeta de trabajo ─────────────────────────────────────────────
-const TrabajoMsg = ({ trabajo }) => (
+const TrabajoMsg = ({ trabajo, etapas }) => (
   <div className="flex items-end gap-2 mb-3 animate-fadeIn">
     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0 shadow">
       <Bot size={15} className="text-white" />
     </div>
-    <TrabajoCard trabajo={trabajo} />
+    <TrabajoCard trabajo={trabajo} etapas={etapas} />
   </div>
 );
 
@@ -177,10 +184,18 @@ const SeguimientoModal = ({ onClose }) => {
   const inputRef   = useRef(null);
   const [input, setInput]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [etapas, setEtapas]   = useState(DEFAULT_ETAPAS);
   const [messages, setMessages] = useState([
     { id: 1, type: 'bot-text', text: '¡Hola! Soy el asistente de seguimiento de ECG Corporativo. 👋' },
     { id: 2, type: 'bot-text', text: 'Ingresa el código de tu trabajo (formato ECG-XXXXXX) y te mostraré el estado actual.' },
   ]);
+
+  useEffect(() => {
+    fetch('/api/catalogo?r=etapas')
+      .then(r => r.json())
+      .then(d => { if (d.etapas?.length) setEtapas(d.etapas); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -250,7 +265,7 @@ const SeguimientoModal = ({ onClose }) => {
             if (m.type === 'bot-text')    return <BotMsg key={m.id}>{m.text}</BotMsg>;
             if (m.type === 'typing')      return <BotMsg key={m.id} typing />;
             if (m.type === 'user')        return <UserMsg key={m.id} text={m.text} />;
-            if (m.type === 'bot-trabajo') return <TrabajoMsg key={m.id} trabajo={m.trabajo} />;
+            if (m.type === 'bot-trabajo') return <TrabajoMsg key={m.id} trabajo={m.trabajo} etapas={etapas} />;
             return null;
           })}
           <div ref={bottomRef} />

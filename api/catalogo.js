@@ -20,12 +20,21 @@ module.exports = async function handler(req, res) {
   Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const resource = req.query.r;
+
+  // ── ETAPAS (GET público, sin auth) ─────────────────────────────────────────
+  if (resource === 'etapas' && req.method === 'GET') {
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const { data, error } = await sb.from('etapas_config').select('*').order('orden').order('created_at');
+    if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
+    return res.json({ etapas: data || [] });
+  }
+
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
 
   const supabase         = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const { nivel, sub: userId } = payload;
-  const resource         = req.query.r;
   const id               = req.query.id;
 
   // ── CLIENTES ───────────────────────────────────────────────────────────────
@@ -259,6 +268,42 @@ module.exports = async function handler(req, res) {
       const { error } = await supabase.from('gantt_tareas').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar tarea.' });
       return res.json({ message: 'Tarea eliminada.' });
+    }
+  }
+
+  // ── ETAPAS (CRUD admin) ────────────────────────────────────────────────────
+  if (resource === 'etapas') {
+    if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+    if (req.method === 'POST') {
+      const { value, label, color, bg, icon_name, orden } = req.body;
+      if (!value?.trim() || !label?.trim()) return res.status(400).json({ error: 'value y label son requeridos.' });
+      const { data, error } = await supabase.from('etapas_config')
+        .insert([{ value: value.trim(), label: label.trim(), color: color || '#94a3b8', bg: bg || '#f1f5f9', icon_name: icon_name || 'Clock', orden: Number(orden) || 0 }])
+        .select().single();
+      if (error) return res.status(500).json({ error: error.code === '23505' ? 'Ya existe una etapa con ese identificador.' : 'Error al crear etapa.' });
+      return res.status(201).json({ etapa: data });
+    }
+
+    if (req.method === 'PUT' && id) {
+      const { label, color, bg, icon_name, orden } = req.body;
+      if (!label?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+      const { data, error } = await supabase.from('etapas_config')
+        .update({ label: label.trim(), color: color || '#94a3b8', bg: bg || '#f1f5f9', icon_name: icon_name || 'Clock', orden: Number(orden) || 0 })
+        .eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: 'Error al actualizar etapa.' });
+      return res.json({ etapa: data });
+    }
+
+    if (req.method === 'DELETE' && id) {
+      const { data: etapa } = await supabase.from('etapas_config').select('value').eq('id', id).single();
+      if (etapa) {
+        const { count } = await supabase.from('trabajos').select('id', { count: 'exact', head: true }).eq('etapa_actual', etapa.value);
+        if (count > 0) return res.status(409).json({ error: `No se puede eliminar: ${count} trabajo(s) están en esta etapa.` });
+      }
+      const { error } = await supabase.from('etapas_config').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: 'Error al eliminar etapa.' });
+      return res.json({ message: 'Etapa eliminada.' });
     }
   }
 
