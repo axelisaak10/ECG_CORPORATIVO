@@ -41,14 +41,13 @@ admin AS (
   SELECT id FROM "Usuarios" WHERE nivel >= 2 LIMIT 1
 )
 INSERT INTO cotizaciones (
-  id, folio, cliente_id, usuario_id, descripcion, estado,
+  id, cliente_id, usuario_id, descripcion, estado,
   articulos, herramientas, empleados,
   horas, dias, semanas, meses,
   totales, total, created_at
 )
 SELECT
   gen_random_uuid(),
-  'COT-0001',
   (SELECT id FROM cliente),
   (SELECT id FROM admin),
   'Remodelación e instalaciones en sucursal El Marques, Qro. '
@@ -93,7 +92,10 @@ ON CONFLICT DO NOTHING;
 
 -- ── 4. Trabajo vinculado a la cotización ──────────────────────────────────────
 WITH cot AS (
-  SELECT id FROM cotizaciones WHERE folio = 'COT-0001' LIMIT 1
+  SELECT c.id FROM cotizaciones c
+  JOIN clientes cl ON cl.id = c.cliente_id
+  WHERE cl.empresa = 'Caja Popular San Jose Iturbide'
+  LIMIT 1
 )
 INSERT INTO trabajos (id, codigo, cotizacion_id, folio, cliente, descripcion, etapa_actual, created_at)
 SELECT
@@ -106,7 +108,7 @@ SELECT
   'demolicion',
   '2026-04-07 08:00:00+00'
 WHERE (SELECT id FROM cot) IS NOT NULL
-ON CONFLICT (codigo) DO NOTHING;
+ON CONFLICT (codigo) DO UPDATE SET folio = 'COT-0001';
 
 -- ── 5. Registro inicial del trabajo ──────────────────────────────────────────
 WITH t AS (
@@ -170,7 +172,8 @@ SELECT 'Etapas de trabajo'      AS elemento, COUNT(*)::text AS cantidad FROM eta
 UNION ALL
 SELECT 'Clientes',               COUNT(*)::text FROM clientes      WHERE empresa = 'Caja Popular San Jose Iturbide'
 UNION ALL
-SELECT 'Cotizaciones',           COUNT(*)::text FROM cotizaciones  WHERE folio = 'COT-0001'
+SELECT 'Cotizaciones',           COUNT(*)::text FROM cotizaciones c
+  JOIN clientes cl ON cl.id = c.cliente_id WHERE cl.empresa = 'Caja Popular San Jose Iturbide'
 UNION ALL
 SELECT 'Trabajos',               COUNT(*)::text FROM trabajos      WHERE codigo = 'ECG-CAJAP1'
 UNION ALL
