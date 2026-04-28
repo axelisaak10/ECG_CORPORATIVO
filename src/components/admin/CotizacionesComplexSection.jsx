@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText,
-  Pencil, AlertCircle, Loader2, ClipboardList,
+  Pencil, AlertCircle, Loader2, ClipboardList, GanttChartSquare,
 } from 'lucide-react';
 import {
   authHeaders,
@@ -10,6 +10,7 @@ import {
   apiGetHerramientas, apiCreateHerramienta, apiUpdateHerramienta, apiDeleteHerramienta,
   apiGetCotizaciones, apiCreateCotizacion, apiUpdateCotizacion, apiDeleteCotizacion,
   apiCreateTarea, apiCreateTrabajo,
+  apiCreateGanttProyecto, apiCreateGanttTarea,
 } from '../../utils/api';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
@@ -37,6 +38,9 @@ const ESTADO_MAP = {
 const calcTotalDias = (horas, dias, semanas, meses) =>
   (horas / 8) + dias + (semanas * 7) + (meses * 30);
 
+const AREAS_GANTT = ['Operaciones','IT','Administración','Comercial','Producción','Mantenimiento','Diseño','Otro'];
+const addDateDays = (str, n) => { const d = new Date(str + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; };
+
 const uid      = () => Math.random().toString(36).slice(2);
 const fmt      = (n) => `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtDate  = (d) => d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -56,6 +60,137 @@ const ErrorMsg = ({ msg }) => (
     <AlertCircle size={15} /> {msg}
   </div>
 );
+
+// ── Modal de planificación Gantt al aprobar ───────────────────────────────────
+const GanttPlanModal = ({ cot, trabajadores, onClose }) => {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const diasEstimados = Math.max(
+    Math.ceil(calcTotalDias(cot.horas || 0, cot.dias || 0, cot.semanas || 0, cot.meses || 0)), 1
+  );
+  const inputCls2 = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+
+  const [form, setForm] = useState({
+    nombre:       cot.descripcion?.slice(0, 80) || `Trabajo: ${cot.clientes?.nombre || 'Cliente'}`,
+    descripcion:  cot.descripcion || '',
+    responsable:  cot.empleados?.[0]?.nombre || '',
+    area:         'Operaciones',
+    fecha_inicio: todayStr,
+    fecha_fin:    addDateDays(todayStr, diasEstimados),
+  });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr]       = useState('');
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleCreate = async () => {
+    if (!form.nombre.trim() || !form.fecha_inicio || !form.fecha_fin) {
+      setErr('Nombre, fecha de inicio y fin son requeridos.'); return;
+    }
+    setSaving(true); setErr('');
+    try {
+      const proyecto = await apiCreateGanttProyecto({
+        nombre:      `${cot.clientes?.nombre || 'Cliente'} — ${cot.folio || 'Cot'}`,
+        descripcion: cot.descripcion || '',
+        color:       '#3b82f6',
+      });
+      await apiCreateGanttTarea({
+        proyecto_id:  proyecto.id,
+        nombre:       form.nombre.trim(),
+        descripcion:  form.descripcion.trim(),
+        responsable:  form.responsable,
+        area:         form.area,
+        fecha_inicio: form.fecha_inicio,
+        fecha_fin:    form.fecha_fin,
+        porcentaje:   0,
+        color:        '#3b82f6',
+        orden:        0,
+        prioridad:    'media',
+      });
+      onClose();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[550] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+              <GanttChartSquare size={16} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-800 leading-tight">Planificar en Gantt</h3>
+              <p className="text-[11px] text-slate-400">Se creará un diagrama para esta cotización</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X size={16} className="text-slate-500" /></button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+          {err && <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-xl px-3 py-2 text-xs font-semibold"><AlertCircle size={13} />{err}</div>}
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nombre de la tarea *</label>
+            <input value={form.nombre} onChange={e => set('nombre', e.target.value)} className={inputCls2} placeholder="Ej. Instalación eléctrica" />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descripción</label>
+            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)}
+              rows={2} className={inputCls2 + ' resize-none'} placeholder="Detalles del trabajo…" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Responsable</label>
+              <select value={form.responsable} onChange={e => set('responsable', e.target.value)} className={inputCls2}>
+                <option value="">— Sin asignar —</option>
+                {(cot.empleados || []).map(e => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+                {trabajadores.filter(u => !(cot.empleados || []).find(e => e.nombre === u.name)).map(u => (
+                  <option key={u.id} value={u.name}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Área</label>
+              <select value={form.area} onChange={e => set('area', e.target.value)} className={inputCls2}>
+                {AREAS_GANTT.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fecha inicio *</label>
+              <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className={inputCls2} />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fecha fin *</label>
+              <input type="date" value={form.fecha_fin} min={form.fecha_inicio} onChange={e => set('fecha_fin', e.target.value)} className={inputCls2} />
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-xl px-4 py-3 text-xs text-blue-700 font-medium">
+            Duración estimada de cotización: <span className="font-black">{diasEstimados} día{diasEstimados !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+
+        <div className="px-6 pb-5 flex gap-3 justify-end border-t border-slate-100 pt-4">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50">Omitir</button>
+          <button onClick={handleCreate} disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-all">
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <GanttChartSquare size={13} />}
+            Crear en Gantt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Catálogo genérico CRUD ────────────────────────────────────────────────────
 const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit, onDelete, addForm }) => {
@@ -699,25 +834,24 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   };
 
   const [trabajoCreado, setTrabajoCreado] = useState(null);
+  const [ganttModal,    setGanttModal]    = useState(null);
 
   const handleEstado = async (id, estado) => {
     const updated = await apiUpdateCotizacion(id, { estado });
     setCotizaciones(p => p.map(c => c.id === id ? updated : c));
-    // Al aprobar, crear trabajo automáticamente
     if (estado === 'aprobada') {
       try {
-        const cot = cotizaciones.find(c => c.id === id) || updated;
         const result = await apiCreateTrabajo({
           cotizacion_id: String(id),
-          folio:         cot.folio || '',
-          cliente:       cot.cliente_nombre || cot.cliente || 'Cliente',
-          descripcion:   `Cotización ${cot.folio || id} aprobada.`,
+          folio:         updated.folio || '',
+          cliente:       updated.clientes?.nombre || 'Cliente',
+          descripcion:   `Cotización ${updated.folio || id} aprobada.`,
         });
         setTrabajoCreado(result.trabajo);
       } catch (e) {
-        // Si ya existía (409), ignorar silenciosamente
         if (!e.message?.includes('Ya existe')) console.warn('Trabajo:', e.message);
       }
+      setGanttModal(updated);
     }
   };
 
@@ -739,6 +873,13 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   return (
     <div>
       {viewCot && <DetalleCotizacionModal cot={viewCot} onClose={() => setViewCot(null)} />}
+      {ganttModal && (
+        <GanttPlanModal
+          cot={ganttModal}
+          trabajadores={trabajadores}
+          onClose={() => setGanttModal(null)}
+        />
+      )}
 
       {/* Toast: trabajo creado */}
       {trabajoCreado && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Edit2, Trash2, GanttChartSquare, User, CalendarRange, ChevronDown } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, GanttChartSquare, User, CalendarRange, ChevronDown, ClipboardList, Check } from 'lucide-react';
 import {
   apiGetGanttProyectos, apiCreateGanttProyecto, apiUpdateGanttProyecto, apiDeleteGanttProyecto,
   apiGetGanttTareas, apiCreateGanttTarea, apiUpdateGanttTarea, apiDeleteGanttTarea,
@@ -214,7 +214,7 @@ const TareaModal = ({ initial, proyectoColor, proyectoNombre, usuarios, onSave, 
 };
 
 // ── Gráfica Gantt ─────────────────────────────────────────────────────────────
-const GanttChart = ({ tareas, onEdit, onDelete }) => {
+const GanttChart = ({ tareas, onEdit, onDelete, onToKanban }) => {
   const sorted   = [...tareas].sort((a, b) => a.orden - b.orden || a.fecha_inicio.localeCompare(b.fecha_inicio));
   const timeline = computeTimeline(sorted);
   if (!timeline) return null;
@@ -270,6 +270,12 @@ const GanttChart = ({ tareas, onEdit, onDelete }) => {
                   <div className="h-full rounded-lg transition-all" style={{ width: `${t.porcentaje}%`, background: t.color }} />
                 </div>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                  {onToKanban && (
+                    <button onClick={() => onToKanban(t)} title="Enviar a Kanban"
+                      className="w-6 h-6 rounded-md bg-white shadow border border-slate-200 flex items-center justify-center hover:border-green-400 hover:bg-green-50">
+                      <ClipboardList size={11} className="text-slate-500" />
+                    </button>
+                  )}
                   <button onClick={() => onEdit(t)} className="w-6 h-6 rounded-md bg-white shadow border border-slate-200 flex items-center justify-center hover:border-blue-300">
                     <Edit2 size={11} className="text-slate-500" />
                   </button>
@@ -300,6 +306,7 @@ export default function GanttSection({ currentUser }) {
   const [loading,      setLoading]      = useState(true);
   const [loadingTareas,setLoadingTareas]= useState(false);
   const [error,        setError]        = useState('');
+  const [successMsg,   setSuccessMsg]   = useState('');
   const [proyectoModal,setProyectoModal]= useState(null);
   const [tareaModal,   setTareaModal]   = useState(null);
   const [confirmDel,   setConfirmDel]   = useState(null);
@@ -384,6 +391,24 @@ export default function GanttSection({ currentUser }) {
     setConfirmDel(null);
   };
 
+  const handleToKanban = async (tarea) => {
+    try {
+      await apiCreateTarea(null, {
+        titulo:       tarea.nombre,
+        descripcion:  [tarea.descripcion, `[Gantt: ${selectedProyecto?.nombre || ''}]`].filter(Boolean).join('\n'),
+        prioridad:    tarea.prioridad || 'media',
+        estado:       'pendiente',
+        grupo:        tarea.area || 'Operaciones',
+        asignado_a:   tarea.responsable || null,
+        fecha_limite: tarea.fecha_fin   || null,
+      });
+      setSuccessMsg(`"${tarea.nombre}" enviada al Kanban`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (e) {
+      setError('No se pudo crear la tarea: ' + e.message);
+    }
+  };
+
   return (
     <div>
       {proyectoModal && (
@@ -433,6 +458,15 @@ export default function GanttSection({ currentUser }) {
       {error && (
         <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm font-semibold">
           {error}<button onClick={() => setError('')} className="ml-auto"><X size={14} /></button>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="fixed bottom-6 right-6 z-[600] flex items-center gap-3 bg-green-600 text-white px-5 py-3.5 rounded-2xl shadow-xl animate-fade-in">
+          <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <Check size={14} className="text-white" strokeWidth={3} />
+          </div>
+          <p className="font-bold text-sm">{successMsg}</p>
         </div>
       )}
 
@@ -505,7 +539,7 @@ export default function GanttSection({ currentUser }) {
                     {isAdmin && <p className="text-sm mt-1">Usa "Nueva tarea" para agregar actividades</p>}
                   </div>
                 ) : (
-                  <GanttChart tareas={tareas} onEdit={t => setTareaModal(t)} onDelete={id => setConfirmDel({ type: 'tarea', id })} />
+                  <GanttChart tareas={tareas} onEdit={t => setTareaModal(t)} onDelete={id => setConfirmDel({ type: 'tarea', id })} onToKanban={handleToKanban} />
                 )}
               </div>
 
