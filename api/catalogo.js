@@ -22,12 +22,29 @@ module.exports = async function handler(req, res) {
 
   const resource = req.query.r;
 
-  // ── ETAPAS (GET público, sin auth) ─────────────────────────────────────────
-  if (resource === 'etapas' && req.method === 'GET') {
+  // ── ENDPOINTS PÚBLICOS (sin auth) ──────────────────────────────────────────
+  if (req.method === 'GET') {
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-    const { data, error } = await sb.from('etapas_config').select('*').order('orden').order('created_at');
-    if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
-    return res.json({ etapas: data || [] });
+
+    if (resource === 'etapas') {
+      const { data, error } = await sb.from('etapas_config').select('*').order('orden').order('created_at');
+      if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
+      return res.json({ etapas: data || [] });
+    }
+
+    if (resource === 'gantt_publico') {
+      const clienteQ = (req.query.cliente || '').trim();
+      if (!clienteQ) return res.json({ proyecto: null, tareas: [] });
+      const { data: proyectos } = await sb
+        .from('gantt_proyectos').select('*')
+        .ilike('nombre', `%${clienteQ}%`).limit(1);
+      if (!proyectos?.length) return res.json({ proyecto: null, tareas: [] });
+      const proy = proyectos[0];
+      const { data: tareas } = await sb
+        .from('gantt_tareas').select('*')
+        .eq('proyecto_id', proy.id).order('orden');
+      return res.json({ proyecto: proy, tareas: tareas || [] });
+    }
   }
 
   const payload = verifyToken(req);

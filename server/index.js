@@ -423,11 +423,26 @@ app.all('/api/catalogo', async (req, res) => {
   const id     = req.query.id;
   const method = req.method;
 
-  // Etapas GET es público (sin auth)
-  if (r === 'etapas' && method === 'GET') {
-    const { data, error } = await supabase.from('etapas_config').select('*').order('orden').order('created_at');
-    if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
-    return res.json({ etapas: data || [] });
+  // Endpoints públicos (sin auth)
+  if (method === 'GET') {
+    if (r === 'etapas') {
+      const { data, error } = await supabase.from('etapas_config').select('*').order('orden').order('created_at');
+      if (error) return res.status(500).json({ error: 'Error al obtener etapas.' });
+      return res.json({ etapas: data || [] });
+    }
+    if (r === 'gantt_publico') {
+      const clienteQ = (req.query.cliente || '').trim();
+      if (!clienteQ) return res.json({ proyecto: null, tareas: [] });
+      const { data: proyectos } = await supabase
+        .from('gantt_proyectos').select('*')
+        .ilike('nombre', `%${clienteQ}%`).limit(1);
+      if (!proyectos?.length) return res.json({ proyecto: null, tareas: [] });
+      const proy = proyectos[0];
+      const { data: tareas } = await supabase
+        .from('gantt_tareas').select('*')
+        .eq('proyecto_id', proy.id).order('orden');
+      return res.json({ proyecto: proy, tareas: tareas || [] });
+    }
   }
 
   const p = verifyToken(req);
