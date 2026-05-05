@@ -4,19 +4,19 @@ import { MapPin, Phone, Mail, Clock, Facebook, Instagram } from 'lucide-react';
 // TikTok icon (no está en lucide)
 const TikTokIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/>
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
   </svg>
 );
 
 const Footer = ({ company }) => {
   const year = new Date().getFullYear();
   const navLinks = [
-    { id: 'inicio',    label: 'Inicio' },
-    { id: 'nosotros',  label: 'Nosotros' },
+    { id: 'inicio', label: 'Inicio' },
+    { id: 'nosotros', label: 'Nosotros' },
     { id: 'servicios', label: 'Servicios' },
-    { id: 'miembros',  label: 'Miembros' },
+    { id: 'miembros', label: 'Miembros' },
     { id: 'politicas', label: 'Políticas' },
-    { id: 'contacto',  label: 'Contacto' },
+    { id: 'contacto', label: 'Contacto' },
   ];
 
   return (
@@ -103,7 +103,7 @@ const Footer = ({ company }) => {
               </li>
               <li className="flex items-start gap-2.5 text-sm text-slate-500">
                 <Clock size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-                <span>Lun–Vie · 08:00–18:00 hrs</span>
+                <span>Lun–Vie · 09:00–17:00 hrs</span>
               </li>
             </ul>
           </div>

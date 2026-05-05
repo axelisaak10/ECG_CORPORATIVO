@@ -4,9 +4,9 @@ import SocialMediaButtons from '../shared/SocialMediaButtons';
 import { apiSendContacto } from '../../utils/api';
 
 const accentColors = {
-  'ecg-azul':  { bg: 'bg-ecg-azul',  hover: 'hover:opacity-90', icon: 'text-ecg-azul',  soft: 'bg-blue-50'  },
-  'ecg-rojo1': { bg: 'bg-ecg-rojo1', hover: 'hover:opacity-90', icon: 'text-ecg-rojo1', soft: 'bg-red-50'   },
-  'ecg-gris':  { bg: 'bg-ecg-negro', hover: 'hover:opacity-90', icon: 'text-ecg-negro', soft: 'bg-gray-100' },
+  'ecg-azul': { bg: 'bg-ecg-azul', hover: 'hover:opacity-90', icon: 'text-ecg-azul', soft: 'bg-blue-50' },
+  'ecg-rojo1': { bg: 'bg-ecg-rojo1', hover: 'hover:opacity-90', icon: 'text-ecg-rojo1', soft: 'bg-red-50' },
+  'ecg-gris': { bg: 'bg-ecg-negro', hover: 'hover:opacity-90', icon: 'text-ecg-negro', soft: 'bg-gray-100' },
 };
 
 const InfoRow = ({ icon, label, children }) => (
@@ -23,10 +23,10 @@ const InfoRow = ({ icon, label, children }) => (
 
 const ContactoSection = ({ company }) => {
   const accent = accentColors[company.accentColor] || accentColors['ecg-azul'];
-  const [form, setForm]       = useState({ nombre: '', correo: '', mensaje: '' });
+  const [form, setForm] = useState({ nombre: '', correo: '', mensaje: '' });
   const [sending, setSending] = useState(false);
-  const [sent, setSent]       = useState(false);
-  const [error, setError]     = useState('');
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -79,7 +79,7 @@ const ContactoSection = ({ company }) => {
 
           <InfoRow icon={<Clock size={15} className="text-gray-400" />} label="Horario">
             <p>Lunes a Viernes</p>
-            <p className="text-gray-500">08:00 am – 18:00 hrs</p>
+            <p className="text-gray-500">09:00 am – 17:00 hrs</p>
           </InfoRow>
 
           <div>

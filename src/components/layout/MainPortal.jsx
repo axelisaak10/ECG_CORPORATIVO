@@ -15,7 +15,7 @@ const MainPortal = ({ companies, onSelectCompany }) => {
       {/* Hero */}
       <div className="text-center mb-16 max-w-3xl animate-slideDown">
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter">
-          ECG <span className="text-ecg-azul">CORPORATIVO</span>
+          <span className="text-slate-400">E</span><span className="text-ecg-azul">C</span><span className="text-ecg-rojo1">G</span> <span className="text-slate-900">CORPORATIVO</span>
         </h1>
         <p className="text-lg text-slate-500 leading-relaxed italic">
           "Ingeniería que construye, gestión que respalda, y capacitación que transforma."
@@ -23,14 +23,14 @@ const MainPortal = ({ companies, onSelectCompany }) => {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full animate-slideUp">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full animate-slideUp items-stretch">
         {companies.map((company, idx) => {
           const text = accentText[company.accentColor] || accentText['ecg-azul'];
           return (
             <button
               key={company.id}
               onClick={() => onSelectCompany(idx)}
-              className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-slate-100 overflow-hidden text-left hover:-translate-y-2"
+              className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-slate-100 overflow-hidden text-left hover:-translate-y-2 flex flex-col h-full"
             >
               {/* Banda de color superior */}
               <div className={`h-1.5 bg-gradient-to-r ${company.color} w-full`} />
@@ -38,7 +38,7 @@ const MainPortal = ({ companies, onSelectCompany }) => {
               {/* Decoración de fondo */}
               <div className={`absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br ${company.color} opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity`} />
 
-              <div className="p-8">
+              <div className="p-8 flex flex-col flex-1">
                 {/* Logo */}
                 <div className="w-24 h-24 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-6 overflow-hidden">
                   <img
@@ -62,7 +62,7 @@ const MainPortal = ({ companies, onSelectCompany }) => {
                   {company.description}
                 </p>
 
-                <div className={`inline-flex items-center font-bold text-xs uppercase tracking-widest ${text}`}>
+                <div className={`inline-flex items-center font-bold text-xs uppercase tracking-widest mt-auto ${text}`}>
                   Ver empresa
                   <ArrowRight size={16} className="ml-2 group-hover:translate-x-1.5 transition-transform duration-300" />
                 </div>

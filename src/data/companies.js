@@ -12,13 +12,13 @@ export const companiesData = [
     // Logo: coloca tu imagen en /public/assets/logos/ y cambia el nombre aquí
     logo: '/assets/logos/centro.png',
     slogan: '¡TU ÉXITO COMIENZA CON UNA INGENIERIA BIEN EJECUTADA!',
-    color: 'from-ecg-negro to-ecg-gris',
+    color: 'from-ecg-gris to-ecg-gris-claro',
     accentColor: 'ecg-gris',
 
     // ── Contacto ──────────────────────────────────────────────────────────────
     phone: '5214427734562',
-    email: 'facturacionecging@gmail.com',
-    direccion: 'Querétaro, Querétaro, México',
+    email: 'centroecg@ecgcorporativo.com',
+    direccion: 'El Marqués, Querétaro, México',
     cobertura: 'Zona Centro y Bajío (Aguascalientes, Guanajuato, Jalisco, Michoacán, Querétaro, San Luis Potosí y Zacatecas)',
     socialMedia: {
       facebook: 'https://www.facebook.com/profile.php?id=100092558892899',
@@ -123,7 +123,7 @@ export const companiesData = [
 
     // ── Contacto ──────────────────────────────────────────────────────────────
     phone: '5214427734562',
-    email: 'centroecging@gmail.com',
+    email: 'dictaminacion@ecgcorporativo.com',
     direccion: 'Querétaro, Querétaro, México',
     cobertura: 'Zona Centro y Bajío (Aguascalientes, Guanajuato, Jalisco, Michoacán, Querétaro, San Luis Potosí y Zacatecas)',
     socialMedia: {
@@ -228,8 +228,8 @@ export const companiesData = [
 
     // ── Contacto ──────────────────────────────────────────────────────────────
     phone: '5214427734562',
-    email: 'centroecging@gmail.com',
-    direccion: 'Querétaro, Querétaro, México',
+    email: 'formacion@ecgcorporativo.com',
+    direccion: 'El Marqués, Querétaro, México',
     cobertura: 'Zona Centro y Bajío (Aguascalientes, Guanajuato, Jalisco, Michoacán, Querétaro, San Luis Potosí y Zacatecas)',
     socialMedia: {
       facebook: 'https://www.facebook.com/profile.php?id=100092558892899',
