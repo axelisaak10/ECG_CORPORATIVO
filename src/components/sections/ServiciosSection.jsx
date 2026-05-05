@@ -1,47 +1,43 @@
 import { Briefcase } from 'lucide-react';
 
-const accentBg = {
-  blue:   'bg-blue-600',
-  red:    'bg-red-600',
-  gray:   'bg-gray-700',
-  green:  'bg-green-600',
-  orange: 'bg-orange-600',
-};
-
-const accentText = {
-  blue:   'text-blue-600',
-  red:    'text-red-600',
-  gray:   'text-gray-700',
-  green:  'text-green-600',
-  orange: 'text-orange-600',
+const accentColors = {
+  'ecg-azul':  { bg: 'bg-ecg-azul',  text: 'text-ecg-azul',  badge: 'bg-blue-50 text-ecg-azul',   bar: 'from-ecg-azul to-ecg-celeste'  },
+  'ecg-rojo1': { bg: 'bg-ecg-rojo1', text: 'text-ecg-rojo1', badge: 'bg-red-50 text-ecg-rojo1',   bar: 'from-ecg-rojo2 to-ecg-rojo1'   },
+  'ecg-gris':  { bg: 'bg-ecg-negro', text: 'text-ecg-negro', badge: 'bg-gray-100 text-ecg-negro', bar: 'from-ecg-negro to-ecg-gris'    },
 };
 
 const ServiciosSection = ({ company }) => {
-  const bg   = accentBg[company.accentColor]   || accentBg.blue;
-  const text = accentText[company.accentColor] || accentText.blue;
+  const accent = accentColors[company.accentColor] || accentColors['ecg-azul'];
 
   return (
-    <div className="space-y-6 animate-slideUp">
-      <div className="flex items-center mb-8">
-        <Briefcase className={`${bg} text-white p-3 rounded-xl mr-4`} size={48} />
+    <div className="animate-slideUp space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 flex-shrink-0 ${accent.bg} text-white rounded-xl flex items-center justify-center shadow-md`}>
+          <Briefcase size={22} />
+        </div>
         <div>
-          <h2 className="text-3xl md:text-4xl font-bold">Nuestros Servicios</h2>
-          <p className="text-gray-400 text-sm mt-1">{company.services.length} servicios disponibles</p>
+          <p className="text-xs font-bold tracking-[0.2em] uppercase text-gray-400">
+            {company.services?.length} servicios disponibles
+          </p>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900">Nuestros Servicios</h2>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        {company.services.map((service, idx) => (
+      {/* Grid */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {company.services?.map((service, idx) => (
           <div
             key={idx}
-            className="group bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-50 hover:border-gray-100 flex gap-5"
+            className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-gray-100 hover:border-gray-200 transition-all duration-300 flex gap-4 items-start"
           >
-            {/* Badge numérico */}
-            <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${bg} flex items-center justify-center text-white font-black text-sm shadow-md`}>
+            {/* Número */}
+            <div className={`flex-shrink-0 w-9 h-9 rounded-xl ${accent.bg} flex items-center justify-center text-white font-black text-xs shadow-sm`}>
               {String(idx + 1).padStart(2, '0')}
             </div>
-            <div>
-              <h3 className={`text-lg font-bold mb-2 ${text} group-hover:opacity-80 transition-opacity`}>
+            <div className="min-w-0">
+              <h3 className={`text-sm font-black mb-1.5 leading-snug ${accent.text}`}>
                 {service.title}
               </h3>
               <p className="text-gray-500 text-sm leading-relaxed">

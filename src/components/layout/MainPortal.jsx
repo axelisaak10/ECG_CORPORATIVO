@@ -1,33 +1,31 @@
 import { ArrowRight } from 'lucide-react';
 
 const accentText = {
-  blue:   'text-blue-600',
-  red:    'text-red-600',
-  gray:   'text-gray-700',
-  green:  'text-green-600',
+  'ecg-azul': 'text-ecg-azul',
+  'ecg-rojo1': 'text-ecg-rojo1',
+  'ecg-gris': 'text-ecg-negro',
+  green: 'text-green-600',
   orange: 'text-orange-600',
 };
 
 const MainPortal = ({ companies, onSelectCompany }) => {
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 lg:p-12 overflow-x-hidden">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 lg:p-12 overflow-x-hidden">
 
       {/* Hero */}
       <div className="text-center mb-16 max-w-3xl animate-slideDown">
-        <p className="text-xs font-black uppercase tracking-[0.35em] text-slate-400 mb-4">Grupo Empresarial</p>
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter">
-          ECG <span className="text-blue-600">CORPORATIVO</span>
+          ECG <span className="text-ecg-azul">CORPORATIVO</span>
         </h1>
-        <p className="text-lg text-slate-500 leading-relaxed">
-          Impulsando la excelencia industrial a través de la formación técnica,
-          la ingeniería avanzada y la sustentabilidad energética.
+        <p className="text-lg text-slate-500 leading-relaxed italic">
+          "Ingeniería que construye, gestión que respalda, y capacitación que transforma."
         </p>
       </div>
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full animate-slideUp">
         {companies.map((company, idx) => {
-          const text = accentText[company.accentColor] || accentText.blue;
+          const text = accentText[company.accentColor] || accentText['ecg-azul'];
           return (
             <button
               key={company.id}

@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { navItems } from '../../data/navItems';
 
 const accentColors = {
-  blue:   { pill: 'bg-blue-600',   glow: 'shadow-blue-500/40',  text: 'text-blue-600',   soft: 'bg-blue-50'   },
-  red:    { pill: 'bg-red-600',    glow: 'shadow-red-500/40',   text: 'text-red-600',    soft: 'bg-red-50'    },
-  gray:   { pill: 'bg-gray-700',   glow: 'shadow-gray-500/40',  text: 'text-gray-700',   soft: 'bg-gray-100'  },
+  'ecg-azul':   { pill: 'bg-ecg-azul',   glow: 'shadow-blue-500/40',  text: 'text-ecg-azul',   soft: 'bg-blue-50'   },
+  'ecg-rojo1':    { pill: 'bg-ecg-rojo1',    glow: 'shadow-red-500/40',   text: 'text-ecg-rojo1',    soft: 'bg-red-50'    },
+  'ecg-gris':   { pill: 'bg-ecg-gris',   glow: 'shadow-gray-500/40',  text: 'text-ecg-negro',   soft: 'bg-gray-100'  },
   green:  { pill: 'bg-green-600',  glow: 'shadow-green-500/40', text: 'text-green-600',  soft: 'bg-green-50'  },
   orange: { pill: 'bg-orange-500', glow: 'shadow-orange-500/40',text: 'text-orange-500', soft: 'bg-orange-50' },
 };
@@ -21,7 +21,7 @@ const HamburgerMenu = ({
   onOpenAuth,
   onLogout,
 }) => {
-  const accent = accentColors[company?.accentColor] ?? accentColors.blue;
+  const accent = accentColors[company?.accentColor] ?? accentColors['ecg-azul'];
   const navigate = useNavigate();
 
   return (
@@ -53,7 +53,7 @@ const HamburgerMenu = ({
             onClick={() => setMenuOpen(false)}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
           >
-            <X size={14} className="text-gray-600" />
+            <X size={14} className="text-ecg-gris" />
           </button>
         </div>
 
@@ -130,7 +130,7 @@ const HamburgerMenu = ({
                   } ${
                     isActive
                       ? `${accent.pill} text-white shadow-lg ${accent.glow}`
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-ecg-gris hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   {/* Icon bubble */}
@@ -163,7 +163,7 @@ const HamburgerMenu = ({
           className="px-6 py-5 border-t border-gray-100"
           style={{ background: 'linear-gradient(to top, #f8fafc, transparent)' }}
         >
-          <p className="text-xs font-bold text-gray-700 truncate">{company?.name}</p>
+          <p className="text-xs font-bold text-ecg-negro truncate">{company?.name}</p>
           <p className="text-[11px] text-gray-400 truncate mt-0.5">{company?.phone}</p>
           <p className="text-[11px] text-gray-400 truncate">{company?.email}</p>
         </div>

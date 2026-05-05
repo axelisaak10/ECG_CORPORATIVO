@@ -6,7 +6,7 @@ import Chatbot from '../shared/Chatbot';
 
 const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout }) => {
   const companyIcons = [<GraduationCap size={28} />, <Leaf size={28} />, <Cog size={28} />];
-  const accentText = ['text-blue-600', 'text-red-600', 'text-gray-600'];
+  const accentText = ['text-ecg-azul', 'text-ecg-rojo1', 'text-ecg-gris'];
 
 
   return (
@@ -20,7 +20,7 @@ const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout })
             </div>
             <div>
               <span className="text-sm font-black text-slate-800 tracking-tight">ECG</span>
-              <span className="text-sm font-black text-blue-600 tracking-tight"> CORPORATIVO</span>
+              <span className="text-sm font-black text-ecg-azul tracking-tight"> CORPORATIVO</span>
             </div>
           </div>
 
@@ -31,7 +31,7 @@ const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout })
             </div>
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 border border-slate-200 rounded-full px-4 py-2 text-sm font-semibold text-slate-500 hover:text-red-600 hover:border-red-200 transition-all"
+              className="flex items-center gap-2 border border-slate-200 rounded-full px-4 py-2 text-sm font-semibold text-slate-500 hover:text-ecg-rojo1 hover:border-red-200 transition-all"
             >
               <LogOut size={14} />
               <span className="hidden sm:inline">Salir</span>

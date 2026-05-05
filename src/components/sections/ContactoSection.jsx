@@ -1,18 +1,28 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
 import SocialMediaButtons from '../shared/SocialMediaButtons';
 import { apiSendContacto } from '../../utils/api';
 
 const accentColors = {
-  blue:   { bg: 'bg-blue-600',   hover: 'hover:bg-blue-700' },
-  red:    { bg: 'bg-red-600',    hover: 'hover:bg-red-700' },
-  gray:   { bg: 'bg-gray-700',   hover: 'hover:bg-gray-800' },
-  green:  { bg: 'bg-green-600',  hover: 'hover:bg-green-700' },
-  orange: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700' }
+  'ecg-azul':  { bg: 'bg-ecg-azul',  hover: 'hover:opacity-90', icon: 'text-ecg-azul',  soft: 'bg-blue-50'  },
+  'ecg-rojo1': { bg: 'bg-ecg-rojo1', hover: 'hover:opacity-90', icon: 'text-ecg-rojo1', soft: 'bg-red-50'   },
+  'ecg-gris':  { bg: 'bg-ecg-negro', hover: 'hover:opacity-90', icon: 'text-ecg-negro', soft: 'bg-gray-100' },
 };
 
+const InfoRow = ({ icon, label, children }) => (
+  <div className="flex gap-3 items-start">
+    <div className="w-8 h-8 flex-shrink-0 bg-gray-50 rounded-lg flex items-center justify-center">
+      {icon}
+    </div>
+    <div className="min-w-0">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-0.5">{label}</p>
+      <div className="text-sm text-gray-700 leading-relaxed">{children}</div>
+    </div>
+  </div>
+);
+
 const ContactoSection = ({ company }) => {
-  const accent = accentColors[company.accentColor] || accentColors.blue;
+  const accent = accentColors[company.accentColor] || accentColors['ecg-azul'];
   const [form, setForm]       = useState({ nombre: '', correo: '', mensaje: '' });
   const [sending, setSending] = useState(false);
   const [sent, setSent]       = useState(false);
@@ -36,92 +46,104 @@ const ContactoSection = ({ company }) => {
   };
 
   return (
-    <div className="animate-slideUp">
-      <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
-        <div className="flex items-center mb-8">
-          <Mail className={`${accent.bg} text-white p-3 rounded-xl mr-4`} size={48} />
-          <h2 className="text-3xl md:text-4xl font-bold">Contáctanos</h2>
+    <div className="animate-slideUp space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 flex-shrink-0 ${accent.bg} text-white rounded-xl flex items-center justify-center shadow-md`}>
+          <Mail size={22} />
+        </div>
+        <div>
+          <p className="text-xs font-bold tracking-[0.2em] uppercase text-gray-400">Estamos aquí para ayudarte</p>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900">Contáctanos</h2>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+
+        {/* Columna izquierda: Info */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
+          <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Información de contacto</h3>
+
+          <InfoRow icon={<MapPin size={15} className="text-gray-400" />} label="Dirección">
+            <p>{company.direccion}</p>
+            {company.cobertura && (
+              <p className="text-gray-400 text-xs mt-1">Cobertura: {company.cobertura}</p>
+            )}
+          </InfoRow>
+
+          <InfoRow icon={<Phone size={15} className="text-gray-400" />} label="Teléfono y Correo">
+            <p>+{company.phone}</p>
+            <p className="text-gray-500">{company.email}</p>
+          </InfoRow>
+
+          <InfoRow icon={<Clock size={15} className="text-gray-400" />} label="Horario">
+            <p>Lunes a Viernes</p>
+            <p className="text-gray-500">08:00 am – 18:00 hrs</p>
+          </InfoRow>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Redes sociales</p>
+            <SocialMediaButtons socialMedia={company.socialMedia} variant="default" />
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12">
-          {/* Columna Izquierda: Información de contacto */}
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <MapPin size={20} className="text-gray-400" /> Dirección
-              </h3>
-              <p className="text-gray-600">{company.direccion}</p>
-              {company.cobertura && (
-                <p className="text-sm text-gray-500 mt-2">Cobertura: {company.cobertura}</p>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Phone size={20} className="text-gray-400" /> Teléfono y Correo
-              </h3>
-              <p className="text-gray-600">+{company.phone}</p>
-              <p className="text-gray-600">{company.email}</p>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-bold mb-4">Síguenos en nuestras redes</h3>
-              <SocialMediaButtons socialMedia={company.socialMedia} variant="default" />
-            </div>
-          </div>
-
-          {/* Columna Derecha: Formulario */}
+        {/* Columna derecha: Formulario */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           {sent ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-12">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Send size={28} className="text-green-600" />
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-10">
+              <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center">
+                <Send size={24} className="text-green-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800">¡Mensaje enviado!</h3>
-              <p className="text-gray-500">Nos pondremos en contacto contigo pronto.</p>
-              <button onClick={() => setSent(false)} className="text-sm text-gray-400 underline">Enviar otro mensaje</button>
+              <h3 className="text-lg font-black text-gray-800">¡Mensaje enviado!</h3>
+              <p className="text-gray-400 text-sm">Nos pondremos en contacto contigo pronto.</p>
+              <button onClick={() => setSent(false)} className="text-xs text-gray-400 underline underline-offset-2">
+                Enviar otro mensaje
+              </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 h-full flex flex-col">
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Envíanos un mensaje</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Nombre Completo</label>
                 <input
                   type="text"
                   required
                   value={form.nombre}
                   onChange={e => set('nombre', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-opacity-50 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none transition-all bg-gray-50 focus:bg-white"
                   placeholder="Tu nombre..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Correo Electrónico</label>
                 <input
                   type="email"
                   required
                   value={form.correo}
                   onChange={e => set('correo', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-opacity-50 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none transition-all bg-gray-50 focus:bg-white"
                   placeholder="tu@email.com"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+              <div className="flex-1 flex flex-col">
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Mensaje</label>
                 <textarea
                   rows="4"
                   required
                   value={form.mensaje}
                   onChange={e => set('mensaje', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-opacity-50 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none transition-all resize-none bg-gray-50 focus:bg-white flex-1"
                   placeholder="¿En qué podemos ayudarte?"
                 />
               </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {error && <p className="text-red-500 text-xs">{error}</p>}
               <button
                 type="submit"
                 disabled={sending}
-                className={`w-full py-4 rounded-xl text-white font-bold flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed ${accent.bg} ${accent.hover}`}
+                className={`w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-sm ${accent.bg} ${accent.hover}`}
               >
-                <Send size={20} />
+                <Send size={16} />
                 {sending ? 'Enviando...' : 'Enviar Mensaje'}
               </button>
             </form>

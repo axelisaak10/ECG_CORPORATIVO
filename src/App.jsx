@@ -11,6 +11,7 @@ import MiembrosSection from './components/sections/MiembrosSection';
 import PoliticasSection from './components/sections/PoliticasSection';
 import ContactoSection from './components/sections/ContactoSection';
 import MainPortal from './components/layout/MainPortal';
+import Footer from './components/layout/Footer';
 import AuthModal from './components/auth/AuthModal';
 import SeguimientoModal from './components/portal/SeguimientoModal';
 import AdminDashboard from './components/auth/AdminDashboard';
@@ -208,7 +209,7 @@ function EmpresaView({ currentUser, onLogin, onLogout }) {
         setActiveCompany={setActiveCompany}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="animate-fadeIn">
           {renderSection()}
         </div>
@@ -218,6 +219,8 @@ function EmpresaView({ currentUser, onLogin, onLogout }) {
         phone={company.phone}
         companyName={company.name}
       />
+
+      <Footer company={company} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={handleLogin} />}
     </div>
