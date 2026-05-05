@@ -72,6 +72,31 @@ const MainPortal = ({ companies, onSelectCompany }) => {
         })}
       </div>
 
+      {/* Video corporativo */}
+      <div className="mt-20 max-w-4xl w-full animate-slideUp">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold tracking-[0.25em] uppercase text-slate-400 mb-2">Conoce más sobre nosotros</p>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
+            Video <span className="text-ecg-azul">Corporativo</span>
+          </h2>
+        </div>
+
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-100 bg-slate-900">
+          {/* Banda de color superior */}
+          <div className="h-1.5 bg-gradient-to-r from-slate-400 via-ecg-azul to-ecg-rojo1 w-full" />
+
+          <video
+            className="w-full aspect-video object-cover"
+            controls
+            playsInline
+            preload="metadata"
+          >
+            <source src="/assets/video.mp4" type="video/mp4" />
+            Tu navegador no soporta la reproducción de video.
+          </video>
+        </div>
+      </div>
+
       <p className="mt-16 text-slate-300 font-bold text-xs uppercase tracking-[0.3em]">
         © {new Date().getFullYear()} ECG Corporativo Industrial
       </p>
