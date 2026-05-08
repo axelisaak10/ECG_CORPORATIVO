@@ -19,11 +19,31 @@
               'ecg-gris': '#a6a6a6',
               'ecg-gris-claro': '#d1d0d1',
               'ecg-blanco': '#ffffff'
-            }
+            },
+            animation: {
+              'fadeIn': 'fadeIn 0.3s ease-out',
+              'slideUp': 'slideUp 0.4s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+            },
           }
         }
       }
     </script>
+    <style>
+      @keyframes slideUpModal {
+        0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

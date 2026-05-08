@@ -1,6 +1,78 @@
-import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Eye } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronRight, ChevronLeft, Eye, Play, Volume2, VolumeX } from 'lucide-react';
 import ImageGalleryModal from '../shared/ImageGalleryModal';
+
+/**
+ * Detecta si una URL es un video basándose en extensión o si tiene type: 'video'
+ */
+const isVideoItem = (item) => {
+  if (item.type === 'video') return true;
+  const url = item.url || '';
+  return /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(url);
+};
+
+/**
+ * Componente para renderizar un item de medios (imagen o video)
+ */
+const MediaItem = ({ item, className = '', autoPlay = false, muted = true, loop = true, controls = false }) => {
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(muted);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (autoPlay) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [autoPlay]);
+
+  if (isVideoItem(item)) {
+    return (
+      <div className="relative w-full h-full">
+        <video
+          ref={videoRef}
+          src={item.url}
+          className={`w-full h-full object-cover ${className}`}
+          autoPlay={autoPlay}
+          muted={isMuted}
+          loop={loop}
+          playsInline
+          controls={controls}
+          poster={item.poster || undefined}
+        />
+        {/* Botón de mute/unmute */}
+        {!controls && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMuted(!isMuted);
+              if (videoRef.current) videoRef.current.muted = !isMuted;
+            }}
+            className="absolute bottom-4 left-4 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-300 z-10"
+            aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        )}
+        {/* Badge de video */}
+        <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 z-10">
+          <Play size={10} fill="white" />
+          Video
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={item.url}
+      alt={item.caption || ''}
+      className={`w-full h-full object-cover ${className}`}
+    />
+  );
+};
 
 const InicioSection = ({ company }) => {
   const [selectedFeature, setSelectedFeature] = useState(null);
@@ -10,11 +82,16 @@ const InicioSection = ({ company }) => {
 
   useEffect(() => {
     if (slides.length === 0) return;
+    // Si el slide actual es un video, pausa el auto-advance (deja que el video corra)
+    const currentItem = slides[currentSlide];
+    const isVideo = isVideoItem(currentItem);
+    if (isVideo) return; // No auto-avanzar para videos
+
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, currentSlide]);
 
   useEffect(() => {
     setCurrentSlide(0);
@@ -26,15 +103,20 @@ const InicioSection = ({ company }) => {
   return (
     <div className="space-y-8 animate-slideUp">
 
-      {/* Carrusel */}
+      {/* Carrusel con soporte para imágenes y videos */}
       {slides.length > 0 && (
         <div className="relative rounded-2xl overflow-hidden shadow-xl h-72 md:h-[440px] group">
           {slides.map((slide, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
-              <img src={slide.url} alt={slide.caption} className="w-full h-full object-cover" />
+              <MediaItem
+                item={slide}
+                autoPlay={index === currentSlide}
+                muted={true}
+                loop={true}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
                 <p className="text-xs font-bold tracking-[0.2em] uppercase text-white/60 mb-1">{company.shortName}</p>
@@ -60,11 +142,15 @@ const InicioSection = ({ company }) => {
           </button>
 
           <div className="absolute bottom-3 right-6 flex space-x-1.5">
-            {slides.map((_, index) => (
+            {slides.map((slide, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${index === currentSlide ? 'bg-white w-6' : 'w-1.5 bg-white/40 hover:bg-white/70'}`}
+                className={`h-1.5 rounded-full transition-all duration-300 flex items-center gap-1 ${
+                  index === currentSlide 
+                    ? 'bg-white w-6' 
+                    : 'w-1.5 bg-white/40 hover:bg-white/70'
+                }`}
                 aria-label={`Ir a slide ${index + 1}`}
               />
             ))}

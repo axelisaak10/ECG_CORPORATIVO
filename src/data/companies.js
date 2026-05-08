@@ -27,11 +27,15 @@ export const companiesData = [
     },
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
+    // Puedes agregar imágenes (.png, .jpg) o videos (.mp4, .webm, .mov)
+    // Para imágenes: { url: '/assets/fotos/mi-foto.jpg', caption: 'Descripción' }
+    // Para videos:   { url: '/assets/videos/mi-video.mp4', caption: 'Descripción', type: 'video' }
+    //                También puedes agregar poster: '/assets/fotos/poster.jpg' para la miniatura del video
     carouselImages: [
-      { url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1200', caption: 'Ingeniería Industrial' },
-      { url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200', caption: 'Instalaciones Eléctricas' },
-      { url: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1200', caption: 'Equipos Industriales' },
-      { url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200', caption: 'Mantenimiento Especializado' }
+      { url: '/assets/Centro/imagenecg1.jpeg', caption: 'Ingeniería Industrial' },
+      { url: '/assets/Centro/videoecg1.mp4', caption: 'Instalaciones Eléctricas', type: 'video' },
+      { url: '/assets/Centro/imagenecg2.jpeg', caption: 'Equipos Industriales' },
+      { url: '/assets/Centro/imagenecg3.jpeg', caption: 'Mantenimiento Especializado' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
@@ -79,10 +83,33 @@ export const companiesData = [
     ],
 
     // ── Sección Miembros ──────────────────────────────────────────────────────
+    // Foto del miembro: coloca la imagen en /public/assets/miembros/ y pon la ruta aquí
+    // Formatos soportados: .png, .jpg, .jpeg, .webp
+    // bio: Descripción profesional del miembro (aparece en la tarjeta de presentación)
+    // email, phone, linkedin: opcionales, aparecen en la tarjeta de presentación al hacer clic
     team: [
-      { name: 'Ing. Juan Erasmo Cuaya G.', role: 'Fundador y Director', specialty: 'Ingeniería Eléctrica Industrial' },
-      { name: 'Gerencia de Ingeniería', role: 'Equipo Técnico', specialty: 'Proyectos Industriales y Subestaciones' },
-      { name: 'Equipo de Mantenimiento', role: 'Técnicos Especializados', specialty: 'Mantenimiento Preventivo y Correctivo' }
+      {
+        name: 'Ing. Juan Erasmo Cuaya G.',
+        role: 'Fundador y Director',
+        specialty: 'Ingeniería Eléctrica Industrial',
+        image: '/assets/miembros/erasmo_cuaya.jpeg',
+        bio: 'Ingeniero con más de 20 años de experiencia en mantenimiento eléctrico, dictaminación, gestión y capacitación. Fundador de ECG Corporativo y líder de proyectos de alto impacto en ingeniería eléctrica.',
+        email: 'centroecg@ecgcorporativo.com'
+      },
+      {
+        name: 'Gerencia de Ingeniería',
+        role: 'Equipo Técnico',
+        specialty: 'Proyectos Industriales y Subestaciones',
+        image: '',
+        bio: 'Equipo especializado en la gestión y ejecución de proyectos industriales, diseño de subestaciones y supervisión técnica de instalaciones eléctricas.'
+      },
+      {
+        name: 'Equipo de Mantenimiento',
+        role: 'Técnicos Especializados',
+        specialty: 'Mantenimiento Preventivo y Correctivo',
+        image: '',
+        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
+      }
     ],
 
     // ── Sección Políticas ──────────────────────────────────────────────────────
@@ -190,9 +217,28 @@ export const companiesData = [
 
     // ── Sección Miembros ──────────────────────────────────────────────────────
     team: [
-      { name: 'Ing. Juan Erasmo Cuaya G.', role: 'Director General', specialty: 'Sustentabilidad y Eficiencia Energética' },
-      { name: 'Equipo de Ingeniería', role: 'Ingenieros Especialistas', specialty: 'Sistemas Eléctricos y Energía Renovable' },
-      { name: 'Equipo de Proyectos', role: 'Gestores de Proyectos', specialty: 'Planeación y Control de Proyectos' }
+      {
+        name: 'Ing. Juan Erasmo Cuaya G.',
+        role: 'Director General',
+        specialty: 'Sustentabilidad y Eficiencia Energética',
+        image: '/assets/miembros/erasmo_cuaya.jpeg',
+        bio: 'Director General con amplia experiencia en dictaminación, gestoría y cumplimiento normativo. Lidera proyectos de alto impacto en regularización y certificación.',
+        email: 'dictaminacion@ecgcorporativo.com'
+      },
+      {
+        name: 'Equipo de Ingeniería',
+        role: 'Ingenieros Especialistas',
+        specialty: 'Sistemas Eléctricos y Energía Renovable',
+        image: '',
+        bio: 'Especialistas en sistemas eléctricos, energía renovable y cumplimiento normativo. Responsables del análisis técnico y la evaluación de instalaciones.'
+      },
+      {
+        name: 'Equipo de Proyectos',
+        role: 'Gestores de Proyectos',
+        specialty: 'Planeación y Control de Proyectos',
+        image: '',
+        bio: 'Equipo dedicado a la gestión integral de trámites y proyectos, garantizando cumplimiento normativo y tiempos óptimos de entrega.'
+      }
     ],
 
     // ── Sección Políticas ──────────────────────────────────────────────────────
@@ -290,9 +336,28 @@ export const companiesData = [
 
     // ── Sección Miembros ──────────────────────────────────────────────────────
     team: [
-      { name: 'Ing. Juan Erasmo Cuaya G.', role: 'Director General', specialty: 'Ingeniería Industrial y Capacitación' },
-      { name: 'Equipo de Consultores', role: 'Especialistas en Normas', specialty: 'STPS, SEMARNAT, ISO 14001' },
-      { name: 'Equipo de Instructores', role: 'Capacitadores Certificados', specialty: 'Desarrollo Profesional y Liderazgo' }
+      {
+        name: 'Ing. Juan Erasmo Cuaya G.',
+        role: 'Director General',
+        specialty: 'Ingeniería Industrial y Capacitación',
+        image: '/assets/miembros/erasmo_cuaya.jpeg',
+        bio: 'Director y fundador de CETACHI ECG. Capacitador reconocido por la STPS con más de 20 años de experiencia en formación técnica industrial.',
+        email: 'formacion@ecgcorporativo.com'
+      },
+      {
+        name: 'Equipo de Consultores',
+        role: 'Especialistas en Normas',
+        specialty: 'STPS, SEMARNAT, ISO 14001',
+        image: '',
+        bio: 'Consultores especializados en normatividad vigente, certificaciones y estándares internacionales aplicados a la industria.'
+      },
+      {
+        name: 'Equipo de Instructores',
+        role: 'Capacitadores Certificados',
+        specialty: 'Desarrollo Profesional y Liderazgo',
+        image: '',
+        bio: 'Instructores certificados ante la STPS, especializados en cursos teórico-prácticos de energía y mantenimiento industrial.'
+      }
     ],
 
     // ── Sección Políticas ──────────────────────────────────────────────────────
