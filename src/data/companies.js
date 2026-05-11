@@ -286,7 +286,7 @@ export const companiesData = [
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
       { url: '/public/assets/CETACHI/CETA1 (1).jpeg', caption: 'Capacitación Profesional' },
-      { url: '/public/assets/CETACHI/VIDEOCETA1 (1).mp4', caption: 'Trabajo en Equipo', type: 'video' },
+      { url: '/public/assets/CETACHI/CETA1 (2).jpeg', caption: 'Trabajo en Equipo' },
       { url: '/public/assets/CETACHI/CETA1 (3).jpeg', caption: 'Desarrollo Organizacional' },
       { url: '/public/assets/CETACHI/CETA1 (4).jpeg', caption: 'Liderazgo Empresarial' }
     ],
