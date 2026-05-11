@@ -161,10 +161,10 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
-      { url: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200', caption: 'Energía Sostenible' },
-      { url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1200', caption: 'Paneles Solares' },
-      { url: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=1200', caption: 'Eficiencia Energética' },
-      { url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200', caption: 'Sustentabilidad Industrial' }
+      { url: '/public/assets/Dictaminacion/Dicta1.jpeg', caption: 'Dictaminación' },
+      { url: '/public/assets/Dictaminacion/Dicta2.jpeg', caption: 'Gestoría' },
+      { url: '/public/assets/Dictaminacion/Dicta3.jpeg', caption: 'Cumplimiento Normativo' },
+      { url: '/public/assets/Dictaminacion/Dicta4.jpeg', caption: 'Sustentabilidad Industrial' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
@@ -285,10 +285,10 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
-      { url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200', caption: 'Capacitación Profesional' },
-      { url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200', caption: 'Trabajo en Equipo' },
-      { url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200', caption: 'Desarrollo Organizacional' },
-      { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200', caption: 'Liderazgo Empresarial' }
+      { url: '/public/assets/CETACHI/CETA1 (1).jpeg', caption: 'Capacitación Profesional' },
+      { url: '/public/assets/CETACHI/VIDEOCETA1 (1).mp4', caption: 'Trabajo en Equipo', type: 'video' },
+      { url: '/public/assets/CETACHI/CETA1 (3).jpeg', caption: 'Desarrollo Organizacional' },
+      { url: '/public/assets/CETACHI/CETA1 (4).jpeg', caption: 'Liderazgo Empresarial' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
