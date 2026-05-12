@@ -85,15 +85,14 @@ const MainPortal = ({ companies, onSelectCompany }) => {
           {/* Banda de color superior */}
           <div className="h-1.5 bg-gradient-to-r from-slate-400 via-ecg-azul to-ecg-rojo1 w-full" />
 
-          <video
-            className="w-full aspect-video object-cover"
-            controls
-            playsInline
-            preload="metadata"
-          >
-            <source src="/assets/video.mp4" type="video/mp4" />
-            Tu navegador no soporta la reproducción de video.
-          </video>
+          <iframe
+            className="w-full aspect-video"
+            src="https://www.youtube-nocookie.com/embed/9nbg3xo-TgA"
+            title="Video Corporativo ECG"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
         </div>
       </div>
 

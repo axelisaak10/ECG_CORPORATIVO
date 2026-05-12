@@ -285,8 +285,8 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
-      { url: '/public/assets/CETACHI/CETA1 (1).jpeg', caption: 'Capacitación Profesional' },
-      { url: '/public/assets/CETACHI/CETA1 (2).jpeg', caption: 'Trabajo en Equipo' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_2_bgnde2.jpg', caption: 'Capacitación Profesional' },
+      { url: 'https://res-console.cloudinary.com/djraiiuyg/thumbnails/v1/image/upload/v1778601599/Q0VUQTFfNF93emhua3I=/drilldown', caption: 'Trabajo en Equipo' },
       { url: '/public/assets/CETACHI/CETA1 (3).jpeg', caption: 'Desarrollo Organizacional' },
       { url: '/public/assets/CETACHI/CETA1 (4).jpeg', caption: 'Liderazgo Empresarial' }
     ],
