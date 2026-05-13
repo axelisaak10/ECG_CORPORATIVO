@@ -34,7 +34,7 @@ export const companiesData = [
     carouselImages: [
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg1_pmumwd.jpg', caption: 'Ingeniería Industrial' },
       { url: 'https://res.cloudinary.com/djraiiuyg/video/upload/v1778694013/videoecg1_wqwrdv.mp4', caption: 'Instalaciones Eléctricas', type: 'video' },
-      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg1_pmumwd.jpg', caption: 'Equipos Industriales' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg5_cfaurj.jpg', caption: 'Equipos Industriales' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694012/imagenecg2_fedasr.jpg', caption: 'Mantenimiento Especializado' }
     ],
 
@@ -285,10 +285,10 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
-      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_2_bgnde2.jpg', caption: 'Capacitación Profesional' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778698506/WhatsApp_Image_2026-05-13_at_12.52.27_PM_c2oejz.jpg', caption: 'Capacitación Profesional' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_4_wzhnkr.jpg', caption: 'Trabajo en Equipo' },
-      { url: '/public/assets/CETACHI/CETA1 (3).jpeg', caption: 'Desarrollo Organizacional' },
-      { url: '/public/assets/CETACHI/CETA1 (4).jpeg', caption: 'Liderazgo Empresarial' }
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_2_bgnde2.jpg', caption: 'Desarrollo Organizacional' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_1_r08ezg.jpg', caption: 'Liderazgo Empresarial' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
