@@ -97,8 +97,8 @@ export const companiesData = [
         email: 'centroecg@ecgcorporativo.com'
       },
       {
-        name: 'Gerencia de Ingeniería',
-        role: 'Equipo Técnico',
+        name: 'MARÍA DE RAYO MANCERA',
+        role: 'Recursos humanos y finanzas ',
         specialty: 'Proyectos Industriales y Subestaciones',
         image: '',
         bio: 'Equipo especializado en la gestión y ejecución de proyectos industriales, diseño de subestaciones y supervisión técnica de instalaciones eléctricas.'
@@ -107,7 +107,7 @@ export const companiesData = [
         name: 'Equipo de Mantenimiento',
         role: 'Técnicos Especializados',
         specialty: 'Mantenimiento Preventivo y Correctivo',
-        image: '',
+        image: '/assets/miembros/maria_rayo.jpeg',
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       }
     ],
