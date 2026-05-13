@@ -32,10 +32,10 @@ export const companiesData = [
     // Para videos:   { url: '/assets/videos/mi-video.mp4', caption: 'Descripción', type: 'video' }
     //                También puedes agregar poster: '/assets/fotos/poster.jpg' para la miniatura del video
     carouselImages: [
-      { url: '/assets/Centro/imagenecg1.jpeg', caption: 'Ingeniería Industrial' },
-      { url: '/assets/Centro/videoecg1.mp4', caption: 'Instalaciones Eléctricas', type: 'video' },
-      { url: '/assets/Centro/imagenecg2.jpeg', caption: 'Equipos Industriales' },
-      { url: '/assets/Centro/imagenecg3.jpeg', caption: 'Mantenimiento Especializado' }
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg1_pmumwd.jpg', caption: 'Ingeniería Industrial' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/video/upload/v1778694013/videoecg1_wqwrdv.mp4', caption: 'Instalaciones Eléctricas', type: 'video' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg1_pmumwd.jpg', caption: 'Equipos Industriales' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694012/imagenecg2_fedasr.jpg', caption: 'Mantenimiento Especializado' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
@@ -161,10 +161,10 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
-      { url: '/public/assets/Dictaminacion/Dicta1.jpeg', caption: 'Dictaminación' },
-      { url: '/public/assets/Dictaminacion/Dicta2.jpeg', caption: 'Gestoría' },
-      { url: '/public/assets/Dictaminacion/Dicta3.jpeg', caption: 'Cumplimiento Normativo' },
-      { url: '/public/assets/Dictaminacion/Dicta4.jpeg', caption: 'Sustentabilidad Industrial' }
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta5_i82mmm.jpg', caption: 'Dictaminación' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta3_nxnfwi.jpg', caption: 'Gestoría' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta1_ui3iy7.jpg', caption: 'Cumplimiento Normativo' },
+      { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta6_jzlsmz.jpg', caption: 'Sustentabilidad Industrial' }
     ],
 
     // ── Sección Inicio — Features ─────────────────────────────────────────────
