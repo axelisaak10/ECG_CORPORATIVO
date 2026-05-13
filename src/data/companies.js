@@ -45,8 +45,8 @@ export const companiesData = [
         desc: 'Brindar soluciones integrales en ingeniería eléctrica mediante servicios de mantenimiento, construcción e infraestructura eléctrica, desarrollo de planos generales, diseño y ejecución de subestaciones, así como análisis energéticos especializados. Nos comprometemos a ofrecer calidad, seguridad y eficiencia en cada proyecto, garantizando confiabilidad operativa y cumplimiento normativo para nuestros clientes industriales, comerciales y públicos.',
         images: [
           { url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800', caption: 'Proyectos Industriales' },
-          { url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800', caption: 'Instalaciones Eléctricas' },
-          { url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800', caption: 'Mantenimiento Especializado' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/video/upload/v1778694013/videoecg1_wqwrdv.mp4', caption: 'Instalaciones Eléctricas' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778698506/WhatsApp_Image_2026-05-13_at_12.51.07_PM_h0e6df.jpg', caption: 'Mantenimiento Especializado' }
         ]
       },
       {
