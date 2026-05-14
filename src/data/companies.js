@@ -99,15 +99,19 @@ export const companiesData = [
       {
         name: 'MARÍA DE RAYO MANCERA',
         role: 'Recursos humanos y finanzas ',
-        specialty: 'Proyectos Industriales y Subestaciones',
         image: '/assets/miembros/maria_rayo.jpeg',
         bio: 'Equipo especializado en la gestión y ejecución de proyectos industriales, diseño de subestaciones y supervisión técnica de instalaciones eléctricas.'
       },
       {
-        name: 'Equipo de Mantenimiento',
-        role: 'Técnicos Especializados',
-        specialty: 'Mantenimiento Preventivo y Correctivo',
-        image: '',
+        name: 'ADELFO MEJIA GUILAR',
+        role: 'Jefe de operaciones',
+        image: '/assets/miembros/adelfo.jpeg',
+        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
+      },
+      {
+        name: 'CESAR ERNESTO GUERRA MENDOZA',
+        role: 'Jefe de diseño',
+        image: '/assets/miembros/cesar_guerra.jpeg',
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       }
     ],
