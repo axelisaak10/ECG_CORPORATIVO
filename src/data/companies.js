@@ -111,7 +111,15 @@ export const companiesData = [
       {
         name: 'CESAR ERNESTO GUERRA MENDOZA',
         role: 'Jefe de diseño',
+        specialty: 'Ingeniero Industrial',
         image: '/assets/miembros/cesar_guerra.jpeg',
+        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
+      },
+      {
+        name: 'AXEL ISAAC RODRÍGUEZ',
+        role: 'Desarrrollo de software e ingenieria',
+        specialty: 'Ingeniero en desarrollo y gestión de software',
+        image: '/assets/miembros/axel.jpeg',
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       }
     ],
