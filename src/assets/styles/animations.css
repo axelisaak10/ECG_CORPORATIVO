@@ -178,8 +178,7 @@
   animation: shimmer 2s infinite linear;
 }
 
-/* GPU-accelerated hint for animated elements */
-.animate-fadeIn,
+/* GPU-accelerated hint — NOT on fadeIn to avoid containing-block issues */
 .animate-slideUp,
 .animate-slideDown,
 .animate-slideInLeft,

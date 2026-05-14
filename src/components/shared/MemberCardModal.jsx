@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Mail, Phone, Linkedin, Briefcase, Award, ChevronRight } from 'lucide-react';
 
 const MemberCardModal = ({ member, companyColor, accentBg, onClose }) => {
@@ -8,13 +9,13 @@ const MemberCardModal = ({ member, companyColor, accentBg, onClose }) => {
 
   const hasImage = member.image && member.image.trim() !== '';
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative animate-slideUp"
+        className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative animate-slideUp"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
       >
@@ -78,7 +79,7 @@ const MemberCardModal = ({ member, companyColor, accentBg, onClose }) => {
           {/* Bio */}
           {member.bio && (
             <div className="bg-gray-50 rounded-2xl p-4 mb-5 text-left">
-              <p className="text-gray-600 text-sm leading-relaxed">{member.bio}</p>
+              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{member.bio}</p>
             </div>
           )}
 
@@ -125,7 +126,8 @@ const MemberCardModal = ({ member, companyColor, accentBg, onClose }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

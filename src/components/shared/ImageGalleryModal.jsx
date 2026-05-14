@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Play } from 'lucide-react';
 
 /**
@@ -11,9 +12,9 @@ const isVideoItem = (item) => {
 };
 
 const ImageGalleryModal = ({ feature, companyColor, onClose }) => {
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
@@ -57,7 +58,7 @@ const ImageGalleryModal = ({ feature, companyColor, onClose }) => {
                         poster={item.poster || undefined}
                       />
                       {/* Badge de video */}
-                      <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 pointer-events-none">
+                      <div className="absolute top-3 left-3 bg-black/50 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 pointer-events-none">
                         <Play size={10} fill="white" />
                         Video
                       </div>
@@ -87,7 +88,8 @@ const ImageGalleryModal = ({ feature, companyColor, onClose }) => {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

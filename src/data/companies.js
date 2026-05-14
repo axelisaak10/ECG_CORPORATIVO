@@ -120,7 +120,7 @@ export const companiesData = [
         role: 'Desarrollo de software e ingeniería',
         specialty: 'Ingeniero en desarrollo y gestión de software',
         image: '/assets/miembros/axel.jpeg',
-        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
+        bio: 'Ingeniero en Desarrollo y Gestión de Software enfocado en crear soluciones digitales que equilibran la potencia técnica con la eficiencia operativa. Mi trabajo consiste en transformar requerimientos complejos en aplicaciones escalables, gestionando todo el ciclo de vida del producto: desde la arquitectura Fullstack y la optimización de datos, hasta el despliegue y la seguridad.\n\nLo que hago:\n• Desarrollo Fullstack: Construcción de interfaces dinámicas y backends robustos utilizando tecnologías modernas como React, Angular, Node.js y Spring Boot.\n• Gestión Estratégica: Dirección de proyectos bajo estándares internacionales, asegurando que cada entrega cumpla con plazos, calidad y normativas de seguridad (OWASP/NIST).\n• Soluciones Integrales: Diseño de bases de datos optimizadas e integración de tecnologías emergentes como IoT para conectar el mundo físico con el digital.'
       }
     ],
 
