@@ -30,7 +30,7 @@ const MainPortal = ({ companies, onSelectCompany }) => {
             <button
               key={company.id}
               onClick={() => onSelectCompany(idx)}
-              className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-slate-100 overflow-hidden text-left hover:-translate-y-2 flex flex-col h-full"
+              className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-[box-shadow,transform] duration-200 border border-slate-100 overflow-hidden text-left hover:-translate-y-2 flex flex-col h-full"
             >
               {/* Banda de color superior */}
               <div className={`h-1.5 bg-gradient-to-r ${company.color} w-full`} />

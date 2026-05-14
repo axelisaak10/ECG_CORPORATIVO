@@ -5,8 +5,8 @@ const Header = ({ company, scrolled, menuOpen, setMenuOpen }) => {
   const navigate = useNavigate();
 
   return (
-    <header className={`fixed top-0 w-full z-[100] transition-all duration-300 ${
-      scrolled ? 'bg-white shadow-lg h-20' : 'bg-white/90 backdrop-blur-md h-24'
+    <header className={`fixed top-0 w-full z-[100] transition-[background-color,box-shadow,height] duration-150 ${
+      scrolled ? 'bg-white shadow-lg h-20' : 'bg-white h-24'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex justify-between items-center">
 

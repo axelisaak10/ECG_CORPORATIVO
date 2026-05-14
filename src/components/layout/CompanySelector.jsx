@@ -7,7 +7,7 @@ const CompanySelector = ({ companies, activeCompany, setActiveCompany }) => {
             <button
               key={company.id}
               onClick={() => setActiveCompany(idx)}
-              className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all duration-300 text-sm text-center ${
+              className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-[background-color,color,box-shadow] duration-150 text-sm text-center ${
                 activeCompany === idx
                   ? `bg-gradient-to-r ${company.color} text-white shadow-lg`
                   : 'bg-white text-gray-600 hover:shadow-md hover:bg-gray-50'

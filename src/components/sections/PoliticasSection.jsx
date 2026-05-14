@@ -31,7 +31,7 @@ const PoliticasSection = ({ company }) => {
         {politicas.map((politica, idx) => (
           <div
             key={idx}
-            className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 flex gap-5 items-start border-l-4 ${accent.bar}`}
+            className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-[box-shadow] duration-200 flex gap-5 items-start border-l-4 ${accent.bar}`}
           >
             {/* Número */}
             <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${accent.num} flex items-center justify-center font-black text-xs`}>

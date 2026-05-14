@@ -30,14 +30,14 @@ const HamburgerMenu = ({
       {/* ── Backdrop ── */}
       <div
         onClick={() => setMenuOpen(false)}
-        className={`absolute inset-0 transition-all duration-500 ${
-          menuOpen ? 'bg-black/60 backdrop-blur-md opacity-100' : 'opacity-0'
+        className={`absolute inset-0 transition-all duration-280 ${
+          menuOpen ? 'bg-black/60 opacity-100' : 'opacity-0'
         }`}
       />
 
       {/* ── Panel ── */}
       <aside
-        className={`absolute right-0 top-0 bottom-0 w-80 flex flex-col bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-500 ease-[cubic-bezier(.77,0,.175,1)] ${
+        className={`absolute right-0 top-0 bottom-0 w-80 flex flex-col bg-white shadow-2xl transform transition-transform duration-280 ease-out ${
           menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ borderLeft: '1px solid rgba(0,0,0,0.06)' }}
@@ -125,8 +125,8 @@ const HamburgerMenu = ({
                   style={{
                     transitionDelay: menuOpen ? `${index * 45}ms` : '0ms',
                   }}
-                  className={`group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 ${
-                    menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
+                  className={`group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-[transform,opacity,background-color] duration-200 ${
+                    menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
                   } ${
                     isActive
                       ? `${accent.pill} text-white shadow-lg ${accent.glow}`

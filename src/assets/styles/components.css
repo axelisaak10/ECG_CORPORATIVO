@@ -3,7 +3,7 @@
   top: 0;
   width: 100%;
   z-index: 50;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .header.scrolled {
@@ -21,7 +21,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   cursor: pointer;
 }
 
@@ -36,7 +36,7 @@
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .card:hover {
@@ -50,7 +50,7 @@
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   border: 1px solid #d1d5db;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .input-field:focus {
@@ -96,7 +96,7 @@
 
 /* Efectos hover */
 .hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .hover-lift:hover {
@@ -105,7 +105,7 @@
 }
 
 .hover-scale {
-  transition: transform 0.3s ease;
+  transition: transform 0.15s ease;
 }
 
 .hover-scale:hover {
@@ -128,7 +128,7 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
   transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
+  transition: width 0.3s, height 0.3s;
 }
 
 .ripple:active::after {
@@ -144,7 +144,7 @@
   
   .animate-slideUp,
   .animate-slideDown {
-    animation-duration: 0.4s;
+    animation-duration: 0.2s;
   }
 }   
 
@@ -228,12 +228,12 @@ body {
 
 /* Animación de transición suave */
 .carousel-transition {
-  transition: transform 0.5s ease-in-out;
+  transition: transform 0.3s ease-out;
 }
 
 /* Efecto de difuminado en transiciones */
 .carousel-fade {
-  animation: carouselFade 1s ease-in-out;
+  animation: carouselFade 0.4s ease-out;
 }
 
 @keyframes carouselFade {
@@ -249,7 +249,7 @@ body {
 
 /* Hover en controles del carrusel */
 .carousel-control {
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .carousel-control:hover {
@@ -258,7 +258,7 @@ body {
 
 /* Indicadores (dots) activos */
 .carousel-dot {
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .carousel-dot.active {
@@ -272,7 +272,7 @@ body {
 
 /* Animación de entrada para el texto */
 .carousel-text-animate {
-  animation: slideInFromBottom 0.8s ease-out;
+  animation: slideInFromBottom 0.3s ease-out;
 }
 
 @keyframes slideInFromBottom {

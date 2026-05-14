@@ -50,7 +50,7 @@ const MediaItem = ({ item, className = '', autoPlay = false, muted = true, loop 
               setIsMuted(!isMuted);
               if (videoRef.current) videoRef.current.muted = !isMuted;
             }}
-            className="absolute bottom-4 left-4 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-300 z-10"
+            className="absolute bottom-4 left-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-[background-color] duration-150 z-10"
             aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
           >
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -109,7 +109,7 @@ const InicioSection = ({ company }) => {
           {slides.map((slide, index) => (
             <div
               key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
               <MediaItem
                 item={slide}
@@ -128,14 +128,14 @@ const InicioSection = ({ company }) => {
 
           <button
             onClick={prevSlide}
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300"
+            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200"
             aria-label="Anterior"
           >
             <ChevronLeft size={20} />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-[opacity,background-color] duration-200"
             aria-label="Siguiente"
           >
             <ChevronRight size={20} />
@@ -146,7 +146,7 @@ const InicioSection = ({ company }) => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`h-1.5 rounded-full transition-all duration-300 flex items-center gap-1 ${
+                className={`h-1.5 rounded-full transition-all duration-200 flex items-center gap-1 ${
                   index === currentSlide 
                     ? 'bg-white w-6' 
                     : 'w-1.5 bg-white/40 hover:bg-white/70'
@@ -177,7 +177,7 @@ const InicioSection = ({ company }) => {
               <button
                 key={i}
                 onClick={() => setSelectedFeature(i)}
-                className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg border border-gray-100 hover:border-gray-200 transition-all duration-300 text-left flex flex-col h-full"
+                className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg border border-gray-100 hover:border-gray-200 transition-[box-shadow,border-color] duration-200 text-left flex flex-col h-full"
               >
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${company.color} mb-4 flex items-center justify-center flex-shrink-0`}>
                   <ChevronRight className="text-white" size={18} />

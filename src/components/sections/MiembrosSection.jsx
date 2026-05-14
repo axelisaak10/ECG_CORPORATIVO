@@ -44,23 +44,23 @@ const MiembrosSection = ({ company }) => {
             <button
               key={idx}
               onClick={() => setSelectedMember(member)}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1 flex flex-col text-left group cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-[box-shadow,transform] duration-200 overflow-hidden border border-gray-100 hover:-translate-y-1 flex flex-col text-left group cursor-pointer"
             >
               {/* Barra color */}
-              <div className={`h-1.5 bg-gradient-to-r ${company.color} group-hover:h-2 transition-all duration-300`} />
+              <div className={`h-1.5 bg-gradient-to-r ${company.color} group-hover:h-2 transition-[height] duration-200`} />
 
               <div className="p-6 flex flex-col items-center text-center flex-1">
                 {/* Avatar / Foto */}
                 {hasImage ? (
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-100 shadow-md mb-4 group-hover:shadow-lg group-hover:border-gray-200 transition-all duration-300">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-100 shadow-md mb-4 group-hover:shadow-lg transition-[box-shadow] duration-200">
                     <img
                       src={member.image}
                       alt={member.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                 ) : (
-                  <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${company.color} flex items-center justify-center text-white text-2xl font-black shadow-md mb-4 group-hover:shadow-lg group-hover:scale-105 transition-all duration-300`}>
+                  <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${company.color} flex items-center justify-center text-white text-2xl font-black shadow-md mb-4 group-hover:shadow-lg group-hover:scale-105 transition-[box-shadow,transform] duration-200`}>
                     {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                   </div>
                 )}

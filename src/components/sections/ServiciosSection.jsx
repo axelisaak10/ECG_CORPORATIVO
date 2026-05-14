@@ -30,7 +30,7 @@ const ServiciosSection = ({ company }) => {
         {company.services?.map((service, idx) => (
           <div
             key={idx}
-            className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-gray-100 hover:border-gray-200 transition-all duration-300 flex gap-4 items-start"
+            className="group bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-gray-100 hover:border-gray-200 transition-[box-shadow,border-color] duration-200 flex gap-4 items-start"
           >
             {/* Número */}
             <div className={`flex-shrink-0 w-9 h-9 rounded-xl ${accent.bg} flex items-center justify-center text-white font-black text-xs shadow-sm`}>

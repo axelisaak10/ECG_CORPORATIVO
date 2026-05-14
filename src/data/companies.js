@@ -11,7 +11,7 @@ export const companiesData = [
     shortName: 'Ingeniería',
     // Logo: coloca tu imagen en /public/assets/logos/ y cambia el nombre aquí
     logo: '/assets/logos/centro.png',
-    slogan: '¡TU ÉXITO COMIENZA CON UNA INGENIERIA BIEN EJECUTADA!',
+    slogan: '¡TU ÉXITO COMIENZA CON UNA INGENIERÍA BIEN EJECUTADA!',
     color: 'from-ecg-gris to-ecg-gris-claro',
     accentColor: 'ecg-gris',
 
@@ -103,7 +103,7 @@ export const companiesData = [
         bio: 'Equipo especializado en la gestión y ejecución de proyectos industriales, diseño de subestaciones y supervisión técnica de instalaciones eléctricas.'
       },
       {
-        name: 'ADELFO MEJIA GUILAR',
+        name: 'ADELFO MEJÍA AGUILAR',
         role: 'Jefe de operaciones',
         image: '/assets/miembros/adelfo.jpeg',
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
@@ -117,7 +117,7 @@ export const companiesData = [
       },
       {
         name: 'AXEL ISAAC RODRÍGUEZ',
-        role: 'Desarrrollo de software e ingenieria',
+        role: 'Desarrollo de software e ingeniería',
         specialty: 'Ingeniero en desarrollo y gestión de software',
         image: '/assets/miembros/axel.jpeg',
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
@@ -152,7 +152,7 @@ export const companiesData = [
   // ── EMPRESA 2: Dictaminación y Gestoria ECG ────────────────────────────────
   {
     id: 2,
-    name: 'Dictaminación y Gestoria ECG',
+    name: 'Dictaminación y Gestoría ECG',
     shortName: 'Sustentabilidad',
     // Logo: coloca tu imagen en /public/assets/logos/ y cambia el nombre aquí
     logo: '/assets/logos/Dictaminacion.png',
@@ -186,7 +186,7 @@ export const companiesData = [
         desc: 'Brindar servicios especializados de dictaminación, gestoría y cumplimiento normativo con alto nivel técnico y profesional, asegurando a nuestros clientes la correcta regularización de sus proyectos, optimizando tiempos, reduciendo riesgos y garantizando el apego a la normativa vigente.',
         images: [
           { url: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800', caption: 'Dictaminación' },
-          { url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800', caption: 'Gestoriía' },
+          { url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800', caption: 'Gestoría' },
           { url: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=800', caption: 'Cumplimiento Normativo' }
         ]
       },
