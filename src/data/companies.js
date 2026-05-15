@@ -91,7 +91,7 @@ export const companiesData = [
       {
         name: 'Ing. Juan Erasmo Cuaya G.',
         role: 'Fundador y Director',
-        specialty: 'Ingeniería Eléctrica Industrial',
+        specialty: 'Ingeniero en electrónica industrial',
         image: '/assets/miembros/erasmo_cuaya.jpeg',
         bio: 'Ingeniero con más de 20 años de experiencia en mantenimiento eléctrico, dictaminación, gestión y capacitación. Fundador de ECG Corporativo y líder de proyectos de alto impacto en ingeniería eléctrica.',
         email: 'centroecg@ecgcorporativo.com'
@@ -99,6 +99,7 @@ export const companiesData = [
       {
         name: 'MARÍA DE RAYO MANCERA',
         role: 'Recursos humanos y finanzas ',
+        specialty: 'L.A.E.',
         image: '/assets/miembros/maria_rayo.jpeg',
         bio: 'Equipo especializado en la gestión y ejecución de proyectos industriales, diseño de subestaciones y supervisión técnica de instalaciones eléctricas.'
       },
@@ -116,11 +117,18 @@ export const companiesData = [
         bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       },
       {
+        name: 'AXEL ISAAC  RODRÍGUEZ',
+        role: 'Desarrollo de software e ingeniería',
+        specialty: 'Ingeniero en desarrollo y gestión de software',
+        image: '/assets/miembros/axel.jpeg',
+        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
+      },
+      {
         name: 'AXEL ISAAC RODRÍGUEZ',
         role: 'Desarrollo de software e ingeniería',
         specialty: 'Ingeniero en desarrollo y gestión de software',
         image: '/assets/miembros/axel.jpeg',
-        bio: 'Ingeniero en Desarrollo y Gestión de Software enfocado en crear soluciones digitales que equilibran la potencia técnica con la eficiencia operativa. Mi trabajo consiste en transformar requerimientos complejos en aplicaciones escalables, gestionando todo el ciclo de vida del producto: desde la arquitectura Fullstack y la optimización de datos, hasta el despliegue y la seguridad.\n\nLo que hago:\n• Desarrollo Fullstack: Construcción de interfaces dinámicas y backends robustos utilizando tecnologías modernas como React, Angular, Node.js y Spring Boot.\n• Gestión Estratégica: Dirección de proyectos bajo estándares internacionales, asegurando que cada entrega cumpla con plazos, calidad y normativas de seguridad (OWASP/NIST).\n• Soluciones Integrales: Diseño de bases de datos optimizadas e integración de tecnologías emergentes como IoT para conectar el mundo físico con el digital.'
+        bio: 'Técnicos certificados en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       }
     ],
 
