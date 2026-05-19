@@ -290,7 +290,7 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
   const totalTiempo = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * (cot.horas || 0) + c.dia * (cot.dias || 0) + c.semana * (cot.semanas || 0) + c.mes * (cot.meses || 0), 0
   );
-  const totalHer = (cot.herramientas || []).reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * totalDias, 0);
+  const totalHer = (cot.herramientas || []).reduce((s, h) => s + (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100) * h.cantidad * totalDias, 0);
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
@@ -352,12 +352,21 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Herramientas</p>
               <div className="space-y-1">
-                {cot.herramientas.map((h, i) => (
-                  <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-                    <span className="text-slate-700">{h.nombre} × {h.cantidad} × {totalDias.toFixed(1)}d</span>
-                    <span className="font-bold text-slate-800">{fmt((h.precio_renta_diaria || 0) * h.cantidad * totalDias)}</span>
-                  </div>
-                ))}
+                {cot.herramientas.map((h, i) => {
+                  const margen = h.margen || 0;
+                  const rentaFinal = (h.precio_renta_diaria || 0) * (1 + margen / 100);
+                  return (
+                    <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
+                      <span className="text-slate-700">
+                        {h.nombre} × {h.cantidad} × {totalDias.toFixed(1)}d
+                        {margen > 0 && (
+                          <span className="ml-1.5 text-xs text-amber-500 font-bold">+{margen}%</span>
+                        )}
+                      </span>
+                      <span className="font-bold text-slate-800">{fmt(rentaFinal * h.cantidad * totalDias)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -411,7 +420,7 @@ const CotizacionForm = ({
   const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
   const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
   const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: uid(), margen: a.margen || 0 })));
-  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: uid() })));
+  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: uid(), margen: h.margen || 0 })));
   const [empleados,    setEmpleados]    = useState(initial?.empleados     || []);
   const [horas,   setHoras]   = useState(initial?.horas   || 0);
   const [dias,    setDias]    = useState(initial?.dias    || 0);
@@ -425,7 +434,7 @@ const CotizacionForm = ({
 
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
-  const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * totalDias, 0);
+  const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100) * h.cantidad * totalDias, 0);
   const totalTiempo       = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * horas + c.dia * dias + c.semana * semanas + c.mes * meses, 0
   );
@@ -448,7 +457,7 @@ const CotizacionForm = ({
     if (herramientas.find(h => h.catalogo_id === cat.id)) {
       setHerramientas(p => p.map(h => h.catalogo_id === cat.id ? { ...h, cantidad: h.cantidad + 1 } : h));
     } else {
-      setHerramientas(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio_renta_diaria: cat.precio_renta_diaria, unidad: cat.unidad || 'pza', cantidad: 1 }]);
+      setHerramientas(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio_renta_diaria: cat.precio_renta_diaria, unidad: cat.unidad || 'pza', cantidad: 1, margen: 0 }]);
     }
     setSelHer('');
   };
@@ -602,20 +611,48 @@ const CotizacionForm = ({
         </div>
         {herramientas.length > 0 && (
           <div className="space-y-1.5">
-            {herramientas.map(h => (
-              <div key={h._id} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{h.nombre}</p>
-                  <p className="text-xs text-slate-400">
-                    {fmt(h.precio_renta_diaria)}/día × {h.cantidad} {h.unidad || 'pza'} × {totalDias.toFixed(1)}d = {fmt((h.precio_renta_diaria || 0) * h.cantidad * totalDias)}
-                  </p>
+            {herramientas.map(h => {
+              const rentaConMargen = (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100);
+              return (
+                <div key={h._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{h.nombre}</p>
+                      <p className="text-xs text-slate-400">
+                        {fmt(h.precio_renta_diaria)}/día
+                        {h.margen > 0 && (
+                          <span className="text-amber-500 font-bold"> +{h.margen}% → {fmt(rentaConMargen)}/día</span>
+                        )}
+                        {' '}× {h.cantidad} {h.unidad || 'pza'} × {totalDias.toFixed(1)}d = <span className="font-bold text-slate-600">{fmt(rentaConMargen * h.cantidad * totalDias)}</span>
+                      </p>
+                    </div>
+                    <input type="number" min="1" value={h.cantidad}
+                      onChange={e => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
+                      className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
+                    <button onClick={() => setHerramientas(p => p.filter(i => i._id !== h._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
+                  </div>
+                  {/* Markup percentage buttons */}
+                  <div className="flex items-center gap-1.5 pl-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <Percent size={10} /> Margen
+                    </span>
+                    {[5, 10, 15].map(pct => (
+                      <button
+                        key={pct}
+                        onClick={() => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
+                          h.margen === pct
+                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+                            : 'bg-white border border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600'
+                        }`}
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <input type="number" min="1" value={h.cantidad}
-                  onChange={e => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
-                  className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
-                <button onClick={() => setHerramientas(p => p.filter(i => i._id !== h._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
-              </div>
-            ))}
+              );
+            })}
             <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalHerramientas)}</div>
           </div>
         )}
