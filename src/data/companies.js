@@ -306,7 +306,7 @@ export const companiesData = [
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778698506/WhatsApp_Image_2026-05-13_at_12.52.27_PM_c2oejz.jpg', caption: 'Capacitación Profesional' },
-      { url: 'https://youtu.be/wZ3poi3qXAw?si=kPXjhwXQRE02iQKE', caption: 'Nuestro trabajo', type: 'video' },
+      { url: 'https://www.youtube.com/watch?v=wZ3poi3qXAw', caption: 'Nuestro trabajo', type: 'video' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_2_bgnde2.jpg', caption: 'Desarrollo Organizacional' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_1_r08ezg.jpg', caption: 'Liderazgo Empresarial' }
     ],
