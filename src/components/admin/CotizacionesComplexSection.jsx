@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText,
-  Pencil, AlertCircle, Loader2, ClipboardList, GanttChartSquare,
+  Pencil, AlertCircle, Loader2, ClipboardList, GanttChartSquare, Percent,
 } from 'lucide-react';
 import {
   authHeaders,
@@ -329,12 +329,21 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Artículos</p>
               <div className="space-y-1">
-                {cot.articulos.map((a, i) => (
-                  <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-                    <span className="text-slate-700">{a.nombre} × {a.cantidad}</span>
-                    <span className="font-bold text-slate-800">{fmt(a.precio * a.cantidad)}</span>
-                  </div>
-                ))}
+                {cot.articulos.map((a, i) => {
+                  const margen = a.margen || 0;
+                  const precioFinal = a.precio * (1 + margen / 100);
+                  return (
+                    <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
+                      <span className="text-slate-700">
+                        {a.nombre} × {a.cantidad}
+                        {margen > 0 && (
+                          <span className="ml-1.5 text-xs text-emerald-500 font-bold">+{margen}%</span>
+                        )}
+                      </span>
+                      <span className="font-bold text-slate-800">{fmt(precioFinal * a.cantidad)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -401,7 +410,7 @@ const CotizacionForm = ({
 }) => {
   const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
   const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
-  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: uid() })));
+  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: uid(), margen: a.margen || 0 })));
   const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: uid() })));
   const [empleados,    setEmpleados]    = useState(initial?.empleados     || []);
   const [horas,   setHoras]   = useState(initial?.horas   || 0);
@@ -415,7 +424,7 @@ const CotizacionForm = ({
   const [selEmp,  setSelEmp]  = useState('');
 
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
-  const totalArticulos    = articulos.reduce((s, a) => s + a.precio * a.cantidad, 0);
+  const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
   const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * h.cantidad * totalDias, 0);
   const totalTiempo       = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * horas + c.dia * dias + c.semana * semanas + c.mes * meses, 0
@@ -428,7 +437,7 @@ const CotizacionForm = ({
     if (articulos.find(a => a.catalogo_id === cat.id)) {
       setArticulos(p => p.map(a => a.catalogo_id === cat.id ? { ...a, cantidad: a.cantidad + 1 } : a));
     } else {
-      setArticulos(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio: cat.precio, cantidad: 1 }]);
+      setArticulos(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio: cat.precio, cantidad: 1, margen: 0 }]);
     }
     setSelArt('');
   };
@@ -528,18 +537,48 @@ const CotizacionForm = ({
         </div>
         {articulos.length > 0 && (
           <div className="space-y-1.5">
-            {articulos.map(a => (
-              <div key={a._id} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
-                  <p className="text-xs text-slate-400">{fmt(a.precio)} × {a.cantidad} = {fmt(a.precio * a.cantidad)}</p>
+            {articulos.map(a => {
+              const precioConMargen = a.precio * (1 + (a.margen || 0) / 100);
+              return (
+                <div key={a._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
+                      <p className="text-xs text-slate-400">
+                        {fmt(a.precio)}
+                        {a.margen > 0 && (
+                          <span className="text-emerald-500 font-bold"> +{a.margen}% → {fmt(precioConMargen)}</span>
+                        )}
+                        {' '}× {a.cantidad} = <span className="font-bold text-slate-600">{fmt(precioConMargen * a.cantidad)}</span>
+                      </p>
+                    </div>
+                    <input type="number" min="1" value={a.cantidad}
+                      onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
+                      className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
+                    <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
+                  </div>
+                  {/* Markup percentage buttons */}
+                  <div className="flex items-center gap-1.5 pl-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <Percent size={10} /> Margen
+                    </span>
+                    {[5, 10, 15].map(pct => (
+                      <button
+                        key={pct}
+                        onClick={() => setArticulos(p => p.map(i => i._id === a._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
+                          a.margen === pct
+                            ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200'
+                            : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+                        }`}
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <input type="number" min="1" value={a.cantidad}
-                  onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
-                  className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
-                <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
-              </div>
-            ))}
+              );
+            })}
             <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalArticulos)}</div>
           </div>
         )}
