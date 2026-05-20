@@ -310,18 +310,18 @@ export const companiesData = [
         name: 'Agentes Capacitadores',
         desc: 'Al estar capacitado en CETACHI tendrás el reconocimiento de gobierno debido a que nuestros capacitadores son reconocidos por la STPS. Contamos con la validez de la STPS para poder expedir DC-3 que avalan tus capacidades laborales.',
         images: [
-          { url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800', caption: 'Talleres de Capacitación' },
-          { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800', caption: 'Liderazgo Empresarial' },
-          { url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800', caption: 'Dinámicas de Equipo' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_1_r08ezg.jpg', caption: 'Talleres de Capacitación' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg1_pmumwd.jpg', caption: 'Liderazgo Empresarial' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta3_nxnfwi.jpg', caption: 'Dinámicas de Equipo' }
         ]
       },
       {
         name: 'Cursos Especializados',
         desc: 'Contamos con cursos teórico-prácticos especializados en Energía y Mantenimiento industrial, comercial y residencial. Programas certificados alineados a NOMs, STPS y estándares internacionales de formación.',
         images: [
-          { url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800', caption: 'Sesiones de Consultoría' },
-          { url: 'https://images.unsplash.com/photo-1560264280-88b68371db39?w=800', caption: 'Certificaciones' },
-          { url: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800', caption: 'Control de Calidad' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1779307204/WhatsApp_Image_2026-05-04_at_6.25.20_PM_lqjvmy.jpg', caption: 'Sesiones de Consultoría' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1779307311/Captura_de_pantalla_2026-05-20_140114_xz7hmj.png', caption: 'Certificaciones' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694013/imagenecg5_cfaurj.jpg', caption: 'Control de Calidad' }
         ]
       },
       {
@@ -329,8 +329,8 @@ export const companiesData = [
         desc: 'Dedicación total al desarrollo del capital humano y la cultura de prevención en las empresas. Construimos relaciones de largo plazo con nuestros clientes impulsando su operación.',
         images: [
           { url: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800', caption: 'Responsabilidad Social' },
-          { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800', caption: 'Formación Continua' },
-          { url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800', caption: 'Trabajo Colaborativo' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1779307496/Captura_de_pantalla_2026-05-20_140404_zoxsoy.png', caption: 'Formación Continua' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta6_jzlsmz.jpg', caption: 'Trabajo Colaborativo' }
         ]
       }
     ],
