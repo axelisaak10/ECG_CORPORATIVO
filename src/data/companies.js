@@ -246,18 +246,11 @@ export const companiesData = [
         email: 'dictaminacion@ecgcorporativo.com'
       },
       {
-        name: 'Equipo de Ingeniería',
-        role: 'Ingenieros Especialistas',
-        specialty: 'Sistemas Eléctricos y Energía Renovable',
-        image: '',
-        bio: 'Especialistas en sistemas eléctricos, energía renovable y cumplimiento normativo. Responsables del análisis técnico y la evaluación de instalaciones.'
-      },
-      {
-        name: 'Equipo de Proyectos',
-        role: 'Gestores de Proyectos',
-        specialty: 'Planeación y Control de Proyectos',
-        image: '',
-        bio: 'Equipo dedicado a la gestión integral de trámites y proyectos, garantizando cumplimiento normativo y tiempos óptimos de entrega.'
+        name: 'MARÍA DE RAYO MANCERA',
+        role: 'Recursos humanos y finanzas ',
+        specialty: 'L.A.E.',
+        image: '/assets/miembros/maria_rayo.jpeg',
+        bio: 'Especialista en Administración de Empresas con una sólida trayectoria en la gestión integral de capital humano y recursos financieros. Me distingo por mi capacidad para alinear la eficiencia administrativa con el bienestar organizacional, asegurando la estabilidad operativa de la empresa a través de una gestión transparente y estratégica.'
       }
     ],
 
@@ -305,8 +298,8 @@ export const companiesData = [
 
     // ── Sección Inicio — Carrusel ──────────────────────────────────────────────
     carouselImages: [
+      { url: 'https://res.cloudinary.com/djraiiuyg/video/upload/v1779305197/WhatsApp_Video_2026-05-19_at_4.11.49_PM_pusbzk.mp4', caption: 'Nuestro trabajo', type: 'video' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778698506/WhatsApp_Image_2026-05-13_at_12.52.27_PM_c2oejz.jpg', caption: 'Capacitación Profesional' },
-      { url: 'https://www.youtube.com/watch?v=wZ3poi3qXAw', caption: 'Nuestro trabajo', type: 'video' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_2_bgnde2.jpg', caption: 'Desarrollo Organizacional' },
       { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778601599/CETA1_1_r08ezg.jpg', caption: 'Liderazgo Empresarial' }
     ],
@@ -364,19 +357,12 @@ export const companiesData = [
         bio: 'Director y fundador de CETACHI ECG. Capacitador reconocido por la STPS con más de 20 años de experiencia en formación técnica industrial.',
         email: 'formacion@ecgcorporativo.com'
       },
-      {
-        name: 'Equipo de Consultores',
-        role: 'Especialistas en Normas',
-        specialty: 'STPS, SEMARNAT, ISO 14001',
-        image: '',
-        bio: 'Consultores especializados en normatividad vigente, certificaciones y estándares internacionales aplicados a la industria.'
-      },
-      {
-        name: 'Equipo de Instructores',
-        role: 'Capacitadores Certificados',
-        specialty: 'Desarrollo Profesional y Liderazgo',
-        image: '',
-        bio: 'Instructores certificados ante la STPS, especializados en cursos teórico-prácticos de energía y mantenimiento industrial.'
+     {
+        name: 'MARÍA DE RAYO MANCERA',
+        role: 'finanzas ',
+        specialty: 'L.A.E.',
+        image: '/assets/miembros/maria_rayo.jpeg',
+        bio: 'Especialista en Administración de Empresas con una sólida trayectoria en la gestión integral de capital humano y recursos financieros. Me distingo por mi capacidad para alinear la eficiencia administrativa con el bienestar organizacional, asegurando la estabilidad operativa de la empresa a través de una gestión transparente y estratégica.'
       }
     ],
 
