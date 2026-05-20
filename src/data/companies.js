@@ -53,18 +53,18 @@ export const companiesData = [
         name: 'VISIÓN',
         desc: 'Ser una empresa líder en ingeniería eléctrica a nivel regional y nacional, reconocida por nuestra excelencia técnica, innovación en soluciones energéticas y capacidad para desarrollar proyectos eléctricos de alto impacto, contribuyendo al crecimiento sostenible y a la eficiencia energética del país.',
         images: [
-          { url: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800', caption: 'Control de Calidad' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694012/imagenecg3_ucova0.jpg', caption: 'Control de Calidad' },
           { url: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800', caption: 'Equipos Certificados' },
-          { url: 'https://images.unsplash.com/photo-1581093458791-9d42e1db760e?w=800', caption: 'Procesos Auditados' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778693808/dicta6_jzlsmz.jpg', caption: 'Procesos Auditados' }
         ]
       },
       {
         name: 'VALORES',
         desc: 'Seguridad: La seguridad eléctrica y la integridad de las personas son nuestra prioridad. Calidad Técnica: Trabajamos bajo normas y estándares eléctricos vigentes. Responsabilidad: Cumplimos tiempos, presupuestos y especificaciones técnicas. Innovación: Implementamos tecnologías que optimizan el consumo y mejoran el rendimiento. Honestidad e Integridad: Actuamos con transparencia en cada proceso. Servicio al Cliente: Construimos relaciones de largo plazo basadas en confianza y resultados.',
         images: [
-          { url: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800', caption: 'Proyectos Terminados' },
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1778694012/imagenecg4_luurwm.jpg', caption: 'Proyectos Terminados' },
           { url: 'https://images.unsplash.com/photo-1560264280-88b68371db39?w=800', caption: 'Clientes Satisfechos' },
-          { url: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800', caption: 'Infraestructura Confiable' }
+          { url: 'https://res.cloudinary.com/djraiiuyg/image/upload/v1779305969/WhatsApp_Image_2026-05-14_at_11.56.25_AM_acketp.jpg', caption: 'Infraestructura Confiable' }
         ]
       }
     ],
