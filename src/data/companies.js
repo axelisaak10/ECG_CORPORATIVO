@@ -125,8 +125,8 @@ export const companiesData = [
       },
       {
         name: 'Jessica Aliyah Tobon Vázquez',
-        role: 'Licenciatura en Innovación de Negocios y Mercadotecnia',
-        specialty: 'Ingeniero en desarrollo y gestión de software',
+        role: 'Mercadotecnia',
+        specialty: 'Lic en Innovación de Negocios y Mercadotecnia',
         image: '/assets/miembros/jess.png',
         bio: 'Actualmente curso la Licenciatura en Innovación de Negocios y Mercadotecnia, donde he desarrollado conocimientos en estrategias de marketing, innovación empresarial, análisis de mercados y desarrollo de proyectos, fortaleciendo habilidades de liderazgo, creatividad y comunicación enfocadas al crecimiento y competitividad de las empresas.'
       }
