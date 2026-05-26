@@ -190,11 +190,12 @@ const AuthModal = ({ onClose, onLogin }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[300] overflow-y-auto" onClick={onClose}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/75" />
+      <div className="fixed inset-0 bg-slate-900/75" />
 
-      {/* Card */}
+      {/* Centering wrapper — scrollable */}
+      <div className="flex items-center justify-center min-h-full p-4">
       <div className="relative w-full max-w-[800px] z-10" onClick={(e) => e.stopPropagation()}>
 
         {/* Close */}
@@ -205,7 +206,7 @@ const AuthModal = ({ onClose, onLogin }) => {
           <X size={15} className="text-slate-500" />
         </button>
 
-        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 flex flex-col md:flex-row min-h-[520px]">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 flex flex-col md:flex-row md:min-h-[520px]">
 
           {/* ── Panel izquierdo (decorativo) ─────────────────── */}
           <div
@@ -567,6 +568,7 @@ const AuthModal = ({ onClose, onLogin }) => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
