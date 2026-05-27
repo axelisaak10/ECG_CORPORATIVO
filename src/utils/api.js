@@ -302,6 +302,28 @@ export async function apiGetUsers() {
   return data.users;
 }
 
+export async function apiChangeOwnPassword(currentPassword, newPassword) {
+  const res = await fetch(`${BASE_URL}/api/auth/change-password?action=change-password`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al cambiar la contraseña.');
+  return data;
+}
+
+export async function apiAdminChangePassword(targetUserId, newPassword) {
+  const res = await fetch(`${BASE_URL}/api/auth/change-password?action=change-password`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ targetUserId, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al cambiar la contraseña.');
+  return data;
+}
+
 // ── Gantt Proyectos ───────────────────────────────────────────────────────────
 export async function apiGetGanttProyectos() {
   const res = await fetch(`${BASE_URL}/api/catalogo?r=gantt-proyectos`, { headers: authHeaders(false) });

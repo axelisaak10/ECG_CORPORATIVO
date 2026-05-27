@@ -1,13 +1,57 @@
-import React from 'react';
-import { User, LogOut, ArrowRight, GraduationCap, Leaf, Cog, LayoutGrid, Mail, Calendar } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+  User, LogOut, ArrowRight, GraduationCap, Leaf, Cog, LayoutGrid, Mail, Calendar,
+  KeyRound, Lock, Eye, EyeOff, CheckCircle, AlertCircle, Check,
+} from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDateLong } from '../../utils/formatters';
+import { apiChangeOwnPassword } from '../../utils/api';
 import Chatbot from '../shared/Chatbot';
 
 const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout }) => {
   const companyIcons = [<GraduationCap size={28} />, <Leaf size={28} />, <Cog size={28} />];
   const accentText = ['text-ecg-azul', 'text-ecg-rojo1', 'text-ecg-gris'];
 
+  // ── Password change state ──
+  const [showPwdForm, setShowPwdForm] = useState(false);
+  const [pwdForm, setPwdForm]         = useState({ current: '', newPwd: '', confirm: '' });
+  const [showPwd, setShowPwd]         = useState(false);
+  const [pwdLoading, setPwdLoading]   = useState(false);
+  const [pwdError, setPwdError]       = useState('');
+  const [pwdSuccess, setPwdSuccess]   = useState(false);
+
+  const pwdRules = useMemo(() => [
+    { label: 'Mínimo 6 caracteres',    ok: pwdForm.newPwd.length >= 6           },
+    { label: 'Al menos una mayúscula', ok: /[A-Z]/.test(pwdForm.newPwd)         },
+    { label: 'Al menos un número',     ok: /\d/.test(pwdForm.newPwd)            },
+    { label: 'Al menos un símbolo',    ok: /[^A-Za-z0-9]/.test(pwdForm.newPwd) },
+  ], [pwdForm.newPwd]);
+
+  const pwdStrength = useMemo(() => {
+    const score = pwdRules.filter(r => r.ok).length;
+    if (!pwdForm.newPwd) return null;
+    if (score <= 1)  return { label: 'Muy débil', color: 'bg-red-500',    w: 'w-1/4'  };
+    if (score === 2) return { label: 'Débil',     color: 'bg-orange-400', w: 'w-2/4'  };
+    if (score === 3) return { label: 'Buena',     color: 'bg-yellow-400', w: 'w-3/4'  };
+    return             { label: 'Fuerte',     color: 'bg-green-500',  w: 'w-full' };
+  }, [pwdRules, pwdForm.newPwd]);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdError('');
+    if (pwdForm.newPwd.length < 6) { setPwdError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (pwdForm.newPwd !== pwdForm.confirm) { setPwdError('Las contraseñas no coinciden.'); return; }
+    setPwdLoading(true);
+    try {
+      await apiChangeOwnPassword(pwdForm.current, pwdForm.newPwd);
+      setPwdSuccess(true);
+      setPwdForm({ current: '', newPwd: '', confirm: '' });
+    } catch (err) {
+      setPwdError(err.message);
+    } finally {
+      setPwdLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -126,6 +170,137 @@ const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout })
                     <p className="text-sm font-semibold text-slate-700 capitalize">{currentUser.role || 'Usuario'}</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Cambiar contraseña */}
+              <div className="px-5 py-4 border-t border-slate-50">
+                {pwdSuccess ? (
+                  <div className="text-center py-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto mb-2 shadow-md shadow-green-200">
+                      <CheckCircle size={20} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <p className="text-sm font-bold text-slate-700">¡Contraseña actualizada!</p>
+                    <p className="text-xs text-slate-400 mt-0.5 mb-3">Tu contraseña fue cambiada exitosamente.</p>
+                    <button
+                      onClick={() => { setPwdSuccess(false); setShowPwdForm(false); }}
+                      className="text-xs text-blue-500 hover:text-blue-700 font-semibold transition-colors"
+                    >Cerrar</button>
+                  </div>
+                ) : !showPwdForm ? (
+                  <button
+                    onClick={() => setShowPwdForm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-all font-bold text-sm"
+                  >
+                    <KeyRound size={15} />
+                    Cambiar contraseña
+                  </button>
+                ) : (
+                  <form onSubmit={handleChangePassword} className="space-y-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cambiar contraseña</p>
+                      <button type="button" onClick={() => { setShowPwdForm(false); setPwdError(''); setPwdForm({ current: '', newPwd: '', confirm: '' }); }} className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold transition-colors">Cancelar</button>
+                    </div>
+
+                    {pwdError && (
+                      <div className="flex items-start gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold bg-red-50 border border-red-100 text-red-600">
+                        <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
+                        <span>{pwdError}</span>
+                      </div>
+                    )}
+
+                    {/* Contraseña actual */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contraseña actual</label>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-blue-500 transition-all">
+                        <Lock size={13} className="text-slate-400 flex-shrink-0" />
+                        <input
+                          type={showPwd ? 'text' : 'password'}
+                          value={pwdForm.current}
+                          onChange={e => { setPwdForm({ ...pwdForm, current: e.target.value }); setPwdError(''); }}
+                          placeholder="Tu contraseña actual"
+                          required
+                          className="w-full bg-transparent text-slate-800 text-xs font-medium placeholder-slate-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Nueva contraseña */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nueva contraseña</label>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-blue-500 transition-all">
+                        <Lock size={13} className="text-slate-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 relative">
+                          <input
+                            type={showPwd ? 'text' : 'password'}
+                            value={pwdForm.newPwd}
+                            onChange={e => { setPwdForm({ ...pwdForm, newPwd: e.target.value }); setPwdError(''); }}
+                            placeholder="Mínimo 6 caracteres"
+                            required
+                            className="w-full bg-transparent text-slate-800 text-xs font-medium placeholder-slate-400 focus:outline-none pr-6"
+                          />
+                          <button type="button" onClick={() => setShowPwd(p => !p)} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                            {showPwd ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                      {pwdForm.newPwd && (
+                        <div className="mt-1.5 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all duration-300 ${pwdStrength?.color} ${pwdStrength?.w}`} />
+                            </div>
+                            <span className={`text-[10px] font-bold ml-2 ${pwdStrength?.color?.replace('bg-', 'text-')}`}>{pwdStrength?.label}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0">
+                            {pwdRules.map(r => (
+                              <div key={r.label} className={`flex items-center gap-1 text-[10px] font-medium ${r.ok ? 'text-green-500' : 'text-slate-400'}`}>
+                                <div className={`w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0 ${r.ok ? 'bg-green-100' : 'bg-slate-100'}`}>
+                                  {r.ok ? <Check size={7} strokeWidth={3} /> : <span className="w-0.5 h-0.5 rounded-full bg-slate-300 inline-block" />}
+                                </div>
+                                {r.label}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Confirmar */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Confirmar nueva contraseña</label>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-blue-500 transition-all">
+                        <Lock size={13} className="text-slate-400 flex-shrink-0" />
+                        <input
+                          type={showPwd ? 'text' : 'password'}
+                          value={pwdForm.confirm}
+                          onChange={e => { setPwdForm({ ...pwdForm, confirm: e.target.value }); setPwdError(''); }}
+                          placeholder="Repite tu contraseña"
+                          required
+                          className="w-full bg-transparent text-slate-800 text-xs font-medium placeholder-slate-400 focus:outline-none"
+                        />
+                      </div>
+                      {pwdForm.confirm && pwdForm.newPwd && (
+                        <p className={`text-[10px] font-semibold mt-0.5 pl-1 ${pwdForm.newPwd === pwdForm.confirm ? 'text-green-500' : 'text-red-400'}`}>
+                          {pwdForm.newPwd === pwdForm.confirm ? '✓ Coinciden' : '✗ No coinciden'}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={pwdLoading}
+                      className="w-full py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' }}
+                    >
+                      {pwdLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          Actualizando…
+                        </span>
+                      ) : 'Actualizar Contraseña'}
+                    </button>
+                  </form>
+                )}
               </div>
 
               <div className="px-5 py-4">

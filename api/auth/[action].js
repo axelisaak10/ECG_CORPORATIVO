@@ -160,5 +160,52 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // ── CHANGE-PASSWORD ─────────────────────────────────────────────────────
+  if (action === 'change-password') {
+    if (req.method !== 'POST') return res.status(405).end();
+
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+    const { currentPassword, newPassword, targetUserId } = req.body || {};
+    if (!newPassword) return res.status(400).json({ error: 'Nueva contraseña requerida.' });
+    if (newPassword.trim().length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+
+    const isSelfChange = !targetUserId || targetUserId === payload.sub;
+
+    // ── Superadmin cambiando contraseña de otro usuario ──
+    if (!isSelfChange) {
+      if (payload.nivel < 3) return res.status(403).json({ error: 'Se requiere nivel superadmin para cambiar contraseñas de otros usuarios.' });
+
+      const { data: target } = await supabase.from('Usuarios').select('id').eq('id', targetUserId).maybeSingle();
+      if (!target) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+      const hash = await bcrypt.hash(newPassword.trim(), 12);
+      const { error } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('id', targetUserId);
+      if (error) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+      return res.json({ message: 'Contraseña actualizada correctamente.' });
+    }
+
+    // ── Usuario cambiando su propia contraseña ──
+    if (!currentPassword) return res.status(400).json({ error: 'Contraseña actual requerida.' });
+
+    const { data: user } = await supabase.from('Usuarios').select('id, "Contraseña"').eq('id', payload.sub).maybeSingle();
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    const stored = user['Contraseña'];
+    let currentValid = false;
+    if (stored?.startsWith('$2b$') || stored?.startsWith('$2a$')) {
+      currentValid = await bcrypt.compare(currentPassword, stored);
+    } else {
+      currentValid = stored === currentPassword;
+    }
+    if (!currentValid) return res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
+
+    const hash = await bcrypt.hash(newPassword.trim(), 12);
+    const { error } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('id', payload.sub);
+    if (error) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+    return res.json({ message: 'Contraseña actualizada correctamente.' });
+  }
+
   return res.status(404).json({ error: 'Acción no encontrada.' });
 };

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
   ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
+  KeyRound, Lock, CheckCircle, AlertCircle, EyeOff,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
-import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje } from '../../utils/api';
+import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje, apiAdminChangePassword } from '../../utils/api';
 import TareasSection from '../admin/TareasSection';
 import TrabajosSection from '../admin/TrabajosSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
@@ -448,11 +449,172 @@ const MensajesSection = ({ isAdmin }) => {
   );
 };
 
+/* ─── ChangePasswordModal (superadmin) ─── */
+const pwdRulesCheck = (pwd) => [
+  { label: 'Mínimo 6 caracteres',    ok: pwd.length >= 6           },
+  { label: 'Al menos una mayúscula', ok: /[A-Z]/.test(pwd)         },
+  { label: 'Al menos un número',     ok: /\d/.test(pwd)            },
+  { label: 'Al menos un símbolo',    ok: /[^A-Za-z0-9]/.test(pwd) },
+];
+
+const pwdStrengthCalc = (pwd) => {
+  const score = pwdRulesCheck(pwd).filter(r => r.ok).length;
+  if (!pwd)        return null;
+  if (score <= 1)  return { label: 'Muy débil', color: 'bg-red-500',    w: 'w-1/4'  };
+  if (score === 2) return { label: 'Débil',     color: 'bg-orange-400', w: 'w-2/4'  };
+  if (score === 3) return { label: 'Buena',     color: 'bg-yellow-400', w: 'w-3/4'  };
+  return             { label: 'Fuerte',     color: 'bg-green-500',  w: 'w-full' };
+};
+
+const ChangePasswordModal = ({ user, onClose }) => {
+  const [newPwd, setNewPwd]       = useState('');
+  const [confirm, setConfirm]     = useState('');
+  const [showPwd, setShowPwd]     = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [success, setSuccess]     = useState(false);
+  const strength = useMemo(() => pwdStrengthCalc(newPwd), [newPwd]);
+  const rules    = useMemo(() => pwdRulesCheck(newPwd),    [newPwd]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (newPwd.length < 6)    { setError('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (newPwd !== confirm)   { setError('Las contraseñas no coinciden.'); return; }
+    setLoading(true);
+    try {
+      await apiAdminChangePassword(user.id, newPwd);
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <KeyRound size={18} className="text-purple-600" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-sm">Cambiar Contraseña</h3>
+              <p className="text-xs text-slate-400 font-medium">{user.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"><X size={16} className="text-slate-500" /></button>
+        </div>
+
+        {success ? (
+          <div className="px-6 py-10 text-center">
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-30" />
+              <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-200">
+                <CheckCircle size={28} className="text-white" strokeWidth={2.5} />
+              </div>
+            </div>
+            <h4 className="text-lg font-black text-slate-800 mb-1">¡Contraseña actualizada!</h4>
+            <p className="text-sm text-slate-400 mb-6">La contraseña de <strong className="text-slate-600">{user.name}</strong> fue cambiada exitosamente.</p>
+            <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-bold hover:from-blue-700 hover:to-blue-800 transition-all">Cerrar</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+            {error && (
+              <div className="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold border bg-red-50 border-red-100 text-red-600">
+                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nueva contraseña</label>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] transition-all">
+                <Lock size={16} className="text-slate-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0 relative">
+                  <input
+                    type={showPwd ? 'text' : 'password'}
+                    value={newPwd}
+                    onChange={e => { setNewPwd(e.target.value); setError(''); }}
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                    className="w-full bg-transparent text-slate-800 text-sm font-medium placeholder-slate-400 focus:outline-none pr-8"
+                  />
+                  <button type="button" onClick={() => setShowPwd(p => !p)} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-0.5">
+                    {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+              {newPwd && (
+                <div className="mt-2 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-300 ${strength?.color} ${strength?.w}`} />
+                    </div>
+                    <span className={`text-[11px] font-bold ml-3 w-16 text-right ${strength?.color?.replace('bg-', 'text-')}`}>{strength?.label}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    {rules.map(r => (
+                      <div key={r.label} className={`flex items-center gap-1.5 text-[11px] font-medium ${r.ok ? 'text-green-500' : 'text-slate-400'}`}>
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${r.ok ? 'bg-green-100' : 'bg-slate-100'}`}>
+                          {r.ok ? <CheckCircle size={8} strokeWidth={3} /> : <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />}
+                        </div>
+                        {r.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Confirmar contraseña</label>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-slate-200 bg-slate-50 focus-within:bg-white focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] transition-all">
+                <Lock size={16} className="text-slate-400 flex-shrink-0" />
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  value={confirm}
+                  onChange={e => { setConfirm(e.target.value); setError(''); }}
+                  placeholder="Repite la contraseña"
+                  required
+                  className="w-full bg-transparent text-slate-800 text-sm font-medium placeholder-slate-400 focus:outline-none"
+                />
+              </div>
+              {confirm && newPwd && (
+                <p className={`text-[11px] font-semibold mt-1 pl-1 ${newPwd === confirm ? 'text-green-500' : 'text-red-400'}`}>
+                  {newPwd === confirm ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-colors">Cancelar</button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 text-white text-sm font-bold hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Cambiando…</span>
+                ) : 'Cambiar Contraseña'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   const [users, setUsers]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [confirmDel, setConfirmDel] = useState(null);
   const [impersonating, setImpersonating] = useState(null);
+  const [changePwdUser, setChangePwdUser] = useState(null);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -503,6 +665,8 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
 
   return (
     <div>
+      {changePwdUser && <ChangePasswordModal user={changePwdUser} onClose={() => setChangePwdUser(null)} />}
+
       <div className="mb-8">
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestión de Usuarios</h1>
         <p className="text-slate-500 mt-0.5 text-sm">Administra roles y accesos de todos los usuarios</p>
@@ -576,6 +740,13 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => setChangePwdUser(user)}
+                              title="Cambiar contraseña"
+                              className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                            >
+                              <KeyRound size={15} />
+                            </button>
                             <button
                               onClick={() => handleImpersonate(user)}
                               disabled={impersonating === user.id}
