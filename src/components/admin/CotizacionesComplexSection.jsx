@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText,
   Pencil, AlertCircle, Loader2, ClipboardList, GanttChartSquare, Percent,
+  Download,
 } from 'lucide-react';
 import {
   authHeaders,
@@ -12,6 +13,7 @@ import {
   apiCreateTarea, apiCreateTrabajo,
   apiCreateGanttProyecto, apiCreateGanttTarea,
 } from '../../utils/api';
+import { generateCotizacionPDF } from '../../utils/pdfGenerator';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
 const COSTOS_TIEMPO = {
@@ -301,7 +303,18 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
             <h3 className="font-extrabold text-slate-800">Cotización</h3>
             <p className="text-sm text-slate-400">{fmtDate(cot.created_at)}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X size={16} /></button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => generateCotizacionPDF(cot)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
+              title="Descargar PDF"
+            >
+              <Download size={14} /> PDF
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
+              <X size={16} />
+            </button>
+          </div>
         </div>
         <div className="overflow-y-auto px-6 py-5 space-y-5">
           <div className="grid grid-cols-2 gap-4">
@@ -829,6 +842,7 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
                     ) : (
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => onView(cot)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Ver detalle"><Eye size={14} /></button>
+                        <button onClick={() => generateCotizacionPDF(cot)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Descargar PDF"><Download size={14} /></button>
                         {!readOnly && <>
                           <button onClick={() => onEdit(cot)} className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg" title="Editar"><Pencil size={14} /></button>
                           <button onClick={() => setConfirmDel(cot.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={14} /></button>
