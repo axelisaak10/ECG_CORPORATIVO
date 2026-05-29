@@ -1061,7 +1061,11 @@ const RecuperacionCuentasSection = () => {
 
 /* ─── AdminDashboard ─── */
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
-  const [activeTab, setActiveTab]   = useState('resumen');
+  const [activeTab, setActiveTab]   = useState(() => localStorage.getItem('admin_active_tab') || 'resumen');
+
+  useEffect(() => {
+    localStorage.setItem('admin_active_tab', activeTab);
+  }, [activeTab]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [badges, setBadges]         = useState({ mensajes: 0, tareas: 0 });
 

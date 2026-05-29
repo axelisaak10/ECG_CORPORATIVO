@@ -430,20 +430,30 @@ const CotizacionForm = ({
   clientes, catalogoArticulos, catalogoHerramientas, trabajadores,
   initial = null, isEdit = false, onSave, onCancel,
 }) => {
-  const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
-  const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
-  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: uid(), margen: a.margen || 0 })));
-  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: uid(), margen: h.margen || 0 })));
-  const [empleados,    setEmpleados]    = useState(initial?.empleados     || []);
-  const [horas,   setHoras]   = useState(initial?.horas   || 0);
-  const [dias,    setDias]    = useState(initial?.dias    || 0);
-  const [semanas, setSemanas] = useState(initial?.semanas || 0);
-  const [meses,   setMeses]   = useState(initial?.meses   || 0);
+  const draft = !isEdit ? JSON.parse(localStorage.getItem('ecg_cotizacion_draft') || 'null') : null;
+
+  const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || draft?.cliente_id    || '');
+  const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || draft?.descripcion   || '');
+  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || draft?.articulos    || []).map(a => ({ ...a, _id: a._id || uid(), margen: a.margen || 0 })));
+  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || draft?.herramientas || []).map(h => ({ ...h, _id: h._id || uid(), margen: h.margen || 0 })));
+  const [empleados,    setEmpleados]    = useState(initial?.empleados     || draft?.empleados     || []);
+  const [horas,   setHoras]   = useState(initial?.horas   || draft?.horas   || 0);
+  const [dias,    setDias]    = useState(initial?.dias    || draft?.dias    || 0);
+  const [semanas, setSemanas] = useState(initial?.semanas || draft?.semanas || 0);
+  const [meses,   setMeses]   = useState(initial?.meses   || draft?.meses   || 0);
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
   const [selArt,  setSelArt]  = useState('');
   const [selHer,  setSelHer]  = useState('');
   const [selEmp,  setSelEmp]  = useState('');
+
+  useEffect(() => {
+    if (!isEdit) {
+      localStorage.setItem('ecg_cotizacion_draft', JSON.stringify({
+        cliente_id: clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses
+      }));
+    }
+  }, [isEdit, clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses]);
 
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
@@ -498,6 +508,10 @@ const CotizacionForm = ({
         total,
       };
       await onSave(payload);
+
+      if (!isEdit) {
+        localStorage.removeItem('ecg_cotizacion_draft');
+      }
 
       // Crear un ticket por cada empleado asignado (solo en nueva cotización)
       if (!isEdit && empleados.length > 0) {
