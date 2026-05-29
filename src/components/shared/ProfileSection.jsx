@@ -23,12 +23,11 @@ const pwdRulesCheck = (pwd) => [
 
 /* ── Avatares Predeterminados ── */
 const PRESET_AVATARS = [
-  '/assets/miembros/adelfo.jpeg',
-  '/assets/miembros/axel.jpeg',
-  '/assets/miembros/cesar_guerra.jpeg',
-  '/assets/miembros/erasmo_cuaya.jpeg',
-  '/assets/miembros/jess.png',
-  '/assets/miembros/maria_rayo.jpeg',
+  'https://res.cloudinary.com/djraiiuyg/image/upload/v1780080668/capacitacion_yf5nk6.png',
+  'https://res.cloudinary.com/djraiiuyg/image/upload/v1780080668/ecg-men_rgap3x.png',
+  'https://res.cloudinary.com/djraiiuyg/image/upload/v1780080668/ecg_sgacsr.png',
+  'https://res.cloudinary.com/djraiiuyg/image/upload/v1780080668/centro_eouels.png',
+  'https://res.cloudinary.com/djraiiuyg/image/upload/v1780080668/dictaminacion_mvg6c9.png',
 ];
 
 const pwdStrengthCalc = (pwd) => {
