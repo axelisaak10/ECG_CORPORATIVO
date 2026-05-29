@@ -353,6 +353,16 @@ export async function apiUpdateProfile(fields) {
   return data;
 }
 
+export async function apiDeleteOwnAccount() {
+  const res = await fetch(`${BASE_URL}/api/auth/delete-account?action=delete-account`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar cuenta.');
+  return data;
+}
+
 export async function apiChangeOwnPassword(currentPassword, newPassword) {
   const res = await fetch(`${BASE_URL}/api/auth/change-password?action=change-password`, {
     method: 'POST',

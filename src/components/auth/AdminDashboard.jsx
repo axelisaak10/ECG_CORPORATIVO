@@ -1146,8 +1146,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
         {/* User profile */}
         <div className="px-4 py-4 border-b border-white/5">
           <div className="flex items-center gap-3 bg-white/5 rounded-xl px-3 py-2.5">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-black text-sm ${avatarBg}`}>
-              {currentUser.name?.charAt(0)?.toUpperCase()}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-black text-sm overflow-hidden ${avatarBg}`}>
+              {currentUser.avatar_url ? (
+                <img src={currentUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+              ) : null}
+              <span style={{ display: currentUser.avatar_url ? 'none' : 'block' }}>
+                {currentUser.name?.charAt(0)?.toUpperCase()}
+              </span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-white font-bold text-xs truncate leading-tight">{currentUser.name}</p>
@@ -1219,8 +1224,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           <span className="text-white font-extrabold text-base">Admin</span>
         </div>
         <div className="ml-auto">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs ${avatarBg}`}>
-            {currentUser.name?.charAt(0)?.toUpperCase()}
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden ${avatarBg}`}>
+            {currentUser.avatar_url ? (
+              <img src={currentUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+            ) : null}
+            <span style={{ display: currentUser.avatar_url ? 'none' : 'block' }}>
+              {currentUser.name?.charAt(0)?.toUpperCase()}
+            </span>
           </div>
         </div>
       </header>
@@ -1236,8 +1246,13 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           </div>
           <div className="ml-auto flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs ${avatarBg}`}>
-                {currentUser.name?.charAt(0)?.toUpperCase()}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs overflow-hidden ${avatarBg}`}>
+                {currentUser.avatar_url ? (
+                  <img src={currentUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                ) : null}
+                <span style={{ display: currentUser.avatar_url ? 'none' : 'block' }}>
+                  {currentUser.name?.charAt(0)?.toUpperCase()}
+                </span>
               </div>
               <span className="text-slate-600 font-semibold">{currentUser.name}</span>
               <span className={`text-[10px] font-bold uppercase tracking-wide ${rolColor}`}>{rolLabel}</span>

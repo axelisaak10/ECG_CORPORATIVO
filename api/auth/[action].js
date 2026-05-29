@@ -71,6 +71,7 @@ module.exports = async function handler(req, res) {
         telefono: data['Telefono'] || '',
         rfc_curp: data['RFC_CURP'] || '',
         empresa:  data['Empresa']  || '',
+        avatar_url: data['AvatarURL'] || '',
       },
     });
   }
@@ -219,7 +220,7 @@ module.exports = async function handler(req, res) {
 
     const { data: user } = await supabase
       .from('Usuarios')
-      .select('id, "Nombre Completo", "Correo", nivel, "Telefono", "RFC_CURP", "Empresa"')
+      .select('id, "Nombre Completo", "Correo", nivel, "Telefono", "RFC_CURP", "Empresa", "AvatarURL"')
       .eq('id', payload.sub)
       .is('deleted_at', null)
       .maybeSingle();
@@ -236,6 +237,7 @@ module.exports = async function handler(req, res) {
         telefono: user['Telefono'] || '',
         rfc_curp: user['RFC_CURP'] || '',
         empresa:  user['Empresa']  || '',
+        avatar_url: user['AvatarURL'] || '',
       },
     });
   }
@@ -247,7 +249,7 @@ module.exports = async function handler(req, res) {
     const payload = verifyToken(req);
     if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
 
-    const { name, telefono, rfc_curp, empresa } = req.body || {};
+    const { name, telefono, rfc_curp, empresa, avatar_url } = req.body || {};
 
     if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
 
@@ -257,6 +259,7 @@ module.exports = async function handler(req, res) {
     if (telefono !== undefined) updateFields['Telefono'] = telefono.trim() || null;
     if (rfc_curp !== undefined) updateFields['RFC_CURP']  = rfc_curp.trim().toUpperCase() || null;
     if (empresa  !== undefined) updateFields['Empresa']   = empresa.trim() || null;
+    if (avatar_url !== undefined) updateFields['AvatarURL'] = avatar_url.trim() || null;
 
     const { error } = await supabase
       .from('Usuarios')
@@ -266,6 +269,27 @@ module.exports = async function handler(req, res) {
     if (error) return res.status(500).json({ error: 'Error al actualizar el perfil.' });
 
     return res.json({ message: 'Perfil actualizado correctamente.' });
+  }
+
+  // ── DELETE-ACCOUNT ───────────────────────────────────────────────────────
+  if (action === 'delete-account') {
+    if (req.method !== 'DELETE') return res.status(405).end();
+
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+    // Soft-delete the user
+    const { error } = await supabase
+      .from('Usuarios')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', payload.sub);
+
+    if (error) return res.status(500).json({ error: 'Error al eliminar la cuenta.' });
+
+    // Opcional: También podemos borrar sus sesiones activas para forzar el logout en otros dispositivos
+    await supabase.from('sesiones').delete().eq('usuario_id', payload.sub);
+
+    return res.json({ message: 'Cuenta eliminada correctamente.' });
   }
 
   return res.status(404).json({ error: 'Acción no encontrada.' });

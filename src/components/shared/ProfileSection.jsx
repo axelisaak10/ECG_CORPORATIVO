@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   User, Mail, Phone, Building2, FileText, Save, X, Edit3,
-  CheckCircle, AlertCircle, KeyRound, Lock, Eye, EyeOff, Check, Loader2,
+  CheckCircle, AlertCircle, KeyRound, Lock, Eye, EyeOff, Check, Loader2, Trash2, Image as ImageIcon,
 } from 'lucide-react';
-import { apiGetProfile, apiUpdateProfile, apiChangeOwnPassword } from '../../utils/api';
+import { apiGetProfile, apiUpdateProfile, apiChangeOwnPassword, apiDeleteOwnAccount } from '../../utils/api';
 
 /* ── Nivel labels ── */
 const NIVEL_LABELS = {
@@ -39,7 +39,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
   const [errorMsg, setErrorMsg]     = useState('');
 
   // Editable form state
-  const [form, setForm] = useState({ name: '', telefono: '', rfc_curp: '', empresa: '' });
+  const [form, setForm] = useState({ name: '', telefono: '', rfc_curp: '', empresa: '', avatar_url: '' });
 
   // Password change state
   const [showPwdForm, setShowPwdForm] = useState(false);
@@ -49,6 +49,11 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
   const [pwdError, setPwdError]       = useState('');
   const [pwdSuccess, setPwdSuccess]   = useState(false);
 
+  // Account deletion state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading]     = useState(false);
+  const [deleteError, setDeleteError]         = useState('');
+
   const pwdRules    = useMemo(() => pwdRulesCheck(pwdForm.newPwd),    [pwdForm.newPwd]);
   const pwdStrength = useMemo(() => pwdStrengthCalc(pwdForm.newPwd), [pwdForm.newPwd]);
 
@@ -57,7 +62,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
     try {
       const p = await apiGetProfile();
       setProfile(p);
-      setForm({ name: p.name || '', telefono: p.telefono || '', rfc_curp: p.rfc_curp || '', empresa: p.empresa || '' });
+      setForm({ name: p.name || '', telefono: p.telefono || '', rfc_curp: p.rfc_curp || '', empresa: p.empresa || '', avatar_url: p.avatar_url || '' });
     } catch (err) {
       setErrorMsg(err.message);
       // Fallback to currentUser data
@@ -69,12 +74,14 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
         telefono: currentUser.telefono || '',
         rfc_curp: currentUser.rfc_curp || '',
         empresa:  currentUser.empresa  || '',
+        avatar_url: currentUser.avatar_url || '',
       });
       setForm({
         name:     currentUser.name || '',
         telefono: currentUser.telefono || '',
         rfc_curp: currentUser.rfc_curp || '',
         empresa:  currentUser.empresa  || '',
+        avatar_url: currentUser.avatar_url || '',
       });
     } finally {
       setLoading(false);
@@ -93,10 +100,10 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
       setSuccessMsg('Perfil actualizado correctamente.');
       setEditing(false);
       // Update profile state
-      setProfile(p => ({ ...p, name: form.name, telefono: form.telefono, rfc_curp: form.rfc_curp, empresa: form.empresa }));
+      setProfile(p => ({ ...p, name: form.name, telefono: form.telefono, rfc_curp: form.rfc_curp, empresa: form.empresa, avatar_url: form.avatar_url }));
       // Notify parent to update session
       if (onProfileUpdate) {
-        onProfileUpdate({ name: form.name.trim(), telefono: form.telefono, rfc_curp: form.rfc_curp, empresa: form.empresa });
+        onProfileUpdate({ name: form.name.trim(), telefono: form.telefono, rfc_curp: form.rfc_curp, empresa: form.empresa, avatar_url: form.avatar_url });
       }
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
@@ -110,7 +117,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
     setEditing(false);
     setErrorMsg('');
     if (profile) {
-      setForm({ name: profile.name, telefono: profile.telefono, rfc_curp: profile.rfc_curp, empresa: profile.empresa });
+      setForm({ name: profile.name, telefono: profile.telefono, rfc_curp: profile.rfc_curp, empresa: profile.empresa, avatar_url: profile.avatar_url });
     }
   };
 
@@ -128,6 +135,19 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
       setPwdError(err.message);
     } finally {
       setPwdLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      await apiDeleteOwnAccount();
+      localStorage.removeItem('ecg_session');
+      window.location.reload();
+    } catch (err) {
+      setDeleteError(err.message);
+      setDeleteLoading(false);
     }
   };
 
@@ -185,8 +205,13 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full" />
               <div className="absolute -left-6 -bottom-6 w-28 h-28 bg-white/5 rounded-full" />
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 shadow-lg border-2 border-white/30">
-                  <span className="text-white font-black text-3xl">{(profile?.name || currentUser.name)?.charAt(0)?.toUpperCase()}</span>
+                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 shadow-lg border-2 border-white/30 overflow-hidden">
+                  {(profile?.avatar_url || currentUser?.avatar_url) ? (
+                    <img src={profile?.avatar_url || currentUser?.avatar_url} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                  ) : null}
+                  <span className="text-white font-black text-3xl" style={{ display: (profile?.avatar_url || currentUser?.avatar_url) ? 'none' : 'block' }}>
+                    {(profile?.name || currentUser.name)?.charAt(0)?.toUpperCase()}
+                  </span>
                 </div>
                 <p className="text-white font-extrabold text-lg">{profile?.name || currentUser.name}</p>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full mt-2 inline-block bg-white/20 text-white/90 uppercase tracking-wider`}>
@@ -252,6 +277,26 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
                     )}
                   </div>
                 </div>
+
+                {/* Avatar URL */}
+                {editing && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <ImageIcon size={16} className="text-pink-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">URL de Avatar</p>
+                      <input
+                        type="url"
+                        value={form.avatar_url}
+                        onChange={e => setForm({ ...form, avatar_url: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                        placeholder="https://ejemplo.com/mifoto.jpg"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-0.5">Pega un enlace a la imagen que deseas usar como foto de perfil</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Email (read-only) */}
                 <div className="flex items-start gap-3">
@@ -498,8 +543,72 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
               )}
             </div>
           </div>
+
+          {/* Zona de peligro */}
+          <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-red-50 bg-red-50/30">
+              <h3 className="font-extrabold text-red-600 text-sm">Zona de Peligro</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-3">
+                Eliminar tu cuenta es una acción permanente y no se puede deshacer. Se borrarán tus datos y perderás el acceso.
+              </p>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 transition-all font-bold text-sm"
+              >
+                <Trash2 size={15} />
+                Eliminar cuenta
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-slideUp">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-black text-slate-800 text-center mb-2">¿Eliminar tu cuenta?</h3>
+              <p className="text-sm text-slate-500 text-center mb-6">
+                Esta acción te desconectará del sistema y eliminará tu perfil. ¿Estás seguro de que deseas continuar?
+              </p>
+
+              {deleteError && (
+                <div className="mb-4 flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold bg-red-50 border border-red-100 text-red-600">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setDeleteError(''); }}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all shadow-md shadow-red-200 disabled:opacity-50"
+                >
+                  {deleteLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    </span>
+                  ) : 'Sí, eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

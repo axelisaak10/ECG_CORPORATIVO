@@ -26,8 +26,17 @@ const UserDashboard = ({ currentUser, onGoToPortal, onSelectCompany, onLogout })
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm font-semibold text-slate-700">
-              <User size={14} className="text-blue-500" />
+            <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full pl-2 pr-4 py-1.5 text-sm font-semibold text-slate-700">
+              {currentUser.avatar_url ? (
+                <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                  <img src={currentUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                  <User size={14} className="text-blue-500 m-1" style={{ display: 'none' }} />
+                </div>
+              ) : (
+                <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                  <User size={14} className="text-blue-500" />
+                </div>
+              )}
               {currentUser.name}
             </div>
             <button
