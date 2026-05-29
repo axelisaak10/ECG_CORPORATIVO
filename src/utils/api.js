@@ -302,6 +302,35 @@ export async function apiGetUsers() {
   return data.users;
 }
 
+export async function apiGetDeletedUsers() {
+  const res = await fetch(`${BASE_URL}/api/users?deleted=true`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener usuarios eliminados.');
+  return data.users;
+}
+
+export async function apiRestoreUser(id) {
+  const res = await fetch(`${BASE_URL}/api/users`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ id }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al restaurar usuario.');
+  return data;
+}
+
+export async function apiPermanentDeleteUser(id) {
+  const res = await fetch(`${BASE_URL}/api/users`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+    body: JSON.stringify({ id, permanent: true }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar usuario permanentemente.');
+  return data;
+}
+
 export async function apiChangeOwnPassword(currentPassword, newPassword) {
   const res = await fetch(`${BASE_URL}/api/auth/change-password?action=change-password`, {
     method: 'POST',

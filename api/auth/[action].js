@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
     const password = req.body?.password?.trim();
     if (!email || !password) return res.status(400).json({ error: 'Correo y contraseña requeridos.' });
 
-    const { data, error } = await supabase.from('Usuarios').select('*').eq('Correo', email).single();
+    const { data, error } = await supabase.from('Usuarios').select('*').eq('Correo', email).is('deleted_at', null).single();
     if (error || !data) return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
 
     const stored = data['Contraseña'];

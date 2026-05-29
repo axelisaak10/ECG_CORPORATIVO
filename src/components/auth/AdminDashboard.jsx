@@ -5,10 +5,11 @@ import {
   ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
   KeyRound, Lock, CheckCircle, AlertCircle, EyeOff,
+  RotateCcw, AlertTriangle, Clock, UserX, ShieldCheck,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
-import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje, apiAdminChangePassword } from '../../utils/api';
+import { authHeaders, apiGetMensajes, apiMarkMensajeLeido, apiDeleteMensaje, apiAdminChangePassword, apiGetDeletedUsers, apiRestoreUser, apiPermanentDeleteUser } from '../../utils/api';
 import TareasSection from '../admin/TareasSection';
 import TrabajosSection from '../admin/TrabajosSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
@@ -774,6 +775,289 @@ const GestionUsuariosSection = ({ currentUser, onImpersonate }) => {
   );
 };
 
+/* ─── RecuperacionCuentasSection (solo superadmin nivel >= 3) ─── */
+const RecuperacionCuentasSection = () => {
+  const [deletedUsers, setDeletedUsers] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [confirmRestore, setConfirmRestore]     = useState(null);
+  const [confirmPermDel, setConfirmPermDel]     = useState(null);
+  const [restoring, setRestoring]       = useState(null);
+  const [deleting, setDeleting]         = useState(null);
+  const [successMsg, setSuccessMsg]     = useState('');
+  const [errorMsg, setErrorMsg]         = useState('');
+
+  const fetchDeleted = async () => {
+    setLoading(true);
+    try {
+      const users = await apiGetDeletedUsers();
+      setDeletedUsers(users || []);
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al cargar usuarios eliminados.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchDeleted(); }, []);
+
+  const handleRestore = async (id) => {
+    setRestoring(id);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      await apiRestoreUser(id);
+      setSuccessMsg('Usuario restaurado exitosamente.');
+      setConfirmRestore(null);
+      fetchDeleted();
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al restaurar usuario.');
+    } finally {
+      setRestoring(null);
+    }
+  };
+
+  const handlePermanentDelete = async (id) => {
+    setDeleting(id);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      await apiPermanentDeleteUser(id);
+      setSuccessMsg('Usuario eliminado permanentemente.');
+      setConfirmPermDel(null);
+      fetchDeleted();
+    } catch (err) {
+      setErrorMsg(err.message || 'Error al eliminar usuario.');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const fmtDeletedDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const timeSinceDeleted = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `hace ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `hace ${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `hace ${days}d`;
+    const months = Math.floor(days / 30);
+    return `hace ${months} mes${months > 1 ? 'es' : ''}`;
+  };
+
+  return (
+    <div>
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200">
+            <RotateCcw size={20} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Recuperación de Cuentas</h1>
+            <p className="text-slate-500 text-sm">Restaura cuentas eliminadas o elimínalas permanentemente</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Mensajes de éxito/error */}
+      {successMsg && (
+        <div className="mb-5 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold border bg-green-50 border-green-100 text-green-700 animate-fadeIn">
+          <CheckCircle size={16} className="flex-shrink-0" />
+          <span>{successMsg}</span>
+          <button onClick={() => setSuccessMsg('')} className="ml-auto p-0.5 hover:bg-green-100 rounded transition-colors"><X size={14} /></button>
+        </div>
+      )}
+      {errorMsg && (
+        <div className="mb-5 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold border bg-red-50 border-red-100 text-red-600 animate-fadeIn">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg('')} className="ml-auto p-0.5 hover:bg-red-100 rounded transition-colors"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* Info card */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 p-5 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <ShieldCheck size={16} className="text-amber-600" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-amber-800 mb-1">Solo para Super Administradores</p>
+            <p className="text-xs text-amber-600 leading-relaxed">
+              Aquí puedes ver y restaurar las cuentas de usuarios que han sido eliminadas. 
+              Al restaurar una cuenta, el usuario recuperará su acceso con el mismo correo y nivel que tenía anteriormente. 
+              También puedes eliminar cuentas de forma permanente si ya no son necesarias.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contador */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cuentas eliminadas</p>
+            <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+              <UserX size={17} className="text-red-500" />
+            </div>
+          </div>
+          <p className="text-4xl font-black text-slate-800">{deletedUsers.length}</p>
+          <p className="text-xs text-slate-400 mt-1">disponibles para recuperar</p>
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado</p>
+            <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center">
+              <ShieldCheck size={17} className="text-green-600" />
+            </div>
+          </div>
+          <p className="text-sm font-bold text-green-600 mt-2">
+            {deletedUsers.length === 0 ? 'Sin cuentas pendientes' : `${deletedUsers.length} cuenta${deletedUsers.length > 1 ? 's' : ''} por revisar`}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">eliminación lógica activa</p>
+        </div>
+      </div>
+
+      {/* Tabla de usuarios eliminados */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-lg font-extrabold text-slate-800">Cuentas Eliminadas</h2>
+          <button
+            onClick={fetchDeleted}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all disabled:opacity-50"
+          >
+            <RotateCcw size={13} className={loading ? 'animate-spin' : ''} />
+            Actualizar
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="py-16 text-center text-slate-400">
+            <div className="w-8 h-8 border-2 border-slate-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-3" />
+            Cargando cuentas eliminadas…
+          </div>
+        ) : deletedUsers.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                <CheckCircle size={28} className="text-green-500" />
+              </div>
+            </div>
+            <p className="text-slate-700 font-bold mb-1">¡Todo en orden!</p>
+            <p className="text-slate-400 text-sm font-medium">No hay cuentas eliminadas para recuperar.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-6 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Usuario</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Correo</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rol</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">Eliminado</th>
+                  <th className="px-6 py-3 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {deletedUsers.map(user => {
+                  const nv = NIVEL_LABELS[user.nivel] ?? NIVEL_LABELS[0];
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 relative">
+                            <span className="text-red-500 font-black text-sm">{user.name?.charAt(0)?.toUpperCase()}</span>
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
+                              <X size={7} className="text-white" strokeWidth={3} />
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-800 text-sm block">{user.name}</span>
+                            {user.empresa && <span className="text-[11px] text-slate-400">{user.empresa}</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500 font-medium">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${nv.cls}`}>{nv.label}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Clock size={13} className="text-slate-400" />
+                          <div>
+                            <p className="text-xs text-slate-600 font-medium">{fmtDeletedDate(user.deleted_at)}</p>
+                            <p className="text-[11px] text-slate-400">{timeSinceDeleted(user.deleted_at)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {confirmRestore === user.id ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-[11px] text-slate-400 font-medium mr-1">¿Restaurar?</span>
+                            <button
+                              onClick={() => handleRestore(user.id)}
+                              disabled={restoring === user.id}
+                              className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 shadow-sm"
+                            >
+                              {restoring === user.id ? (
+                                <span className="flex items-center gap-1"><span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />…</span>
+                              ) : 'Sí, restaurar'}
+                            </button>
+                            <button onClick={() => setConfirmRestore(null)} className="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">Cancelar</button>
+                          </div>
+                        ) : confirmPermDel === user.id ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-[11px] text-red-500 font-medium mr-1">⚠ Irreversible</span>
+                            <button
+                              onClick={() => handlePermanentDelete(user.id)}
+                              disabled={deleting === user.id}
+                              className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
+                            >
+                              {deleting === user.id ? (
+                                <span className="flex items-center gap-1"><span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />…</span>
+                              ) : 'Eliminar para siempre'}
+                            </button>
+                            <button onClick={() => setConfirmPermDel(null)} className="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">Cancelar</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => { setConfirmRestore(user.id); setConfirmPermDel(null); }}
+                              title="Restaurar cuenta"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all"
+                            >
+                              <RotateCcw size={13} />
+                              Restaurar
+                            </button>
+                            <button
+                              onClick={() => { setConfirmPermDel(user.id); setConfirmRestore(null); }}
+                              title="Eliminar permanentemente"
+                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 /* ─── AdminDashboard ─── */
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
   const [activeTab, setActiveTab]   = useState('resumen');
@@ -817,7 +1101,10 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
     { id: 'gantt',         label: 'Gantt',               icon: <GanttChartSquare size={17} />, color: 'text-teal-400'    },
     { id: 'tareas',        label: 'Tareas',              icon: <ListChecks size={17} />,        color: 'text-violet-400', badge: badges.tareas   },
     { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,color: 'text-rose-400',   badge: badges.mensajes },
-    ...(isSuperAdmin ? [{ id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' }] : []),
+    ...(isSuperAdmin ? [
+      { id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' },
+      { id: 'recuperacion', label: 'Recuperar Cuentas', icon: <RotateCcw size={17} />, color: 'text-amber-400' },
+    ] : []),
   ];
 
   const handleNav = (id) => {
@@ -989,6 +1276,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           )}
           {activeTab === 'usuarios' && nivel >= 3 && (
             <GestionUsuariosSection currentUser={currentUser} onImpersonate={onImpersonate} />
+          )}
+          {activeTab === 'recuperacion' && nivel >= 3 && (
+            <RecuperacionCuentasSection />
           )}
         </div>
       </main>
