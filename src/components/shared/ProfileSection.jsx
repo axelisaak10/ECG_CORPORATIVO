@@ -21,6 +21,16 @@ const pwdRulesCheck = (pwd) => [
   { label: 'Al menos un símbolo',    ok: /[^A-Za-z0-9]/.test(pwd) },
 ];
 
+/* ── Avatares Predeterminados ── */
+const PRESET_AVATARS = [
+  '/assets/miembros/adelfo.jpeg',
+  '/assets/miembros/axel.jpeg',
+  '/assets/miembros/cesar_guerra.jpeg',
+  '/assets/miembros/erasmo_cuaya.jpeg',
+  '/assets/miembros/jess.png',
+  '/assets/miembros/maria_rayo.jpeg',
+];
+
 const pwdStrengthCalc = (pwd) => {
   const score = pwdRulesCheck(pwd).filter(r => r.ok).length;
   if (!pwd)        return null;
@@ -278,22 +288,47 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
                   </div>
                 </div>
 
-                {/* Avatar URL */}
+                {/* Avatar Selection */}
                 {editing && (
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <ImageIcon size={16} className="text-pink-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">URL de Avatar</p>
-                      <input
-                        type="url"
-                        value={form.avatar_url}
-                        onChange={e => setForm({ ...form, avatar_url: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
-                        placeholder="https://ejemplo.com/mifoto.jpg"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-0.5">Pega un enlace a la imagen que deseas usar como foto de perfil</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Selecciona un Avatar</p>
+                      
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-2">
+                        {PRESET_AVATARS.map((url) => (
+                          <button
+                            key={url}
+                            type="button"
+                            onClick={() => setForm({ ...form, avatar_url: url })}
+                            className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
+                              form.avatar_url === url ? 'border-blue-500 shadow-md ring-2 ring-blue-200' : 'border-slate-100 hover:border-slate-300'
+                            }`}
+                          >
+                            <img src={url} alt="Avatar option" className="w-full h-full object-cover" />
+                            {form.avatar_url === url && (
+                              <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                                <div className="bg-blue-500 rounded-full p-1 shadow-sm">
+                                  <Check size={12} className="text-white" strokeWidth={3} />
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">O pega un enlace web (Opcional)</p>
+                        <input
+                          type="url"
+                          value={form.avatar_url}
+                          onChange={e => setForm({ ...form, avatar_url: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                          placeholder="https://ejemplo.com/mifoto.jpg"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
