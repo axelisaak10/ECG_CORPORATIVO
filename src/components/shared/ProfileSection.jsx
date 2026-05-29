@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   User, Mail, Phone, Building2, FileText, Save, X, Edit3,
-  CheckCircle, AlertCircle, KeyRound, Lock, Eye, EyeOff, Check, Loader2, Trash2, Image as ImageIcon,
+  CheckCircle, AlertCircle, KeyRound, Lock, Eye, EyeOff, Check, Loader2, Trash2, Image as ImageIcon, Link,
 } from 'lucide-react';
 import { apiGetProfile, apiUpdateProfile, apiChangeOwnPassword, apiDeleteOwnAccount } from '../../utils/api';
 
@@ -49,6 +49,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
 
   // Editable form state
   const [form, setForm] = useState({ name: '', telefono: '', rfc_curp: '', empresa: '', avatar_url: '' });
+  const [showUrlInput, setShowUrlInput] = useState(false);
 
   // Password change state
   const [showPwdForm, setShowPwdForm] = useState(false);
@@ -72,6 +73,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
       const p = await apiGetProfile();
       setProfile(p);
       setForm({ name: p.name || '', telefono: p.telefono || '', rfc_curp: p.rfc_curp || '', empresa: p.empresa || '', avatar_url: p.avatar_url || '' });
+      if (p.avatar_url && !PRESET_AVATARS.includes(p.avatar_url)) setShowUrlInput(true);
     } catch (err) {
       setErrorMsg(err.message);
       // Fallback to currentUser data
@@ -92,6 +94,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
         empresa:  currentUser.empresa  || '',
         avatar_url: currentUser.avatar_url || '',
       });
+      if (currentUser.avatar_url && !PRESET_AVATARS.includes(currentUser.avatar_url)) setShowUrlInput(true);
     } finally {
       setLoading(false);
     }
@@ -127,6 +130,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
     setErrorMsg('');
     if (profile) {
       setForm({ name: profile.name, telefono: profile.telefono, rfc_curp: profile.rfc_curp, empresa: profile.empresa, avatar_url: profile.avatar_url });
+      setShowUrlInput(profile.avatar_url ? !PRESET_AVATARS.includes(profile.avatar_url) : false);
     }
   };
 
@@ -301,7 +305,7 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
                           <button
                             key={url}
                             type="button"
-                            onClick={() => setForm({ ...form, avatar_url: url })}
+                            onClick={() => { setForm({ ...form, avatar_url: url }); setShowUrlInput(false); }}
                             className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
                               form.avatar_url === url ? 'border-blue-500 shadow-md ring-2 ring-blue-200' : 'border-slate-100 hover:border-slate-300'
                             }`}
@@ -319,14 +323,39 @@ const ProfileSection = ({ currentUser, onProfileUpdate }) => {
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-slate-100">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">O pega un enlace web (Opcional)</p>
-                        <input
-                          type="url"
-                          value={form.avatar_url}
-                          onChange={e => setForm({ ...form, avatar_url: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
-                          placeholder="https://ejemplo.com/mifoto.jpg"
-                        />
+                        {!showUrlInput ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowUrlInput(true)}
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-blue-500 hover:text-blue-700 transition-colors uppercase tracking-wider"
+                          >
+                            <Link size={12} />
+                            O usar un enlace web personalizado
+                          </button>
+                        ) : (
+                          <div className="animate-fadeIn">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Enlace web personalizado</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowUrlInput(false);
+                                  if (!PRESET_AVATARS.includes(form.avatar_url)) setForm({ ...form, avatar_url: '' });
+                                }}
+                                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                            <input
+                              type="url"
+                              value={!PRESET_AVATARS.includes(form.avatar_url) ? form.avatar_url : ''}
+                              onChange={e => setForm({ ...form, avatar_url: e.target.value })}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                              placeholder="https://ejemplo.com/mifoto.jpg"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
