@@ -428,32 +428,24 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
 // ── Formulario nueva/editar cotización ────────────────────────────────────────
 const CotizacionForm = ({
   clientes, catalogoArticulos, catalogoHerramientas, trabajadores,
-  initial = null, isEdit = false, onSave, onCancel,
+  initial = null, isEdit = false, onSave, onCancel, onSaveDraft
 }) => {
-  const draft = !isEdit ? JSON.parse(localStorage.getItem('ecg_cotizacion_draft') || 'null') : null;
-
-  const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || draft?.cliente_id    || '');
-  const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || draft?.descripcion   || '');
-  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || draft?.articulos    || []).map(a => ({ ...a, _id: a._id || uid(), margen: a.margen || 0 })));
-  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || draft?.herramientas || []).map(h => ({ ...h, _id: h._id || uid(), margen: h.margen || 0 })));
-  const [empleados,    setEmpleados]    = useState(initial?.empleados     || draft?.empleados     || []);
-  const [horas,   setHoras]   = useState(initial?.horas   || draft?.horas   || 0);
-  const [dias,    setDias]    = useState(initial?.dias    || draft?.dias    || 0);
-  const [semanas, setSemanas] = useState(initial?.semanas || draft?.semanas || 0);
-  const [meses,   setMeses]   = useState(initial?.meses   || draft?.meses   || 0);
+  const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
+  const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
+  const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: a._id || uid(), margen: a.margen || 0 })));
+  const [herramientas, setHerramientas] = useState(() => (initial?.herramientas || []).map(h => ({ ...h, _id: h._id || uid(), margen: h.margen || 0 })));
+  const [empleados,    setEmpleados]    = useState(initial?.empleados     || []);
+  const [horas,   setHoras]   = useState(initial?.horas   || 0);
+  const [dias,    setDias]    = useState(initial?.dias    || 0);
+  const [semanas, setSemanas] = useState(initial?.semanas || 0);
+  const [meses,   setMeses]   = useState(initial?.meses   || 0);
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
   const [selArt,  setSelArt]  = useState('');
   const [selHer,  setSelHer]  = useState('');
   const [selEmp,  setSelEmp]  = useState('');
 
-  useEffect(() => {
-    if (!isEdit) {
-      localStorage.setItem('ecg_cotizacion_draft', JSON.stringify({
-        cliente_id: clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses
-      }));
-    }
-  }, [isEdit, clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses]);
+  const isDraft = initial?.isDraft || false;
 
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
@@ -509,12 +501,8 @@ const CotizacionForm = ({
       };
       await onSave(payload);
 
-      if (!isEdit) {
-        localStorage.removeItem('ecg_cotizacion_draft');
-      }
-
-      // Crear un ticket por cada empleado asignado (solo en nueva cotización)
-      if (!isEdit && empleados.length > 0) {
+      // Crear un ticket por cada empleado asignado (solo en nueva cotización y no en borrador)
+      if (!isEdit && !isDraft && empleados.length > 0) {
         for (const emp of empleados) {
           try {
             await apiCreateTarea(null, {
@@ -535,6 +523,14 @@ const CotizacionForm = ({
     }
   };
 
+  const handleSaveDraftBtn = () => {
+    onSaveDraft({
+      id: initial?.id,
+      isDraft: true,
+      cliente_id: clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses
+    });
+  };
+
   return (
     <div className="space-y-5">
       {error && <ErrorMsg msg={error} />}
@@ -542,7 +538,7 @@ const CotizacionForm = ({
       {/* Info básica */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3">
-          {isEdit ? 'Editar Cotización' : 'Información Básica'}
+          {isEdit && !isDraft ? 'Editar Cotización' : isDraft ? 'Continuar Borrador' : 'Información Básica'}
         </h2>
         <Field label="Cliente *">
           <select className={inputCls} value={clienteId} onChange={e => setClienteId(e.target.value)}>
@@ -765,10 +761,15 @@ const CotizacionForm = ({
         </div>
         <div className="flex gap-3 pt-2">
           <button onClick={onCancel} className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold">Cancelar</button>
+          {(!isEdit || isDraft) && (
+            <button onClick={handleSaveDraftBtn} className="flex-1 py-2.5 bg-blue-500/30 hover:bg-blue-500/50 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2">
+              <Save size={14} /> Guardar Borrador
+            </button>
+          )}
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-2.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 text-sm disabled:opacity-60 flex items-center justify-center gap-2">
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Guardar Cotización'}
+            {saving ? 'Guardando…' : isEdit && !isDraft ? 'Guardar Cambios' : 'Generar Cotización'}
           </button>
         </div>
       </div>
@@ -874,6 +875,45 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
   );
 };
 
+// ── Tab: Lista de borradores ──────────────────────────────────────────────────
+const BorradoresListTab = ({ drafts, clientes, onResume, onDelete }) => {
+  if (drafts.length === 0) return (
+    <div className="flex flex-col items-center py-20 text-slate-400 gap-3">
+      <FileText size={38} /><p>No hay borradores guardados</p>
+    </div>
+  );
+  return (
+    <div className="grid gap-3">
+      {drafts.map(d => {
+        const cliente = clientes.find(c => String(c.id) === String(d.cliente_id));
+        const nombreCliente = cliente ? cliente.nombre : (d.cliente_id ? 'Cliente desconocido' : 'Sin cliente asignado');
+        const countArts = (d.articulos?.length || 0) + (d.herramientas?.length || 0);
+
+        return (
+          <div key={d.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center hover:border-blue-200 transition-colors">
+            <div>
+              <p className="font-black text-slate-800 text-base">{nombreCliente}</p>
+              <p className="text-sm text-slate-500 line-clamp-1">{d.descripcion || 'Sin descripción'}</p>
+              <div className="flex items-center gap-3 mt-2 text-xs font-bold text-slate-400">
+                <span className="flex items-center gap-1"><Clock size={12}/> {new Date(d.timestamp).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                {countArts > 0 && <span>• {countArts} {countArts === 1 ? 'ítem' : 'ítems'}</span>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => onResume(d)} className="flex items-center gap-1 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors">
+                <Pencil size={14}/> Continuar
+              </button>
+              <button onClick={() => onDelete(d.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors" title="Eliminar borrador">
+                <Trash2 size={16}/>
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ── Componente principal ──────────────────────────────────────────────────────
 const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   const [activeTab, setActiveTab] = useState('cotizaciones');
@@ -886,6 +926,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   const [catArticulos,    setCatArticulos]    = useState([]);
   const [catHerramientas, setCatHerramientas] = useState([]);
   const [trabajadores,    setTrabajadores]    = useState([]);
+  const [drafts,          setDrafts]          = useState(() => JSON.parse(localStorage.getItem('ecg_cotizacion_drafts') || '[]'));
 
   const [loadingCot, setLoadingCot] = useState(true);
   const [loadingCat, setLoadingCat] = useState(true);
@@ -922,14 +963,40 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
 
   const handleSaveCot = async (fields) => {
     await apiCreateCotizacion(fields);
+    if (editCot?.isDraft) {
+      handleDeleteDraft(editCot.id);
+    }
     await fetchCotizaciones();
     setShowForm(false);
+    setEditCot(null);
   };
 
   const handleUpdateCot = async (fields) => {
     await apiUpdateCotizacion(editCot.id, fields);
     await fetchCotizaciones();
     setEditCot(null);
+  };
+
+  const handleSaveDraft = (payload) => {
+    const newDraft = { ...payload, timestamp: Date.now() };
+    let newDrafts = [...drafts];
+    if (newDraft.id) {
+      const idx = newDrafts.findIndex(d => d.id === newDraft.id);
+      if (idx >= 0) newDrafts[idx] = newDraft;
+      else newDrafts.push(newDraft);
+    } else {
+      newDrafts.push({ ...newDraft, id: 'draft_' + Date.now(), isDraft: true });
+    }
+    setDrafts(newDrafts);
+    localStorage.setItem('ecg_cotizacion_drafts', JSON.stringify(newDrafts));
+    setShowForm(false);
+    setEditCot(null);
+  };
+
+  const handleDeleteDraft = (id) => {
+    const newDrafts = drafts.filter(d => d.id !== id);
+    setDrafts(newDrafts);
+    localStorage.setItem('ecg_cotizacion_drafts', JSON.stringify(newDrafts));
   };
 
   const handleDeleteCot = async (id) => {
@@ -966,6 +1033,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
   const tabs = [
     { id: 'cotizaciones',   label: 'Cotizaciones',  icon: <FileText size={14} />  },
     ...(!readOnly ? [
+      { id: 'borradores',   label: `Borradores (${drafts.length})`, icon: <Save size={14} /> },
       { id: 'clientes',     label: 'Clientes',      icon: <Users size={14} />     },
       { id: 'articulos',    label: 'Artículos',     icon: <Package size={14} />   },
       { id: 'herramientas', label: 'Herramientas',  icon: <Wrench size={14} />    },
@@ -1032,8 +1100,9 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
           <CotizacionForm
             {...formProps}
             initial={editCot}
-            isEdit={!!editCot}
-            onSave={editCot ? handleUpdateCot : handleSaveCot}
+            isEdit={!!editCot && !editCot.isDraft}
+            onSave={editCot && !editCot.isDraft ? handleUpdateCot : handleSaveCot}
+            onSaveDraft={handleSaveDraft}
             onCancel={() => { setShowForm(false); setEditCot(null); }}
           />
         ) : (
@@ -1048,6 +1117,15 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
             onEstado={handleEstado}
           />
         )
+      )}
+
+      {activeTab === 'borradores' && !readOnly && (
+        <BorradoresListTab
+          drafts={drafts}
+          clientes={clientes}
+          onResume={(d) => { setEditCot(d); setShowForm(true); setActiveTab('cotizaciones'); }}
+          onDelete={handleDeleteDraft}
+        />
       )}
 
       {activeTab === 'clientes' && (
