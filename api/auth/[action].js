@@ -68,6 +68,9 @@ module.exports = async function handler(req, res) {
         id: userId, name: Array.isArray(rawName) ? rawName[0] : rawName,
         email: data['Correo'], role: data.nivel >= 1 ? 'admin' : 'user',
         nivel: data.nivel, sessionToken: token,
+        telefono: data['Telefono'] || '',
+        rfc_curp: data['RFC_CURP'] || '',
+        empresa:  data['Empresa']  || '',
       },
     });
   }
@@ -205,6 +208,64 @@ module.exports = async function handler(req, res) {
     const { error } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('id', payload.sub);
     if (error) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
     return res.json({ message: 'Contraseña actualizada correctamente.' });
+  }
+
+  // ── GET-PROFILE ──────────────────────────────────────────────────────────
+  if (action === 'get-profile') {
+    if (req.method !== 'POST') return res.status(405).end();
+
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+    const { data: user } = await supabase
+      .from('Usuarios')
+      .select('id, "Nombre Completo", "Correo", nivel, "Telefono", "RFC_CURP", "Empresa"')
+      .eq('id', payload.sub)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    const rawName = user['Nombre Completo'];
+    return res.json({
+      profile: {
+        id:       user.id,
+        name:     Array.isArray(rawName) ? rawName[0] : rawName,
+        email:    user['Correo'],
+        nivel:    user.nivel,
+        telefono: user['Telefono'] || '',
+        rfc_curp: user['RFC_CURP'] || '',
+        empresa:  user['Empresa']  || '',
+      },
+    });
+  }
+
+  // ── UPDATE-PROFILE ───────────────────────────────────────────────────────
+  if (action === 'update-profile') {
+    if (req.method !== 'POST') return res.status(405).end();
+
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+    const { name, telefono, rfc_curp, empresa } = req.body || {};
+
+    if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
+
+    const updateFields = {
+      'Nombre Completo': [name.trim()],
+    };
+    if (telefono !== undefined) updateFields['Telefono'] = telefono.trim() || null;
+    if (rfc_curp !== undefined) updateFields['RFC_CURP']  = rfc_curp.trim().toUpperCase() || null;
+    if (empresa  !== undefined) updateFields['Empresa']   = empresa.trim() || null;
+
+    const { error } = await supabase
+      .from('Usuarios')
+      .update(updateFields)
+      .eq('id', payload.sub);
+
+    if (error) return res.status(500).json({ error: 'Error al actualizar el perfil.' });
+
+    return res.json({ message: 'Perfil actualizado correctamente.' });
   }
 
   return res.status(404).json({ error: 'Acción no encontrada.' });

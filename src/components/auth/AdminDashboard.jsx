@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Users, Building2, LayoutGrid, LogOut, Trash2, Shield,
+  Users, User, Building2, LayoutGrid, LogOut, Trash2, Shield,
   ChevronRight, GraduationCap, Leaf, Cog, FileText,
   ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
@@ -14,6 +14,7 @@ import TareasSection from '../admin/TareasSection';
 import TrabajosSection from '../admin/TrabajosSection';
 import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 import GanttSection from '../admin/GanttSection';
+import ProfileSection from '../shared/ProfileSection';
 
 /* ─── Status maps ─── */
 
@@ -1105,6 +1106,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
       { id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' },
       { id: 'recuperacion', label: 'Recuperar Cuentas', icon: <RotateCcw size={17} />, color: 'text-amber-400' },
     ] : []),
+    { id: 'perfil', label: 'Mi Perfil', icon: <User size={17} />, color: 'text-cyan-400' },
   ];
 
   const handleNav = (id) => {
@@ -1279,6 +1281,18 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           )}
           {activeTab === 'recuperacion' && nivel >= 3 && (
             <RecuperacionCuentasSection />
+          )}
+          {activeTab === 'perfil' && (
+            <ProfileSection
+              currentUser={currentUser}
+              onProfileUpdate={(updated) => {
+                try {
+                  const session = JSON.parse(localStorage.getItem('ecg_session') || '{}');
+                  const newSession = { ...session, ...updated };
+                  localStorage.setItem('ecg_session', JSON.stringify(newSession));
+                } catch { /* ignorar */ }
+              }}
+            />
           )}
         </div>
       </main>

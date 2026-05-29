@@ -331,6 +331,28 @@ export async function apiPermanentDeleteUser(id) {
   return data;
 }
 
+// ── Perfil de Usuario ─────────────────────────────────────────────────────────
+export async function apiGetProfile() {
+  const res = await fetch(`${BASE_URL}/api/auth/get-profile?action=get-profile`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener perfil.');
+  return data.profile;
+}
+
+export async function apiUpdateProfile(fields) {
+  const res = await fetch(`${BASE_URL}/api/auth/update-profile?action=update-profile`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar perfil.');
+  return data;
+}
+
 export async function apiChangeOwnPassword(currentPassword, newPassword) {
   const res = await fetch(`${BASE_URL}/api/auth/change-password?action=change-password`, {
     method: 'POST',
