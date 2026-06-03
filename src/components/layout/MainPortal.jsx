@@ -96,6 +96,20 @@ const MainPortal = ({ companies, onSelectCompany }) => {
         </div>
       </div>
 
+      {/* Nuestros Clientes */}
+      <div className="mt-20 max-w-5xl w-full animate-slideUp">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold tracking-[0.25em] uppercase text-slate-400 mb-2">Confían en nosotros</p>
+        </div>
+        
+        <div className="flex justify-center bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
+          <img 
+            src="/assets/nuestros_clientes.jpeg" 
+            className="max-w-full h-auto rounded-xl object-contain"
+          />
+        </div>
+      </div>
+
       <p className="mt-16 text-slate-300 font-bold text-xs uppercase tracking-[0.3em]">
         © {new Date().getFullYear()} ECG Corporativo Industrial
       </p>
