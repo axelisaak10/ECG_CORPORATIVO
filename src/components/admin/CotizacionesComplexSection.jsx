@@ -199,24 +199,69 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
   const [showAdd,    setShowAdd]    = useState(false);
   const [editItem,   setEditItem]   = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [search,     setSearch]     = useState('');
+  const [filterCat,  setFilterCat]  = useState('todos');
+
+  const filtered = items.filter(item => {
+    const matchesSearch = columns.some(col => String(item[col.key] || '').toLowerCase().includes(search.toLowerCase()));
+    const matchesCat = filterCat === 'todos' || item.categoria === filterCat;
+    return matchesSearch && matchesCat;
+  });
+
+  const categories = [...new Set(items.map(i => i.categoria))].filter(Boolean).sort();
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-extrabold text-slate-800">{title}</h2>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all">
-          <Plus size={14} /> Agregar
-        </button>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-4">
+        <div>
+          <h2 className="text-lg font-extrabold text-slate-800">{title}</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{filtered.length} registros encontrados</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)}
+              className="pl-8 pr-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-400 w-48" />
+            <Package className="absolute left-2.5 top-2 text-slate-400" size={14} />
+          </div>
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all">
+            <Plus size={14} /> Agregar
+          </button>
+        </div>
       </div>
+
+      {categories.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-4 no-scrollbar">
+          <button 
+            onClick={() => setFilterCat('todos')}
+            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+              filterCat === 'todos' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+            }`}
+          >
+            Todos
+          </button>
+          {categories.map(cat => (
+            <button 
+              key={cat}
+              onClick={() => setFilterCat(cat)}
+              className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+                filterCat === cat ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       {error && <ErrorMsg msg={error} />}
       {showAdd && addForm({ onSave: async (d) => { await onAdd(d); setShowAdd(false); }, onClose: () => setShowAdd(false) })}
       {editItem && addForm({ initial: editItem, isEdit: true, onSave: async (d) => { await onEdit(editItem.id, d); setEditItem(null); }, onClose: () => setEditItem(null) })}
 
       {loading ? <Spinner /> : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          {items.length === 0 ? (
-            <p className="text-center text-slate-400 py-12 text-sm">Sin registros aún</p>
+          {filtered.length === 0 ? (
+            <p className="text-center text-slate-400 py-12 text-sm">Sin registros que coincidan</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -226,7 +271,7 @@ const CatalogoManager = ({ title, items, loading, error, columns, onAdd, onEdit,
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {items.map(item => (
+                {filtered.map(item => (
                   <tr key={item.id} className="hover:bg-slate-50/50">
                     {columns.map(c => (
                       <td key={c.key} className="px-5 py-3 text-slate-700 font-medium">
@@ -466,6 +511,7 @@ const CotizacionForm = ({
   const [selEmp,  setSelEmp]  = useState('');
   const [searchArt, setSearchArt] = useState('');
   const [searchHer, setSearchHer] = useState('');
+  const [filterCat, setFilterCat] = useState('todos');
 
   const isDraft = initial?.isDraft || false;
 
@@ -477,11 +523,15 @@ const CotizacionForm = ({
   );
   const total = totalArticulos + totalHerramientas + totalTiempo;
 
-  const filteredArticulos = catalogoArticulos.filter(a => 
-    (a.nombre || '').toLowerCase().includes(searchArt.toLowerCase()) ||
-    (a.codigo || '').toLowerCase().includes(searchArt.toLowerCase()) ||
-    (a.categoria || '').toLowerCase().includes(searchArt.toLowerCase())
-  );
+  const filteredArticulos = catalogoArticulos.filter(a => {
+    const matchesSearch = (a.nombre || '').toLowerCase().includes(searchArt.toLowerCase()) ||
+                          (a.codigo || '').toLowerCase().includes(searchArt.toLowerCase()) ||
+                          (a.categoria || '').toLowerCase().includes(searchArt.toLowerCase());
+    const matchesCat = filterCat === 'todos' || a.categoria === filterCat;
+    return matchesSearch && matchesCat;
+  });
+
+  const materialCategories = [...new Set(catalogoArticulos.map(a => a.categoria))].filter(Boolean).sort();
 
   const filteredHerramientas = catalogoHerramientas.filter(h => 
     (h.nombre || '').toLowerCase().includes(searchHer.toLowerCase())
@@ -607,6 +657,30 @@ const CotizacionForm = ({
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
           <Package size={15} className="text-blue-500" /> Artículos
         </h2>
+        
+        {/* Filtros por Apartados (Categorías) */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-2 no-scrollbar">
+          <button 
+            onClick={() => setFilterCat('todos')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
+              filterCat === 'todos' ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+            }`}
+          >
+            Todos
+          </button>
+          {materialCategories.map(cat => (
+            <button 
+              key={cat}
+              onClick={() => setFilterCat(cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
+                filterCat === cat ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-2 mb-4">
           <input 
             type="text" 
@@ -617,7 +691,7 @@ const CotizacionForm = ({
           />
           <div className="flex gap-2">
             <select className={inputCls} value={selArt} onChange={e => setSelArt(e.target.value)}>
-              <option value="">— {filteredArticulos.length} artículos encontrados —</option>
+              <option value="">— {filteredArticulos.length} artículos {filterCat !== 'todos' ? `en ${filterCat}` : ''} —</option>
               {filteredArticulos.map(a => (
                 <option key={a.id} value={a.id}>
                   {a.categoria ? `[${a.categoria}] ` : ''}{a.nombre} ({fmt(a.precio)}/{a.unidad})
@@ -1267,11 +1341,15 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
                     { value: 'articulos_catalogo', label: 'Otros (General)' },
                     { value: 'tubos', label: 'Tubos / Tubería' },
                     { value: 'conectores', label: 'Conectores / Coples' },
+                    { value: 'coples', label: 'Coples' },
                     { value: 'abrazaderas', label: 'Abrazaderas' },
                     { value: 'cables', label: 'Cables' },
-                    { value: 'interruptores', label: 'Interruptores / Centros' },
                     { value: 'iluminacion', label: 'Iluminación' },
-                    { value: 'accesorios_varios', label: 'Accesorios Varios' },
+                    { value: 'cajas_registros', label: 'Cajas y Registros' },
+                    { value: 'fontaneria_y_valvulas', label: 'Fontanería' },
+                    { value: 'cajas_y_tableros', label: 'Cajas y Tableros' },
+                    { value: 'sistemas_tierra_y_protecciones', label: 'Sistemas Tierra' },
+                    { value: 'herramientas_y_estructuras', label: 'Herramientas y Estructuras' },
                   ]
                 }]),
                 { key: 'codigo', label: 'Código', placeholder: 'Ej. tpd13, cxlp01...' },
