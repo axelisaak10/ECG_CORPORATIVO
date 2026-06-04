@@ -191,8 +191,8 @@ export async function apiUpdateArticulo(id, fields) {
   return data.articulo;
 }
 
-export async function apiDeleteArticulo(id) {
-  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos&id=${id}`, {
+export async function apiDeleteArticulo(id, tabla = 'articulos_catalogo') {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=articulos&id=${id}&tabla=${tabla}`, {
     method: 'DELETE', headers: authHeaders(false),
   });
   const data = await res.json();

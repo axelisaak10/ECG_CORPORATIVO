@@ -100,29 +100,47 @@ export const generateCotizacionPDF = async (cot) => {
 
   // --- Table: Artículos ---
   if (cot.articulos && cot.articulos.length > 0) {
-    autoTable(doc, {
-      startY: currentY,
-      head: [['Artículos / Materiales', 'Cantidad', 'Precio Unit.', 'Subtotal']],
-      body: cot.articulos.map(a => {
-        const precioFinal = a.precio * (1 + (a.margen || 0) / 100);
-        return [
-          a.nombre,
-          a.cantidad,
-          fmt(precioFinal),
-          fmt(precioFinal * a.cantidad)
-        ];
-      }),
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, 
-      styles: { fontSize: 9, cellPadding: 3 },
-      columnStyles: {
-        1: { halign: 'center' },
-        2: { halign: 'right' },
-        3: { halign: 'right' }
-      },
-      margin: { left: margin, right: margin }
+    const grouped = cot.articulos.reduce((acc, a) => {
+      const cat = a.categoria || 'Artículos Varios';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(a);
+      return acc;
+    }, {});
+
+    Object.entries(grouped).forEach(([categoria, items]) => {
+      if (currentY > pageHeight - 40) { doc.addPage(); currentY = 20; }
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(59, 130, 246);
+      doc.text(categoria.toUpperCase(), margin, currentY);
+      currentY += 3;
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Material / Descripción', 'Cantidad', 'Precio Unit.', 'Subtotal']],
+        body: items.map(a => {
+          const precioFinal = a.precio * (1 + (a.margen || 0) / 100);
+          const nombreCompleto = a.codigo ? `[${a.codigo}] ${a.nombre}` : a.nombre;
+          return [
+            nombreCompleto,
+            `${a.cantidad} ${a.unidad || 'pza'}`,
+            fmt(precioFinal),
+            fmt(precioFinal * a.cantidad)
+          ];
+        }),
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, 
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        columnStyles: {
+          1: { halign: 'center', cellWidth: 25 },
+          2: { halign: 'right', cellWidth: 30 },
+          3: { halign: 'right', cellWidth: 35 }
+        },
+        margin: { left: margin, right: margin }
+      });
+      currentY = doc.lastAutoTable.finalY + 8;
     });
-    currentY = doc.lastAutoTable.finalY + 10;
   }
 
   // --- Table: Herramientas ---

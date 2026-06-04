@@ -272,8 +272,14 @@ const SimpleModal = ({ title, fields, initial = {}, onSave, onClose }) => {
         <div className="px-6 py-5 space-y-4">
           {fields.map(f => (
             <Field key={f.key} label={f.label}>
-              <input type={f.type || 'text'} className={inputCls}
-                value={data[f.key]} onChange={e => set(f.key, e.target.value)} placeholder={f.placeholder || ''} />
+              {f.type === 'select' ? (
+                <select className={inputCls} value={data[f.key]} onChange={e => set(f.key, e.target.value)}>
+                  {f.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              ) : (
+                <input type={f.type || 'text'} className={inputCls}
+                  value={data[f.key]} onChange={e => set(f.key, e.target.value)} placeholder={f.placeholder || ''} />
+              )}
             </Field>
           ))}
         </div>
@@ -339,25 +345,39 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
           )}
 
           {(cot.articulos || []).length > 0 && (
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Artículos</p>
-              <div className="space-y-1">
-                {cot.articulos.map((a, i) => {
-                  const margen = a.margen || 0;
-                  const precioFinal = a.precio * (1 + margen / 100);
-                  return (
-                    <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-                      <span className="text-slate-700">
-                        {a.nombre} × {a.cantidad}
-                        {margen > 0 && (
-                          <span className="ml-1.5 text-xs text-emerald-500 font-bold">+{margen}%</span>
-                        )}
-                      </span>
-                      <span className="font-bold text-slate-800">{fmt(precioFinal * a.cantidad)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="space-y-4">
+              {Object.entries(
+                (cot.articulos || []).reduce((acc, a) => {
+                  const cat = a.categoria || 'Artículos Varios';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(a);
+                  return acc;
+                }, {})
+              ).map(([categoria, items]) => (
+                <div key={categoria}>
+                  <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2 border-b border-blue-50 pb-1">
+                    {categoria}
+                  </p>
+                  <div className="space-y-1">
+                    {items.map((a, i) => {
+                      const margen = a.margen || 0;
+                      const precioFinal = a.precio * (1 + margen / 100);
+                      return (
+                        <div key={i} className="flex justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
+                          <span className="text-slate-700">
+                            {a.codigo && <span className="font-mono text-[10px] bg-slate-200 px-1 rounded mr-1.5">{a.codigo}</span>}
+                            {a.nombre} × {a.cantidad}
+                            {margen > 0 && (
+                              <span className="ml-1.5 text-xs text-emerald-500 font-bold">+{margen}%</span>
+                            )}
+                          </span>
+                          <span className="font-bold text-slate-800">{fmt(precioFinal * a.cantidad)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -444,6 +464,8 @@ const CotizacionForm = ({
   const [selArt,  setSelArt]  = useState('');
   const [selHer,  setSelHer]  = useState('');
   const [selEmp,  setSelEmp]  = useState('');
+  const [searchArt, setSearchArt] = useState('');
+  const [searchHer, setSearchHer] = useState('');
 
   const isDraft = initial?.isDraft || false;
 
@@ -455,15 +477,35 @@ const CotizacionForm = ({
   );
   const total = totalArticulos + totalHerramientas + totalTiempo;
 
+  const filteredArticulos = catalogoArticulos.filter(a => 
+    (a.nombre || '').toLowerCase().includes(searchArt.toLowerCase()) ||
+    (a.codigo || '').toLowerCase().includes(searchArt.toLowerCase()) ||
+    (a.categoria || '').toLowerCase().includes(searchArt.toLowerCase())
+  );
+
+  const filteredHerramientas = catalogoHerramientas.filter(h => 
+    (h.nombre || '').toLowerCase().includes(searchHer.toLowerCase())
+  );
+
   const addArticulo = () => {
     const cat = catalogoArticulos.find(a => a.id === selArt);
     if (!cat) return;
     if (articulos.find(a => a.catalogo_id === cat.id)) {
       setArticulos(p => p.map(a => a.catalogo_id === cat.id ? { ...a, cantidad: a.cantidad + 1 } : a));
     } else {
-      setArticulos(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio: cat.precio, cantidad: 1, margen: 0 }]);
+      setArticulos(p => [...p, { 
+        _id: uid(), 
+        catalogo_id: cat.id, 
+        nombre: cat.nombre, 
+        precio: cat.precio, 
+        cantidad: 1, 
+        margen: 0,
+        categoria: cat.categoria || 'Artículos Varios',
+        codigo: cat.codigo || null
+      }]);
     }
     setSelArt('');
+    setSearchArt('');
   };
 
   const addHerramienta = () => {
@@ -475,6 +517,7 @@ const CotizacionForm = ({
       setHerramientas(p => [...p, { _id: uid(), catalogo_id: cat.id, nombre: cat.nombre, precio_renta_diaria: cat.precio_renta_diaria, unidad: cat.unidad || 'pza', cantidad: 1, margen: 0 }]);
     }
     setSelHer('');
+    setSearchHer('');
   };
 
   const addEmpleado = () => {
@@ -483,6 +526,13 @@ const CotizacionForm = ({
     setEmpleados(p => [...p, { id: emp.id, nombre: emp.name }]);
     setSelEmp('');
   };
+
+  const groupedArticulos = articulos.reduce((acc, a) => {
+    const cat = a.categoria || 'Artículos Varios';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(a);
+    return acc;
+  }, {});
 
   const handleSave = async () => {
     if (!clienteId) { setError('Selecciona un cliente.'); return; }
@@ -557,60 +607,80 @@ const CotizacionForm = ({
         <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
           <Package size={15} className="text-blue-500" /> Artículos
         </h2>
-        <div className="flex gap-2 mb-3">
-          <select className={inputCls} value={selArt} onChange={e => setSelArt(e.target.value)}>
-            <option value="">— Selecciona del catálogo —</option>
-            {catalogoArticulos.map(a => <option key={a.id} value={a.id}>{a.nombre} ({fmt(a.precio)}/{a.unidad})</option>)}
-          </select>
-          <button onClick={addArticulo} disabled={!selArt}
-            className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40 flex-shrink-0">
-            <Plus size={14} /> Agregar
-          </button>
+        <div className="space-y-2 mb-4">
+          <input 
+            type="text" 
+            placeholder="Buscar artículo por nombre, código o categoría..." 
+            className={inputCls}
+            value={searchArt}
+            onChange={e => setSearchArt(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <select className={inputCls} value={selArt} onChange={e => setSelArt(e.target.value)}>
+              <option value="">— {filteredArticulos.length} artículos encontrados —</option>
+              {filteredArticulos.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.categoria ? `[${a.categoria}] ` : ''}{a.nombre} ({fmt(a.precio)}/{a.unidad})
+                </option>
+              ))}
+            </select>
+            <button onClick={addArticulo} disabled={!selArt}
+              className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40 flex-shrink-0">
+              <Plus size={14} /> Agregar
+            </button>
+          </div>
         </div>
         {articulos.length > 0 && (
-          <div className="space-y-1.5">
-            {articulos.map(a => {
-              const precioConMargen = a.precio * (1 + (a.margen || 0) / 100);
-              return (
-                <div key={a._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
-                      <p className="text-xs text-slate-400">
-                        {fmt(a.precio)}
-                        {a.margen > 0 && (
-                          <span className="text-emerald-500 font-bold"> +{a.margen}% → {fmt(precioConMargen)}</span>
-                        )}
-                        {' '}× {a.cantidad} = <span className="font-bold text-slate-600">{fmt(precioConMargen * a.cantidad)}</span>
-                      </p>
+          <div className="space-y-4">
+            {Object.entries(groupedArticulos).map(([categoria, items]) => (
+              <div key={categoria} className="space-y-1.5">
+                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider pl-1 border-l-2 border-blue-200 ml-0.5">{categoria}</p>
+                {items.map(a => {
+                  const precioConMargen = a.precio * (1 + (a.margen || 0) / 100);
+                  return (
+                    <div key={a._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {a.codigo && <span className="text-[10px] font-mono bg-slate-200 text-slate-600 px-1 rounded uppercase">{a.codigo}</span>}
+                            <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
+                          </div>
+                          <p className="text-xs text-slate-400">
+                            {fmt(a.precio)}
+                            {a.margen > 0 && (
+                              <span className="text-emerald-500 font-bold"> +{a.margen}% → {fmt(precioConMargen)}</span>
+                            )}
+                            {' '}× {a.cantidad} = <span className="font-bold text-slate-600">{fmt(precioConMargen * a.cantidad)}</span>
+                          </p>
+                        </div>
+                        <input type="number" min="1" value={a.cantidad}
+                          onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
+                          className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
+                        <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
+                      </div>
+                      <div className="flex items-center gap-1.5 pl-0.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <Percent size={10} /> Margen
+                        </span>
+                        {[5, 10, 15].map(pct => (
+                          <button
+                            key={pct}
+                            onClick={() => setArticulos(p => p.map(i => i._id === a._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
+                              a.margen === pct
+                                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200'
+                                : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+                            }`}
+                          >
+                            +{pct}%
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <input type="number" min="1" value={a.cantidad}
-                      onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
-                      className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
-                    <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
-                  </div>
-                  {/* Markup percentage buttons */}
-                  <div className="flex items-center gap-1.5 pl-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <Percent size={10} /> Margen
-                    </span>
-                    {[5, 10, 15].map(pct => (
-                      <button
-                        key={pct}
-                        onClick={() => setArticulos(p => p.map(i => i._id === a._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
-                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
-                          a.margen === pct
-                            ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200'
-                            : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
-                        }`}
-                      >
-                        +{pct}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
             <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalArticulos)}</div>
           </div>
         )}
@@ -622,15 +692,24 @@ const CotizacionForm = ({
           <Wrench size={15} className="text-amber-500" /> Herramientas
           {totalDias > 0 && <span className="ml-auto text-xs text-slate-400 font-medium">Renta por {totalDias.toFixed(1)} días equiv.</span>}
         </h2>
-        <div className="flex gap-2 mb-3">
-          <select className={inputCls} value={selHer} onChange={e => setSelHer(e.target.value)}>
-            <option value="">— Selecciona del catálogo —</option>
-            {catalogoHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día · {h.unidad || 'pza'})</option>)}
-          </select>
-          <button onClick={addHerramienta} disabled={!selHer}
-            className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-40 flex-shrink-0">
-            <Plus size={14} /> Agregar
-          </button>
+        <div className="space-y-2 mb-4">
+          <input 
+            type="text" 
+            placeholder="Buscar herramienta por nombre..." 
+            className={inputCls}
+            value={searchHer}
+            onChange={e => setSearchHer(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <select className={inputCls} value={selHer} onChange={e => setSelHer(e.target.value)}>
+              <option value="">— {filteredHerramientas.length} herramientas encontradas —</option>
+              {filteredHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día · {h.unidad || 'pza'})</option>)}
+            </select>
+            <button onClick={addHerramienta} disabled={!selHer}
+              className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-40 flex-shrink-0">
+              <Plus size={14} /> Agregar
+            </button>
+          </div>
         </div>
         {herramientas.length > 0 && (
           <div className="space-y-1.5">
@@ -1155,23 +1234,54 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
 
       {activeTab === 'articulos' && (
         <CatalogoManager
-          title="Catálogo de Artículos" items={catArticulos} loading={loadingCat} error={errorCat}
+          title="Catálogo de Artículos y Materiales" items={catArticulos} loading={loadingCat} error={errorCat}
           columns={[
+            { key: 'codigo', label: 'Código', render: v => <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold">{v || '—'}</span> },
             { key: 'nombre', label: 'Nombre' },
+            { key: 'categoria', label: 'Categoría', render: v => <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">{v || 'Otros'}</span> },
             { key: 'precio', label: 'Precio', render: v => <span className="font-bold">{fmt(v)}</span> },
             { key: 'unidad', label: 'Unidad' },
           ]}
-          onAdd={async (d) => { const a = await apiCreateArticulo(d); setCatArticulos(p => [...p, a].sort((a, b) => a.nombre.localeCompare(b.nombre))); }}
-          onEdit={async (id, d) => { const a = await apiUpdateArticulo(id, d); setCatArticulos(p => p.map(i => i.id === id ? a : i)); }}
-          onDelete={async (id) => { await apiDeleteArticulo(id); setCatArticulos(p => p.filter(i => i.id !== id)); }}
+          onAdd={async (d) => { 
+            const a = await apiCreateArticulo({ ...d, tabla_origen: d.tabla_origen }); 
+            setCatArticulos(p => [...p, { ...a, nombre: a.nombre || a.descripcion }].sort((a, b) => (a.nombre || a.descripcion).localeCompare(b.nombre || b.descripcion))); 
+          }}
+          onEdit={async (id, d) => { 
+            const item = catArticulos.find(i => i.id === id);
+            const a = await apiUpdateArticulo(id, { ...d, tabla_origen: item.tabla_origen }); 
+            setCatArticulos(p => p.map(i => i.id === id ? { ...a, nombre: a.nombre || a.descripcion } : i)); 
+          }}
+          onDelete={async (id) => { 
+            const item = catArticulos.find(i => i.id === id);
+            await apiDeleteArticulo(id, item.tabla_origen); 
+            setCatArticulos(p => p.filter(i => i.id !== id)); 
+          }}
           addForm={({ initial, onSave, onClose, isEdit }) => (
             <SimpleModal title={isEdit ? 'Editar Artículo' : 'Nuevo Artículo'}
               fields={[
-                { key: 'nombre', label: 'Nombre *',    placeholder: 'Nombre del artículo' },
-                { key: 'precio', label: 'Precio ($)',   placeholder: '0.00', type: 'number' },
-                { key: 'unidad', label: 'Unidad',      placeholder: 'pza, kg, m, etc.' },
+                ...(isEdit ? [] : [{ 
+                  key: 'tabla_origen', 
+                  label: 'Tabla / Destino *', 
+                  type: 'select', 
+                  options: [
+                    { value: 'articulos_catalogo', label: 'Otros (General)' },
+                    { value: 'tubos', label: 'Tubos / Tubería' },
+                    { value: 'conectores', label: 'Conectores / Coples' },
+                    { value: 'abrazaderas', label: 'Abrazaderas' },
+                    { value: 'cables', label: 'Cables' },
+                    { value: 'interruptores', label: 'Interruptores / Centros' },
+                    { value: 'iluminacion', label: 'Iluminación' },
+                    { value: 'accesorios_varios', label: 'Accesorios Varios' },
+                  ]
+                }]),
+                { key: 'codigo', label: 'Código', placeholder: 'Ej. tpd13, cxlp01...' },
+                { key: 'nombre', label: 'Nombre / Descripción *', placeholder: 'Nombre del artículo' },
+                { key: 'categoria', label: 'Categoría Mostrar', placeholder: 'Ej. Tubos, Cables, etc.' },
+                { key: 'precio', label: 'Precio ($)', placeholder: '0.00', type: 'number' },
+                { key: 'unidad', label: 'Unidad', placeholder: 'pza, m, tramo, etc.' },
               ]}
-              initial={initial || {}} onSave={onSave} onClose={onClose} />
+              initial={initial ? { ...initial, nombre: initial.nombre || initial.descripcion } : { tabla_origen: 'articulos_catalogo' }} 
+              onSave={onSave} onClose={onClose} />
           )}
         />
       )}

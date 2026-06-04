@@ -95,32 +95,71 @@ module.exports = async function handler(req, res) {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
     if (req.method === 'GET') {
-      const { data, error } = await supabase.from('articulos_catalogo').select('*').order('nombre');
-      if (error) return res.status(500).json({ error: 'Error al obtener artículos.' });
+      // Usar la vista unificada para obtener todos los materiales de todas las categorías
+      const { data, error } = await supabase.from('vista_articulos_completo').select('*').order('nombre');
+      if (error) {
+        // Fallback a la tabla original si la vista no existe aún
+        const { data: dataOrig, error: errorOrig } = await supabase.from('articulos_catalogo').select('*').order('nombre');
+        if (errorOrig) return res.status(500).json({ error: 'Error al obtener artículos.' });
+        return res.json({ articulos: dataOrig || [] });
+      }
       return res.json({ articulos: data || [] });
     }
     if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
 
     if (req.method === 'POST') {
-      const { nombre, precio, unidad } = req.body;
+      const { nombre, precio, unidad, categoria, codigo, tabla_origen } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
-      const { data, error } = await supabase.from('articulos_catalogo')
-        .insert([{ nombre: nombre.trim(), precio: Number(precio) || 0, unidad: unidad?.trim() || 'pza' }])
+      
+      // Decidir en qué tabla insertar
+      const targetTable = tabla_origen || 'articulos_catalogo';
+      const insertData = { 
+        precio: Number(precio) || 0, 
+        unidad: unidad?.trim() || 'pza'
+      };
+
+      if (targetTable === 'articulos_catalogo') {
+        insertData.nombre = nombre.trim();
+      } else {
+        insertData.descripcion = nombre.trim();
+        insertData.codigo = codigo?.trim() || null;
+        if (categoria) insertData.categoria = categoria;
+      }
+
+      const { data, error } = await supabase.from(targetTable)
+        .insert([insertData])
         .select().single();
+      
       if (error) return res.status(500).json({ error: 'Error al crear artículo.' });
       return res.status(201).json({ articulo: data });
     }
     if (req.method === 'PUT' && id) {
-      const { nombre, precio, unidad } = req.body;
+      const { nombre, precio, unidad, tabla_origen, codigo, categoria } = req.body;
       if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre es requerido.' });
-      const { data, error } = await supabase.from('articulos_catalogo')
-        .update({ nombre: nombre.trim(), precio: Number(precio) || 0, unidad: unidad?.trim() || 'pza' })
+
+      const targetTable = tabla_origen || 'articulos_catalogo';
+      const updateData = { 
+        precio: Number(precio) || 0, 
+        unidad: unidad?.trim() || 'pza'
+      };
+
+      if (targetTable === 'articulos_catalogo') {
+        updateData.nombre = nombre.trim();
+      } else {
+        updateData.descripcion = nombre.trim();
+        updateData.codigo = codigo?.trim() || null;
+        if (categoria) updateData.categoria = categoria;
+      }
+
+      const { data, error } = await supabase.from(targetTable)
+        .update(updateData)
         .eq('id', id).select().single();
       if (error) return res.status(500).json({ error: 'Error al actualizar artículo.' });
       return res.json({ articulo: data });
     }
     if (req.method === 'DELETE' && id) {
-      const { error } = await supabase.from('articulos_catalogo').delete().eq('id', id);
+      const tabla_origen = req.query.tabla || 'articulos_catalogo';
+      const { error } = await supabase.from(tabla_origen).delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar artículo.' });
       return res.json({ message: 'Artículo eliminado.' });
     }
