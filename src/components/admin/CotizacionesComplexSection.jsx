@@ -495,6 +495,7 @@ const CotizacionForm = ({
   clientes, catalogoArticulos, catalogoHerramientas, trabajadores,
   initial = null, isEdit = false, onSave, onCancel, onSaveDraft
 }) => {
+  // ── State ──
   const [clienteId,    setClienteId]    = useState(initial?.cliente_id    || '');
   const [descripcion,  setDescripcion]  = useState(initial?.descripcion   || '');
   const [articulos,    setArticulos]    = useState(() => (initial?.articulos    || []).map(a => ({ ...a, _id: a._id || uid(), margen: a.margen || 0 })));
@@ -515,6 +516,7 @@ const CotizacionForm = ({
 
   const isDraft = initial?.isDraft || false;
 
+  // ── Totals ──
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
   const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100) * h.cantidad * totalDias, 0);
@@ -523,6 +525,7 @@ const CotizacionForm = ({
   );
   const total = totalArticulos + totalHerramientas + totalTiempo;
 
+  // ── Filtered catalogs ──
   const filteredArticulos = catalogoArticulos.filter(a => {
     const matchesSearch = (a.nombre || '').toLowerCase().includes(searchArt.toLowerCase()) ||
                           (a.codigo || '').toLowerCase().includes(searchArt.toLowerCase()) ||
@@ -533,22 +536,23 @@ const CotizacionForm = ({
 
   const materialCategories = [...new Set(catalogoArticulos.map(a => a.categoria))].filter(Boolean).sort();
 
-  const filteredHerramientas = catalogoHerramientas.filter(h => 
+  const filteredHerramientas = catalogoHerramientas.filter(h =>
     (h.nombre || '').toLowerCase().includes(searchHer.toLowerCase())
   );
 
+  // ── Add items ──
   const addArticulo = () => {
     const cat = catalogoArticulos.find(a => a.id === selArt);
     if (!cat) return;
     if (articulos.find(a => a.catalogo_id === cat.id)) {
       setArticulos(p => p.map(a => a.catalogo_id === cat.id ? { ...a, cantidad: a.cantidad + 1 } : a));
     } else {
-      setArticulos(p => [...p, { 
-        _id: uid(), 
-        catalogo_id: cat.id, 
-        nombre: cat.nombre, 
-        precio: cat.precio, 
-        cantidad: 1, 
+      setArticulos(p => [...p, {
+        _id: uid(),
+        catalogo_id: cat.id,
+        nombre: cat.nombre,
+        precio: cat.precio,
+        cantidad: 1,
         margen: 0,
         categoria: cat.categoria || 'Artículos Varios',
         codigo: cat.codigo || null
@@ -584,6 +588,7 @@ const CotizacionForm = ({
     return acc;
   }, {});
 
+  // ── Save ──
   const handleSave = async () => {
     if (!clienteId) { setError('Selecciona un cliente.'); return; }
     setSaving(true); setError('');
@@ -600,8 +605,6 @@ const CotizacionForm = ({
         total,
       };
       await onSave(payload);
-
-      // Crear un ticket por cada empleado asignado (solo en nueva cotización y no en borrador)
       if (!isEdit && !isDraft && empleados.length > 0) {
         for (const emp of empleados) {
           try {
@@ -631,298 +634,421 @@ const CotizacionForm = ({
     });
   };
 
-  return (
-    <div className="space-y-5">
-      {error && <ErrorMsg msg={error} />}
-
-      {/* Info básica */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3">
-          {isEdit && !isDraft ? 'Editar Cotización' : isDraft ? 'Continuar Borrador' : 'Información Básica'}
-        </h2>
-        <Field label="Cliente *">
-          <select className={inputCls} value={clienteId} onChange={e => setClienteId(e.target.value)}>
-            <option value="">— Selecciona un cliente —</option>
-            {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.empresa ? ` — ${c.empresa}` : ''}</option>)}
-          </select>
-        </Field>
-        <Field label="Descripción">
-          <textarea className={inputCls + ' resize-none'} rows={3} value={descripcion}
-            onChange={e => setDescripcion(e.target.value)} placeholder="Describe el trabajo a realizar…" />
-        </Field>
-      </div>
-
-      {/* Artículos */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-          <Package size={15} className="text-blue-500" /> Artículos
-        </h2>
-        
-        {/* Filtros por Apartados (Categorías) */}
-        <div className="flex gap-2 overflow-x-auto pb-3 mb-2 no-scrollbar">
-          <button 
-            onClick={() => setFilterCat('todos')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
-              filterCat === 'todos' ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
-            }`}
-          >
-            Todos
-          </button>
-          {materialCategories.map(cat => (
-            <button 
-              key={cat}
-              onClick={() => setFilterCat(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
-                filterCat === cat ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+  // ── Section card wrapper ──
+  const SectionCard = ({ icon, title, accent = 'blue', badge, children }) => {
+    const accents = {
+      blue:   { icon: 'text-blue-500',   ring: 'ring-blue-100',  dot: 'bg-blue-500'  },
+      amber:  { icon: 'text-amber-500',  ring: 'ring-amber-100', dot: 'bg-amber-500' },
+      green:  { icon: 'text-green-500',  ring: 'ring-green-100', dot: 'bg-green-500' },
+      violet: { icon: 'text-violet-500', ring: 'ring-violet-100',dot: 'bg-violet-500'},
+    };
+    const a = accents[accent] || accents.blue;
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+          <span className={`${a.icon} flex-shrink-0`}>{icon}</span>
+          <span className="font-extrabold text-slate-800 text-sm flex-1">{title}</span>
+          {badge && (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white ${a.dot}`}>
+              {badge}
+            </span>
+          )}
         </div>
+        <div className="p-5">{children}</div>
+      </div>
+    );
+  };
 
-        <div className="space-y-2 mb-4">
-          <input 
-            type="text" 
-            placeholder="Buscar artículo por nombre, código o categoría..." 
-            className={inputCls}
-            value={searchArt}
-            onChange={e => setSearchArt(e.target.value)}
-          />
-          <div className="flex gap-2">
-            <select className={inputCls} value={selArt} onChange={e => setSelArt(e.target.value)}>
-              <option value="">— {filteredArticulos.length} artículos {filterCat !== 'todos' ? `en ${filterCat}` : ''} —</option>
-              {filteredArticulos.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.categoria ? `[${a.categoria}] ` : ''}{a.nombre} ({fmt(a.precio)}/{a.unidad})
-                </option>
+  return (
+    <div className="flex gap-6 items-start">
+
+      {/* ── LEFT COLUMN: form sections ── */}
+      <div className="flex-1 min-w-0 space-y-4">
+        {error && <ErrorMsg msg={error} />}
+
+        {/* ── Basic Info ── */}
+        <SectionCard icon={<FileText size={16} />} title={isEdit && !isDraft ? 'Editar Cotización' : isDraft ? 'Continuar Borrador' : 'Información Básica'}>
+          <div className="space-y-4">
+            <Field label="Cliente *">
+              <select className={inputCls} value={clienteId} onChange={e => setClienteId(e.target.value)}>
+                <option value="">— Selecciona un cliente —</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.empresa ? ` — ${c.empresa}` : ''}</option>)}
+              </select>
+            </Field>
+            <Field label="Descripción del proyecto">
+              <textarea className={inputCls + ' resize-none'} rows={3} value={descripcion}
+                onChange={e => setDescripcion(e.target.value)} placeholder="Describe el trabajo a realizar…" />
+            </Field>
+          </div>
+        </SectionCard>
+
+        {/* ── Artículos ── */}
+        <SectionCard
+          icon={<Package size={16} />}
+          title="Artículos y Materiales"
+          accent="blue"
+          badge={articulos.length > 0 ? articulos.length : null}
+        >
+          {/* Category filter chips */}
+          <div className="flex gap-1.5 overflow-x-auto pb-3 mb-3 no-scrollbar">
+            <button
+              onClick={() => setFilterCat('todos')}
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border transition-all ${
+                filterCat === 'todos' ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+              }`}
+            >Todos</button>
+            {materialCategories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilterCat(cat)}
+                className={`px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border transition-all ${
+                  filterCat === cat ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+                }`}
+              >{cat}</button>
+            ))}
+          </div>
+
+          {/* Search + select + add */}
+          <div className="space-y-2 mb-4">
+            <input
+              type="text"
+              placeholder="Buscar artículo por nombre, código o categoría..."
+              className={inputCls}
+              value={searchArt}
+              onChange={e => setSearchArt(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <select className={inputCls} value={selArt} onChange={e => setSelArt(e.target.value)}>
+                <option value="">— {filteredArticulos.length} artículos {filterCat !== 'todos' ? `en ${filterCat}` : ''} —</option>
+                {filteredArticulos.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.categoria ? `[${a.categoria}] ` : ''}{a.nombre} ({fmt(a.precio)}/{a.unidad})
+                  </option>
+                ))}
+              </select>
+              <button onClick={addArticulo} disabled={!selArt}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40 flex-shrink-0 transition-all">
+                <Plus size={14} /> Agregar
+              </button>
+            </div>
+          </div>
+
+          {/* Added articles */}
+          {articulos.length > 0 ? (
+            <div className="space-y-3">
+              {Object.entries(groupedArticulos).map(([categoria, items]) => (
+                <div key={categoria}>
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                    {categoria}
+                  </p>
+                  <div className="space-y-1.5">
+                    {items.map(a => {
+                      const precioConMargen = a.precio * (1 + (a.margen || 0) / 100);
+                      return (
+                        <div key={a._id} className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                {a.codigo && <span className="text-[10px] font-mono bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase">{a.codigo}</span>}
+                                <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
+                              </div>
+                              <p className="text-xs text-slate-400">
+                                {fmt(a.precio)}
+                                {a.margen > 0 && <span className="text-emerald-500 font-bold"> +{a.margen}% → {fmt(precioConMargen)}</span>}
+                                {' '}× {a.cantidad} = <span className="font-bold text-slate-700">{fmt(precioConMargen * a.cantidad)}</span>
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <input type="number" min="1" value={a.cantidad}
+                                onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
+                                className="w-14 text-center text-sm font-bold border border-slate-200 rounded-lg px-1 py-1 focus:outline-none focus:border-blue-400 bg-white" />
+                              <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                          {/* Margin buttons */}
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-0.5">
+                              <Percent size={9} /> Margen:
+                            </span>
+                            {[5, 10, 15].map(pct => (
+                              <button
+                                key={pct}
+                                onClick={() => setArticulos(p => p.map(i => i._id === a._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
+                                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+                                  a.margen === pct
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+                                }`}
+                              >+{pct}%</button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-end pt-1">
+                <span className="text-xs font-black text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                  Subtotal artículos: {fmt(totalArticulos)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-slate-400 text-sm py-6">Ningún artículo agregado aún</p>
+          )}
+        </SectionCard>
+
+        {/* ── Herramientas ── */}
+        <SectionCard
+          icon={<Wrench size={16} />}
+          title="Herramientas / Equipo"
+          accent="amber"
+          badge={herramientas.length > 0 ? herramientas.length : null}
+        >
+          {totalDias > 0 && (
+            <div className="flex items-center gap-1.5 mb-3 text-xs font-bold text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5">
+              <Clock size={12} /> Renta por {totalDias.toFixed(1)} días equivalentes
+            </div>
+          )}
+          <div className="space-y-2 mb-4">
+            <input
+              type="text"
+              placeholder="Buscar herramienta por nombre..."
+              className={inputCls}
+              value={searchHer}
+              onChange={e => setSearchHer(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <select className={inputCls} value={selHer} onChange={e => setSelHer(e.target.value)}>
+                <option value="">— {filteredHerramientas.length} herramientas encontradas —</option>
+                {filteredHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día · {h.unidad || 'pza'})</option>)}
+              </select>
+              <button onClick={addHerramienta} disabled={!selHer}
+                className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-40 flex-shrink-0 transition-all">
+                <Plus size={14} /> Agregar
+              </button>
+            </div>
+          </div>
+          {herramientas.length > 0 ? (
+            <div className="space-y-1.5">
+              {herramientas.map(h => {
+                const rentaConMargen = (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100);
+                return (
+                  <div key={h._id} className="bg-amber-50/50 rounded-xl px-4 py-3 border border-amber-100">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{h.nombre}</p>
+                        <p className="text-xs text-slate-400">
+                          {fmt(h.precio_renta_diaria)}/día
+                          {h.margen > 0 && <span className="text-amber-500 font-bold"> +{h.margen}% → {fmt(rentaConMargen)}/día</span>}
+                          {' '}× {h.cantidad} × {totalDias.toFixed(1)}d = <span className="font-bold text-slate-700">{fmt(rentaConMargen * h.cantidad * totalDias)}</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input type="number" min="1" value={h.cantidad}
+                          onChange={e => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
+                          className="w-14 text-center text-sm font-bold border border-slate-200 rounded-lg px-1 py-1 focus:outline-none focus:border-blue-400 bg-white" />
+                        <button onClick={() => setHerramientas(p => p.filter(i => i._id !== h._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-0.5">
+                        <Percent size={9} /> Margen:
+                      </span>
+                      {[5, 10, 15].map(pct => (
+                        <button
+                          key={pct}
+                          onClick={() => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+                            h.margen === pct
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-white border border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600'
+                          }`}
+                        >+{pct}%</button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex justify-end pt-1">
+                <span className="text-xs font-black text-slate-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                  Subtotal herramientas: {fmt(totalHerramientas)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-slate-400 text-sm py-6">Ninguna herramienta agregada aún</p>
+          )}
+        </SectionCard>
+
+        {/* ── Empleados ── */}
+        <SectionCard
+          icon={<Users size={16} />}
+          title="Personal Asignado"
+          accent="green"
+          badge={empleados.length > 0 ? empleados.length : null}
+        >
+          {!isEdit && empleados.length > 0 && (
+            <div className="flex items-center gap-1.5 mb-3 text-xs font-medium text-green-700 bg-green-50 rounded-lg px-3 py-1.5">
+              <ClipboardList size={12} /> Se crearán {empleados.length} tarea{empleados.length > 1 ? 's' : ''} automáticamente
+            </div>
+          )}
+          <div className="flex gap-2 mb-3">
+            <select className={inputCls} value={selEmp} onChange={e => setSelEmp(e.target.value)}>
+              <option value="">— Selecciona un trabajador —</option>
+              {trabajadores.filter(u => !empleados.find(e => e.id === u.id)).map(u => (
+                <option key={u.id} value={String(u.id)}>{u.name}</option>
               ))}
             </select>
-            <button onClick={addArticulo} disabled={!selArt}
-              className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40 flex-shrink-0">
+            <button onClick={addEmpleado} disabled={!selEmp}
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-40 flex-shrink-0 transition-all">
               <Plus size={14} /> Agregar
             </button>
           </div>
-        </div>
-        {articulos.length > 0 && (
-          <div className="space-y-4">
-            {Object.entries(groupedArticulos).map(([categoria, items]) => (
-              <div key={categoria} className="space-y-1.5">
-                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider pl-1 border-l-2 border-blue-200 ml-0.5">{categoria}</p>
-                {items.map(a => {
-                  const precioConMargen = a.precio * (1 + (a.margen || 0) / 100);
-                  return (
-                    <div key={a._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {a.codigo && <span className="text-[10px] font-mono bg-slate-200 text-slate-600 px-1 rounded uppercase">{a.codigo}</span>}
-                            <p className="text-sm font-semibold text-slate-800 truncate">{a.nombre}</p>
-                          </div>
-                          <p className="text-xs text-slate-400">
-                            {fmt(a.precio)}
-                            {a.margen > 0 && (
-                              <span className="text-emerald-500 font-bold"> +{a.margen}% → {fmt(precioConMargen)}</span>
-                            )}
-                            {' '}× {a.cantidad} = <span className="font-bold text-slate-600">{fmt(precioConMargen * a.cantidad)}</span>
-                          </p>
-                        </div>
-                        <input type="number" min="1" value={a.cantidad}
-                          onChange={e => setArticulos(p => p.map(i => i._id === a._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
-                          className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
-                        <button onClick={() => setArticulos(p => p.filter(i => i._id !== a._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
-                      </div>
-                      <div className="flex items-center gap-1.5 pl-0.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Percent size={10} /> Margen
-                        </span>
-                        {[5, 10, 15].map(pct => (
-                          <button
-                            key={pct}
-                            onClick={() => setArticulos(p => p.map(i => i._id === a._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
-                            className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
-                              a.margen === pct
-                                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200'
-                                : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
-                            }`}
-                          >
-                            +{pct}%
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalArticulos)}</div>
-          </div>
-        )}
-      </div>
+          {empleados.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {empleados.map(e => (
+                <span key={e.id} className="flex items-center gap-1.5 bg-green-100 text-green-800 text-xs font-bold px-3 py-1.5 rounded-full border border-green-200">
+                  {e.nombre}
+                  <button onClick={() => setEmpleados(p => p.filter(i => i.id !== e.id))} className="text-green-600 hover:text-red-500 transition-colors">
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-slate-400 text-sm py-4">Sin personal asignado</p>
+          )}
+        </SectionCard>
 
-      {/* Herramientas */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-          <Wrench size={15} className="text-amber-500" /> Herramientas
-          {totalDias > 0 && <span className="ml-auto text-xs text-slate-400 font-medium">Renta por {totalDias.toFixed(1)} días equiv.</span>}
-        </h2>
-        <div className="space-y-2 mb-4">
-          <input 
-            type="text" 
-            placeholder="Buscar herramienta por nombre..." 
-            className={inputCls}
-            value={searchHer}
-            onChange={e => setSearchHer(e.target.value)}
-          />
-          <div className="flex gap-2">
-            <select className={inputCls} value={selHer} onChange={e => setSelHer(e.target.value)}>
-              <option value="">— {filteredHerramientas.length} herramientas encontradas —</option>
-              {filteredHerramientas.map(h => <option key={h.id} value={h.id}>{h.nombre} ({fmt(h.precio_renta_diaria)}/día · {h.unidad || 'pza'})</option>)}
-            </select>
-            <button onClick={addHerramienta} disabled={!selHer}
-              className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-40 flex-shrink-0">
-              <Plus size={14} /> Agregar
-            </button>
-          </div>
-        </div>
-        {herramientas.length > 0 && (
-          <div className="space-y-1.5">
-            {herramientas.map(h => {
-              const rentaConMargen = (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100);
+        {/* ── Tiempo de Trabajo ── */}
+        <SectionCard icon={<Clock size={16} />} title="Tiempo de Trabajo" accent="violet">
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {[
+              { label: 'Horas',   value: horas,   set: setHoras,   key: 'hr'     },
+              { label: 'Días',    value: dias,     set: setDias,    key: 'dia'    },
+              { label: 'Semanas', value: semanas,  set: setSemanas, key: 'semana' },
+              { label: 'Meses',   value: meses,    set: setMeses,   key: 'mes'    },
+            ].map(({ label, value, set, key }) => {
+              const sub = Object.values(COSTOS_TIEMPO).reduce((s, c) => s + c[key] * value, 0);
               return (
-                <div key={h._id} className="bg-slate-50 rounded-xl px-4 py-2.5 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{h.nombre}</p>
-                      <p className="text-xs text-slate-400">
-                        {fmt(h.precio_renta_diaria)}/día
-                        {h.margen > 0 && (
-                          <span className="text-amber-500 font-bold"> +{h.margen}% → {fmt(rentaConMargen)}/día</span>
-                        )}
-                        {' '}× {h.cantidad} {h.unidad || 'pza'} × {totalDias.toFixed(1)}d = <span className="font-bold text-slate-600">{fmt(rentaConMargen * h.cantidad * totalDias)}</span>
-                      </p>
-                    </div>
-                    <input type="number" min="1" value={h.cantidad}
-                      onChange={e => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, cantidad: +e.target.value || 1 } : i))}
-                      className="w-16 text-center text-sm font-bold border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-blue-400 bg-white" />
-                    <button onClick={() => setHerramientas(p => p.filter(i => i._id !== h._id))} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
-                  </div>
-                  {/* Markup percentage buttons */}
-                  <div className="flex items-center gap-1.5 pl-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <Percent size={10} /> Margen
-                    </span>
-                    {[5, 10, 15].map(pct => (
-                      <button
-                        key={pct}
-                        onClick={() => setHerramientas(p => p.map(i => i._id === h._id ? { ...i, margen: i.margen === pct ? 0 : pct } : i))}
-                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
-                          h.margen === pct
-                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
-                            : 'bg-white border border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600'
-                        }`}
-                      >
-                        +{pct}%
-                      </button>
-                    ))}
-                  </div>
+                <div key={label} className="flex flex-col items-center bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">{label}</p>
+                  <input type="number" min="0" value={value}
+                    onChange={e => set(+e.target.value || 0)}
+                    className="w-16 text-center text-2xl font-black border border-slate-200 rounded-xl px-1 py-1 focus:outline-none focus:border-violet-400 bg-white mb-1.5" />
+                  <p className="text-[11px] font-bold text-violet-600">{fmt(sub)}</p>
                 </div>
               );
             })}
-            <div className="flex justify-end text-sm font-bold text-slate-700 pr-1">Subtotal: {fmt(totalHerramientas)}</div>
           </div>
-        )}
+          <div className="bg-violet-50 rounded-xl px-4 py-3 flex justify-between items-center border border-violet-100">
+            <span className="text-sm font-bold text-violet-700">Total por tiempo</span>
+            <span className="text-base font-black text-violet-700">{fmt(totalTiempo)}</span>
+          </div>
+        </SectionCard>
       </div>
 
-      {/* Empleados */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-          <Users size={15} className="text-green-500" /> Empleados
-          {!isEdit && empleados.length > 0 && (
-            <span className="ml-auto flex items-center gap-1 text-xs text-green-600 font-medium">
-              <ClipboardList size={12} /> Se crearán {empleados.length} tarea{empleados.length > 1 ? 's' : ''}
-            </span>
-          )}
-        </h2>
-        <div className="flex gap-2 mb-3">
-          <select className={inputCls} value={selEmp} onChange={e => setSelEmp(e.target.value)}>
-            <option value="">— Selecciona un trabajador —</option>
-            {trabajadores.filter(u => !empleados.find(e => e.id === u.id)).map(u => (
-              <option key={u.id} value={String(u.id)}>{u.name}</option>
-            ))}
-          </select>
-          <button onClick={addEmpleado} disabled={!selEmp}
-            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 disabled:opacity-40 flex-shrink-0">
-            <Plus size={14} /> Agregar
-          </button>
-        </div>
-        {empleados.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {empleados.map(e => (
-              <span key={e.id} className="flex items-center gap-1.5 bg-green-100 text-green-800 text-xs font-bold px-3 py-1.5 rounded-full">
-                {e.nombre}
-                <button onClick={() => setEmpleados(p => p.filter(i => i.id !== e.id))} className="text-green-600 hover:text-red-500"><X size={11} /></button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* ── RIGHT COLUMN: sticky summary + actions ── */}
+      <div className="w-72 flex-shrink-0 sticky top-6 space-y-4">
 
-      {/* Tiempo */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h2 className="font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-          <Clock size={15} className="text-blue-500" /> Tiempo de Trabajo
-        </h2>
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          {[
-            { label: 'Horas',   value: horas,   set: setHoras,   key: 'hr'     },
-            { label: 'Días',    value: dias,     set: setDias,    key: 'dia'    },
-            { label: 'Semanas', value: semanas,  set: setSemanas, key: 'semana' },
-            { label: 'Meses',   value: meses,    set: setMeses,   key: 'mes'    },
-          ].map(({ label, value, set, key }) => {
-            const sub = Object.values(COSTOS_TIEMPO).reduce((s, c) => s + c[key] * value, 0);
-            return (
-              <div key={label} className="bg-slate-50 rounded-xl p-4 text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</p>
-                <input type="number" min="0" value={value}
-                  onChange={e => set(+e.target.value || 0)}
-                  className="w-20 text-center text-xl font-black border border-slate-200 rounded-xl px-2 py-1.5 focus:outline-none focus:border-blue-400 bg-white mx-auto block mb-1.5" />
-                <p className="text-xs font-bold text-slate-600">{fmt(sub)}</p>
+        {/* Totals card */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+            <p className="text-xs font-black text-blue-100 uppercase tracking-widest mb-1">Resumen</p>
+            <p className="text-2xl font-black text-white">{fmt(total)}</p>
+            <p className="text-[11px] text-blue-200 mt-0.5">Total estimado</p>
+          </div>
+          <div className="p-4 space-y-3">
+            {[
+              { icon: <Package size={13} />, label: 'Artículos',    value: totalArticulos,    color: 'text-blue-600'   },
+              { icon: <Wrench  size={13} />, label: 'Herramientas', value: totalHerramientas, color: 'text-amber-600'  },
+              { icon: <Clock   size={13} />, label: 'Tiempo',       value: totalTiempo,       color: 'text-violet-600' },
+            ].map(({ icon, label, value, color }) => (
+              <div key={label} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={color}>{icon}</span>
+                  <span className="text-xs font-semibold text-slate-600">{label}</span>
+                </div>
+                <span className="text-xs font-black text-slate-800">{fmt(value)}</span>
               </div>
-            );
-          })}
-        </div>
-        <div className="bg-blue-50 rounded-xl px-5 py-3 flex justify-between">
-          <span className="text-sm font-bold text-blue-700">Total por tiempo</span>
-          <span className="text-base font-black text-blue-700">{fmt(totalTiempo)}</span>
-        </div>
-      </div>
-
-      {/* Total y botones */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-5 text-white space-y-2">
-        {[
-          { l: 'Artículos',    v: totalArticulos    },
-          { l: 'Herramientas', v: totalHerramientas },
-          { l: 'Tiempo',       v: totalTiempo       },
-        ].map(({ l, v }) => (
-          <div key={l} className="flex justify-between text-sm text-blue-100">
-            <span>{l}</span><span className="font-bold text-white">{fmt(v)}</span>
+            ))}
+            <div className="border-t border-slate-100 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Total</span>
+                <span className="text-sm font-black text-blue-600">{fmt(total)}</span>
+              </div>
+            </div>
           </div>
-        ))}
-        <div className="flex justify-between font-black text-xl border-t border-blue-500 pt-3 mt-1">
-          <span>Total</span><span>{fmt(total)}</span>
         </div>
-        <div className="flex gap-3 pt-2">
-          <button onClick={onCancel} className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold">Cancelar</button>
+
+        {/* Client mini card (shows when selected) */}
+        {clienteId && (() => {
+          const c = clientes.find(cl => cl.id === clienteId);
+          return c ? (
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 px-4 py-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Cliente seleccionado</p>
+              <p className="font-bold text-slate-800 text-sm">{c.nombre}</p>
+              {c.empresa && <p className="text-xs text-slate-500">{c.empresa}</p>}
+            </div>
+          ) : null;
+        })()}
+
+        {/* Items summary chips */}
+        {(articulos.length > 0 || herramientas.length > 0 || empleados.length > 0) && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5">En esta cotización</p>
+            <div className="space-y-1.5">
+              {articulos.length > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600"><Package size={11} className="text-blue-400" /> Artículos</span>
+                  <span className="font-black text-slate-800 bg-blue-50 px-2 py-0.5 rounded-full">{articulos.length}</span>
+                </div>
+              )}
+              {herramientas.length > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600"><Wrench size={11} className="text-amber-400" /> Herramientas</span>
+                  <span className="font-black text-slate-800 bg-amber-50 px-2 py-0.5 rounded-full">{herramientas.length}</span>
+                </div>
+              )}
+              {empleados.length > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600"><Users size={11} className="text-green-400" /> Personal</span>
+                  <span className="font-black text-slate-800 bg-green-50 px-2 py-0.5 rounded-full">{empleados.length}</span>
+                </div>
+              )}
+              {totalDias > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600"><Clock size={11} className="text-violet-400" /> Días equiv.</span>
+                  <span className="font-black text-slate-800 bg-violet-50 px-2 py-0.5 rounded-full">{totalDias.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="space-y-2">
+          <button onClick={handleSave} disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm shadow-md shadow-blue-200 disabled:opacity-60 transition-all">
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}
+            {saving ? 'Guardando…' : isEdit && !isDraft ? 'Guardar Cambios' : 'Generar Cotización'}
+          </button>
           {(!isEdit || isDraft) && (
-            <button onClick={handleSaveDraftBtn} className="flex-1 py-2.5 bg-blue-500/30 hover:bg-blue-500/50 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2">
+            <button onClick={handleSaveDraftBtn}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all">
               <Save size={14} /> Guardar Borrador
             </button>
           )}
-          <button onClick={handleSave} disabled={saving}
-            className="flex-1 py-2.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 text-sm disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'Guardando…' : isEdit && !isDraft ? 'Guardar Cambios' : 'Generar Cotización'}
+          <button onClick={onCancel}
+            className="w-full py-2.5 border border-slate-200 text-slate-500 hover:bg-slate-50 font-bold rounded-xl text-sm transition-all">
+            Cancelar
           </button>
         </div>
       </div>
