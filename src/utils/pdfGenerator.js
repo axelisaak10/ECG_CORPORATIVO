@@ -46,18 +46,18 @@ export const generateCotizacionPDF = async (cot) => {
   const logo = await loadImage('/assets/logos/centro.png');
 
   // ============================================================
-  //  HELPER: draw watermark text on current page
+  //  HELPER: draw logo watermark centered on current page
   // ============================================================
   const drawWatermark = () => {
+    if (!logo) return;
+    // Logo watermark: centered, large, very low opacity
+    const wmW = 130; // mm wide
+    const wmH = 130; // mm tall (adjust if logo is not square)
+    const wmX = (pageWidth  - wmW) / 2;
+    const wmY = (pageHeight - wmH) / 2;
     doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.07 }));
-    doc.setFontSize(62);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    // Rotated vertical text on the left margin
-    doc.text('CENTRO', 11, pageHeight / 2 + 20, { angle: 90, align: 'center' });
-    doc.setFontSize(30);
-    doc.text('INGENIERÍA', 5, pageHeight / 2 + 20, { angle: 90, align: 'center' });
+    doc.setGState(new doc.GState({ opacity: 0.08 }));
+    doc.addImage(logo, 'PNG', wmX, wmY, wmW, wmH);
     doc.restoreGraphicsState();
   };
 
