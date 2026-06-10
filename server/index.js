@@ -15,8 +15,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const SESSION_LIMIT     = 2;
-const SESSION_TTL_HOURS = 24;
+const SESSION_LIMIT             = 2;
+const SESSION_TTL_HOURS         = Number(process.env.SESSION_TTL_HOURS)         || 24;   // cuántas horas dura una sesión
+const SESSION_CLEANUP_INTERVAL  = Number(process.env.SESSION_CLEANUP_INTERVAL_HOURS) || 1;    // cada cuántas horas se hace limpieza global
 
 function getSecret() {
   const secret = process.env.JWT_SECRET;
@@ -25,8 +26,26 @@ function getSecret() {
 }
 
 function signToken({ userId, nivel, jti }) {
-  return jwt.sign({ sub: userId, nivel, jti }, getSecret(), { expiresIn: '24h' });
+  return jwt.sign({ sub: userId, nivel, jti }, getSecret(), { expiresIn: `${SESSION_TTL_HOURS}h` });
 }
+
+// ── Limpieza periódica global de sesiones expiradas ───────────────────────────
+async function cleanExpiredSessions() {
+  const expiredBefore = new Date(Date.now() - SESSION_TTL_HOURS * 3600 * 1000).toISOString();
+  const { error, count } = await supabase
+    .from('sesiones')
+    .delete({ count: 'exact' })
+    .lt('last_active', expiredBefore);
+  if (error) {
+    console.error('[Session Cleanup] Error:', error.message);
+  } else {
+    console.log(`[Session Cleanup] ${new Date().toISOString()} — ${count ?? 0} sesión(es) expirada(s) eliminada(s).`);
+  }
+}
+
+// Ejecutar inmediatamente al arrancar y luego cada SESSION_CLEANUP_INTERVAL horas
+cleanExpiredSessions();
+setInterval(cleanExpiredSessions, SESSION_CLEANUP_INTERVAL * 3600 * 1000);
 
 function verifyToken(req) {
   const auth = req.headers['authorization'];
@@ -986,6 +1005,201 @@ app.patch('/api/trabajos/:id', async (req, res) => {
   if (e2) console.warn('Error al insertar actualizacion:', e2);
 
   return res.json({ trabajo });
+});
+
+// ── Encuestas de Satisfacción ─────────────────────────────────────────────────
+const ENC_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function genCodigoEncuesta() {
+  let c = 'ENC-';
+  for (let i = 0; i < 6; i++) c += ENC_CHARS[Math.floor(Math.random() * ENC_CHARS.length)];
+  return c;
+}
+
+// GET /api/encuesta/preguntas — público
+app.get('/api/encuesta/preguntas', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('encuesta_preguntas').select('*').eq('activa', true).order('orden').order('created_at');
+  if (error) return res.status(500).json({ error: 'Error al obtener preguntas.' });
+  return res.json({ preguntas: data || [] });
+});
+
+// GET /api/encuesta/preguntas/all — admin: todas incluyendo inactivas
+app.get('/api/encuesta/preguntas/all', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+  const { data, error } = await supabase
+    .from('encuesta_preguntas').select('*').order('orden').order('created_at');
+  if (error) return res.status(500).json({ error: 'Error al obtener preguntas.' });
+  return res.json({ preguntas: data || [] });
+});
+
+// POST /api/encuesta/preguntas — admin (nivel >= 2)
+app.post('/api/encuesta/preguntas', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+  const { texto, tipo, opciones, orden } = req.body;
+  if (!texto?.trim()) return res.status(400).json({ error: 'El texto es requerido.' });
+  if (!['abierta', 'multiple'].includes(tipo)) return res.status(400).json({ error: 'Tipo inválido. Use "abierta" o "multiple".' });
+  if (tipo === 'multiple' && (!Array.isArray(opciones) || opciones.filter(o => o?.trim()).length < 2))
+    return res.status(400).json({ error: 'Las preguntas de opción múltiple requieren al menos 2 opciones.' });
+
+  const { data, error } = await supabase.from('encuesta_preguntas')
+    .insert([{ texto: texto.trim(), tipo, opciones: (opciones || []).map(o => o.trim()).filter(Boolean), orden: Number(orden) || 0, activa: true }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al crear pregunta.' });
+  return res.status(201).json({ pregunta: data });
+});
+
+// PUT /api/encuesta/preguntas/:id — admin (nivel >= 2)
+app.put('/api/encuesta/preguntas/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+  const { texto, tipo, opciones, orden, activa } = req.body;
+  if (!texto?.trim()) return res.status(400).json({ error: 'El texto es requerido.' });
+
+  const { data, error } = await supabase.from('encuesta_preguntas')
+    .update({ texto: texto.trim(), tipo, opciones: (opciones || []).map(o => o?.trim()).filter(Boolean), orden: Number(orden) || 0, activa: activa ?? true })
+    .eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar pregunta.' });
+  return res.json({ pregunta: data });
+});
+
+// DELETE /api/encuesta/preguntas/:id — admin (nivel >= 2)
+app.delete('/api/encuesta/preguntas/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+  const { error } = await supabase.from('encuesta_preguntas').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar pregunta.' });
+  return res.json({ message: 'Pregunta eliminada.' });
+});
+
+// GET /api/encuesta/codigos — trabajador+ (nivel >= 1)
+app.get('/api/encuesta/codigos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+  const { data, error } = await supabase
+    .from('encuesta_codigos').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener códigos.' });
+  return res.json({ codigos: data || [] });
+});
+
+// POST /api/encuesta/codigos — trabajador+ (nivel >= 1)
+app.post('/api/encuesta/codigos', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso. Se requiere nivel trabajador o superior.' });
+
+  const { cliente, descripcion } = req.body;
+  if (!cliente?.trim()) return res.status(400).json({ error: 'El nombre del cliente es requerido.' });
+
+  const { data: userRow } = await supabase.from('Usuarios').select('"Nombre Completo"').eq('id', payload.sub).single();
+  const rawName = userRow?.['Nombre Completo'];
+  const generadoPor = Array.isArray(rawName) ? rawName[0] : rawName || 'Staff';
+
+  let codigo, attempts = 0;
+  do {
+    codigo = genCodigoEncuesta();
+    const { data: conflict } = await supabase.from('encuesta_codigos').select('id').eq('codigo', codigo).maybeSingle();
+    if (!conflict) break;
+  } while (++attempts < 10);
+
+  const { data, error } = await supabase.from('encuesta_codigos')
+    .insert([{ codigo, cliente: cliente.trim(), descripcion: descripcion?.trim() || null, generado_por: generadoPor, generado_por_id: payload.sub, usado: false }])
+    .select().single();
+  if (error) return res.status(500).json({ error: 'Error al generar código.' });
+  return res.status(201).json({ codigo: data });
+});
+
+// DELETE /api/encuesta/codigos/:id — admin (nivel >= 2)
+app.delete('/api/encuesta/codigos/:id', async (req, res) => {
+  const payload = verifyToken(req);
+  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+
+  const { error } = await supabase.from('encuesta_codigos').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: 'Error al eliminar código.' });
+  return res.json({ message: 'Código eliminado.' });
+});
+
+// POST /api/encuesta/validar — público, valida código y devuelve preguntas activas
+app.post('/api/encuesta/validar', async (req, res) => {
+  const codigo = req.body.codigo?.trim().toUpperCase();
+  if (!codigo) return res.status(400).json({ error: 'Código requerido.' });
+
+  const { data: codigoData, error } = await supabase
+    .from('encuesta_codigos').select('*').eq('codigo', codigo).maybeSingle();
+  if (error || !codigoData) return res.status(404).json({ error: 'Código no válido o no encontrado.' });
+  if (codigoData.usado) return res.status(409).json({ error: 'Este código ya fue utilizado. Cada código es de un solo uso.' });
+
+  const { data: preguntas } = await supabase
+    .from('encuesta_preguntas').select('*').eq('activa', true).order('orden').order('created_at');
+
+  return res.json({ valido: true, codigo: codigoData, preguntas: preguntas || [] });
+});
+
+// POST /api/encuesta/responder — público, envía respuestas y marca código como usado
+app.post('/api/encuesta/responder', async (req, res) => {
+  const { codigo_id, respuestas } = req.body;
+  if (!codigo_id || !Array.isArray(respuestas) || respuestas.length === 0)
+    return res.status(400).json({ error: 'codigo_id y respuestas son requeridos.' });
+
+  const { data: codigoData } = await supabase
+    .from('encuesta_codigos').select('id, usado').eq('id', codigo_id).maybeSingle();
+  if (!codigoData) return res.status(404).json({ error: 'Código no encontrado.' });
+  if (codigoData.usado) return res.status(409).json({ error: 'Este código ya fue utilizado.' });
+
+  const rows = respuestas.map(r => ({
+    codigo_id,
+    pregunta_id: r.pregunta_id,
+    respuesta_texto:  r.respuesta_texto  || null,
+    respuesta_opcion: r.respuesta_opcion || null,
+  }));
+
+  const { error: insError } = await supabase.from('encuesta_respuestas').insert(rows);
+  if (insError) return res.status(500).json({ error: 'Error al guardar respuestas.' });
+
+  await supabase.from('encuesta_codigos').update({ usado: true }).eq('id', codigo_id);
+  return res.json({ message: 'Respuestas guardadas correctamente. ¡Gracias por tu opinión!' });
+});
+
+// GET /api/encuesta/estadisticas — público
+app.get('/api/encuesta/estadisticas', async (_req, res) => {
+  const [codigosRes, preguntasRes, respuestasRes] = await Promise.all([
+    supabase.from('encuesta_codigos').select('id, usado, cliente, created_at'),
+    supabase.from('encuesta_preguntas').select('id, texto, tipo, opciones').eq('activa', true).order('orden'),
+    supabase.from('encuesta_respuestas').select('pregunta_id, respuesta_texto, respuesta_opcion, created_at'),
+  ]);
+
+  const codigos    = codigosRes.data   || [];
+  const preguntas  = preguntasRes.data || [];
+  const respuestas = respuestasRes.data || [];
+
+  const total_codigos     = codigos.length;
+  const total_completados = codigos.filter(c => c.usado).length;
+
+  const stats_por_pregunta = preguntas.map(p => {
+    const resps = respuestas.filter(r => r.pregunta_id === p.id);
+    if (p.tipo === 'multiple') {
+      const conteo = {};
+      resps.forEach(r => { if (r.respuesta_opcion) conteo[r.respuesta_opcion] = (conteo[r.respuesta_opcion] || 0) + 1; });
+      return { pregunta_id: p.id, texto: p.texto, tipo: p.tipo, opciones: p.opciones, total: resps.length, conteo };
+    }
+    return {
+      pregunta_id: p.id, texto: p.texto, tipo: p.tipo, total: resps.length,
+      comentarios: resps.map(r => r.respuesta_texto).filter(Boolean).slice(0, 30),
+    };
+  });
+
+  return res.json({ total_codigos, total_completados, stats_por_pregunta });
 });
 
 // ── Health check ──────────────────────────────────────────────────────────────

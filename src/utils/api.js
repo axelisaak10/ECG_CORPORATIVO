@@ -454,3 +454,93 @@ export async function apiDeleteGanttTarea(id) {
   if (!res.ok) throw new Error(data.error || 'Error al eliminar tarea.');
   return data;
 }
+
+// ── Encuestas de Satisfacción ─────────────────────────────────────────────────
+export async function apiEncuestaGetPreguntas() {
+  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas/all`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener preguntas.');
+  return data.preguntas;
+}
+
+export async function apiEncuestaCreatePregunta(fields) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear pregunta.');
+  return data.pregunta;
+}
+
+export async function apiEncuestaUpdatePregunta(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas/${id}`, {
+    method: 'PUT', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar pregunta.');
+  return data.pregunta;
+}
+
+export async function apiEncuestaDeletePregunta(id) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar pregunta.');
+  return data;
+}
+
+export async function apiEncuestaGetCodigos() {
+  const res = await fetch(`${BASE_URL}/api/encuesta/codigos`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener códigos.');
+  return data.codigos;
+}
+
+export async function apiEncuestaCreateCodigo(fields) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/codigos`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al generar código.');
+  return data.codigo;
+}
+
+export async function apiEncuestaDeleteCodigo(id) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/codigos/${id}`, {
+    method: 'DELETE', headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar código.');
+  return data;
+}
+
+export async function apiEncuestaValidar(codigo) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/validar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Código no válido.');
+  return data;
+}
+
+export async function apiEncuestaResponder(codigo_id, respuestas) {
+  const res = await fetch(`${BASE_URL}/api/encuesta/responder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo_id, respuestas }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al enviar respuestas.');
+  return data;
+}
+
+export async function apiEncuestaGetEstadisticas() {
+  const res = await fetch(`${BASE_URL}/api/encuesta/estadisticas`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener estadísticas.');
+  return data;
+}
+

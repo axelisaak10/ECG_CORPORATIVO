@@ -1,4 +1,7 @@
-import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, Star } from 'lucide-react';
+import EncuestaModal from '../shared/EncuestaModal';
+import EncuestaStatsWidget from '../shared/EncuestaStatsWidget';
 
 const accentText = {
   'ecg-azul': 'text-ecg-azul',
@@ -9,8 +12,22 @@ const accentText = {
 };
 
 const MainPortal = ({ companies, onSelectCompany }) => {
+  const [showEncuesta, setShowEncuesta] = useState(false);
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 lg:p-12 overflow-x-hidden">
+      {showEncuesta && <EncuestaModal onClose={() => setShowEncuesta(false)} />}
+
+      {/* Botón flotante encuesta */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]">
+        <button
+          onClick={() => setShowEncuesta(true)}
+          id="main-portal-encuesta-btn"
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-5 py-2 shadow-lg shadow-blue-200 text-xs font-bold hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-105"
+        >
+          <Star size={13} />
+          Responder encuesta de satisfacción
+        </button>
+      </div>
 
       {/* Hero */}
       <div className="text-center mb-16 max-w-3xl animate-slideDown">
@@ -109,6 +126,9 @@ const MainPortal = ({ companies, onSelectCompany }) => {
           />
         </div>
       </div>
+
+      {/* Widget de satisfacción */}
+      <EncuestaStatsWidget onOpenEncuesta={() => setShowEncuesta(true)} />
 
       <p className="mt-16 text-slate-300 font-bold text-xs uppercase tracking-[0.3em]">
         © {new Date().getFullYear()} ECG Corporativo Industrial
