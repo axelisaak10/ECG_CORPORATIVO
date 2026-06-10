@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('./lib/jwt');
+const { verifyToken }  = require('../lib/jwt');
 
 const ENC_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function genCodigoEncuesta() {
