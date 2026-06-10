@@ -457,7 +457,7 @@ export async function apiDeleteGanttTarea(id) {
 
 // ── Encuestas de Satisfacción ─────────────────────────────────────────────────
 export async function apiEncuestaGetPreguntas() {
-  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas/all`, { headers: authHeaders(false) });
+  const res = await fetch(`${BASE_URL}/api/encuesta/preguntas?all=1`, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener preguntas.');
   return data.preguntas;

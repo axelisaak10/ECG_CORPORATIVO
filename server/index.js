@@ -1015,21 +1015,21 @@ function genCodigoEncuesta() {
   return c;
 }
 
-// GET /api/encuesta/preguntas — público
-app.get('/api/encuesta/preguntas', async (_req, res) => {
+// GET /api/encuesta/preguntas        -> activas (público)
+// GET /api/encuesta/preguntas?all=1  -> todas (admin)
+app.get('/api/encuesta/preguntas', async (req, res) => {
+  if (req.query.all === '1') {
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+    if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+    const { data, error } = await supabase
+      .from('encuesta_preguntas').select('*').order('orden').order('created_at');
+    if (error) return res.status(500).json({ error: 'Error al obtener preguntas.' });
+    return res.json({ preguntas: data || [] });
+  }
+  // Público
   const { data, error } = await supabase
     .from('encuesta_preguntas').select('*').eq('activa', true).order('orden').order('created_at');
-  if (error) return res.status(500).json({ error: 'Error al obtener preguntas.' });
-  return res.json({ preguntas: data || [] });
-});
-
-// GET /api/encuesta/preguntas/all — admin: todas incluyendo inactivas
-app.get('/api/encuesta/preguntas/all', async (req, res) => {
-  const payload = verifyToken(req);
-  if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
-  if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
-  const { data, error } = await supabase
-    .from('encuesta_preguntas').select('*').order('orden').order('created_at');
   if (error) return res.status(500).json({ error: 'Error al obtener preguntas.' });
   return res.json({ preguntas: data || [] });
 });
