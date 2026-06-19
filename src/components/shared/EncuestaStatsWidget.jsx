@@ -44,56 +44,15 @@ const EncuestaStatsWidget = ({ onOpenEncuesta }) => {
         <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 w-full" />
 
         <div className="p-8">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            <div className="text-center p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 size={18} className="text-white" />
+          {topOpcion && (
+            <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-100 mb-6 text-center max-w-md mx-auto">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center mb-3">
+                <Star size={18} className="text-white fill-white" />
               </div>
-              <p className="text-3xl font-black text-slate-800">{stats.total_completados}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">Encuestas completadas</p>
+              <p className="text-lg font-black text-slate-800 leading-tight">"{topOpcion[0]}"</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">Calificación más frecuente de nuestros clientes</p>
             </div>
-
-            <div className="text-center p-5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center mx-auto mb-3">
-                <TrendingUp size={18} className="text-white" />
-              </div>
-              <p className="text-3xl font-black text-slate-800">{pct}%</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">Tasa de respuesta</p>
-            </div>
-
-            {topOpcion ? (
-              <div className="text-center p-5 bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-100 md:block hidden">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center mx-auto mb-3">
-                  <Star size={18} className="text-white" />
-                </div>
-                <p className="text-sm font-black text-slate-800 leading-tight mb-1">"{topOpcion[0]}"</p>
-                <p className="text-xs text-slate-500 font-semibold">Respuesta más frecuente</p>
-              </div>
-            ) : (
-              <div className="text-center p-5 bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-100 md:block hidden">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center mx-auto mb-3">
-                  <Key size={18} className="text-white" />
-                </div>
-                <p className="text-3xl font-black text-slate-800">{stats.total_codigos}</p>
-                <p className="text-xs text-slate-500 font-semibold mt-1">Clientes invitados</p>
-              </div>
-            )}
-          </div>
-
-          {/* Barra de satisfacción */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
-              <span>Participación global</span>
-              <span className="text-indigo-600">{pct}%</span>
-            </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-1000"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
+          )}
 
           {/* CTA */}
           <div className="flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
