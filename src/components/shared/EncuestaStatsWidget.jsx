@@ -98,9 +98,9 @@ const EncuestaStatsWidget = ({ onOpenEncuesta }) => {
           {/* CTA */}
           <div className="flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
             <div className="flex-1">
-              <p className="font-black text-slate-800 text-sm">¿Trabajaste con nosotros?</p>
+              <p className="font-black text-slate-800 text-sm">¿Nos conoces o trabajaste con nosotros?</p>
               <p className="text-slate-400 text-xs mt-0.5">
-                Si tienes un código de encuesta, comparte tu experiencia con nosotros.
+                Comparte tu experiencia con nosotros, tengas o no un código de cliente.
               </p>
             </div>
             <button

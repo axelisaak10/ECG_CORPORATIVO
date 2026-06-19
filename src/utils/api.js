@@ -526,6 +526,16 @@ export async function apiEncuestaValidar(codigo) {
   return data;
 }
 
+export async function apiEncuestaResponderPublico() {
+  const res = await fetch(`${BASE_URL}/api/encuesta/publico`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al iniciar encuesta pública.');
+  return data;
+}
+
 export async function apiEncuestaResponder(codigo_id, respuestas) {
   const res = await fetch(`${BASE_URL}/api/encuesta/responder`, {
     method: 'POST',

@@ -3,7 +3,7 @@ import {
   X, ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2,
   AlertCircle, Star, MessageSquare, ListChecks, UserPlus, Loader2,
 } from 'lucide-react';
-import { apiEncuestaValidar, apiEncuestaResponder, apiRegister } from '../../utils/api';
+import { apiEncuestaValidar, apiEncuestaResponder, apiRegister, apiEncuestaResponderPublico } from '../../utils/api';
 
 /* ─── Helpers ─── */
 const STEP = { CODE: 'code', QUESTIONS: 'questions', SUCCESS: 'success' };
@@ -170,6 +170,27 @@ const EncuestaModal = ({ onClose }) => {
     }
   };
 
+  /* ── Responder como público general ── */
+  const handlePublicSurvey = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiEncuestaResponderPublico();
+      setCodigoData(res.codigo);
+      setPreguntas(res.preguntas);
+      if (res.preguntas.length === 0) {
+        setError('No hay preguntas activas en este momento. Por favor contacta a ECG Corporativo.');
+        setLoading(false);
+        return;
+      }
+      setStep(STEP.QUESTIONS);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ── Guardar respuesta actual ── */
   const currentQ = preguntas[qIndex];
   const currentAnswer = respuestas[currentQ?.id];
@@ -277,6 +298,25 @@ const EncuestaModal = ({ onClose }) => {
             >
               {loading ? <Loader2 size={17} className="animate-spin" /> : <ChevronRight size={17} />}
               {loading ? 'Verificando...' : 'Continuar con encuesta'}
+            </button>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-3 text-slate-400 font-bold">O también</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handlePublicSurvey}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-50 transition-all active:scale-[0.98]"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} className="text-amber-500 fill-amber-500" />}
+              Responder como público general
             </button>
           </form>
         )}

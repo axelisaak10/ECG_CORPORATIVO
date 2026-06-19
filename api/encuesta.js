@@ -78,6 +78,39 @@ module.exports = async function handler(req, res) {
     return res.json({ valido: true, codigo: codigoData, preguntas: preguntas || [] });
   }
 
+  // ── RESPONDER COMO PÚBLICO GENERAL (público) ─────────────────────────────────
+  if (route === 'publico' && method === 'POST') {
+    let codigo, attempts = 0;
+    do {
+      let c = 'PUB-';
+      for (let i = 0; i < 6; i++) c += ENC_CHARS[Math.floor(Math.random() * ENC_CHARS.length)];
+      codigo = c;
+      const { data: conflict } = await supabase.from('encuesta_codigos').select('id').eq('codigo', codigo).maybeSingle();
+      if (!conflict) break;
+    } while (++attempts < 10);
+
+    const { data: codigoData, error: insError } = await supabase
+      .from('encuesta_codigos')
+      .insert([{
+        codigo,
+        cliente: 'Público General',
+        descripcion: 'Encuesta completada de forma pública (no cliente)',
+        generado_por: 'Sistema',
+        generado_por_id: null,
+        usado: false
+      }])
+      .select().single();
+
+    if (insError) return res.status(500).json({ error: 'Error al iniciar encuesta pública.' });
+
+    const { data: preguntas, error: qError } = await supabase
+      .from('encuesta_preguntas').select('*').eq('activa', true).order('orden').order('created_at');
+
+    if (qError) return res.status(500).json({ error: 'Error al obtener preguntas.' });
+
+    return res.json({ valido: true, codigo: codigoData, preguntas: preguntas || [] });
+  }
+
   // ── RESPONDER ENCUESTA (público) ─────────────────────────────────────────
   if (route === 'responder' && method === 'POST') {
     const { codigo_id, respuestas } = req.body || {};
