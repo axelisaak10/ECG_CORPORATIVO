@@ -544,3 +544,63 @@ export async function apiEncuestaGetEstadisticas() {
   return data;
 }
 
+// ── Anuncios / Pop-ups ────────────────────────────────────────────────────────
+
+/** Lista todos los anuncios (requiere token, nivel >= 1) */
+export async function apiGetAnuncios() {
+  const res = await fetch(`${BASE_URL}/api/anuncios`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener anuncios.');
+  return data.anuncios || [];
+}
+
+/** Lista anuncios activos y vigentes para un destino (público, sin token) */
+export async function apiGetAnunciosPublicos(destino) {
+  const url = destino
+    ? `${BASE_URL}/api/anuncios?destino=${encodeURIComponent(destino)}`
+    : `${BASE_URL}/api/anuncios`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener anuncios.');
+  return data.anuncios || [];
+}
+
+/** Crea un nuevo anuncio (nivel >= 1) */
+export async function apiCreateAnuncio(anuncio) {
+  const res = await fetch(`${BASE_URL}/api/anuncios`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(anuncio),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear anuncio.');
+  return data.anuncio;
+}
+
+/** Actualiza campos de un anuncio (nivel >= 1 para los propios, >= 2 para cualquiera) */
+export async function apiUpdateAnuncio(id, updates) {
+  const res = await fetch(`${BASE_URL}/api/anuncios?id=${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar anuncio.');
+  return data.anuncio;
+}
+
+/** Activa o desactiva un anuncio */
+export async function apiToggleAnuncio(id, activo) {
+  return apiUpdateAnuncio(id, { activo });
+}
+
+/** Elimina un anuncio (nivel >= 2) */
+export async function apiDeleteAnuncio(id) {
+  const res = await fetch(`${BASE_URL}/api/anuncios?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar anuncio.');
+  return data;
+}

@@ -4,6 +4,7 @@ import Header from './components/layout/Header';
 import HamburgerMenu from './components/layout/HamburgerMenu';
 import CompanySelector from './components/layout/CompanySelector';
 import WhatsAppButton from './components/shared/WhatsAppButton';
+import AnuncioPopup from './components/shared/AnuncioPopup';
 import InicioSection from './components/sections/InicioSection';
 import NosotrosSection from './components/sections/NosotrosSection';
 import ServiciosSection from './components/sections/ServiciosSection';
@@ -135,6 +136,8 @@ function EmpresaView({ currentUser, onLogin, onLogout }) {
   const companyIndex = companiesData.findIndex((c) => String(c.id) === String(id));
   const company = companiesData[companyIndex] ?? companiesData[0];
   const activeSection = seccion || 'inicio';
+  // El destino del popup sigue el patrón 'empresa_N' que usa la API
+  const popupDestino = `empresa_${company?.id}`;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -221,6 +224,13 @@ function EmpresaView({ currentUser, onLogin, onLogout }) {
       />
 
       <Footer company={company} />
+
+      {/* Popup de anuncios de la empresa — cargado dinámicamente desde Supabase */}
+      <AnuncioPopup
+        destino={popupDestino}
+        popupId={`empresa-${company.id}`}
+        delay={1200}
+      />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={handleLogin} />}
     </div>

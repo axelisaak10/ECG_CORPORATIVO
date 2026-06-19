@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, Star } from 'lucide-react';
 import EncuestaModal from '../shared/EncuestaModal';
 import EncuestaStatsWidget from '../shared/EncuestaStatsWidget';
+import AnuncioPopup from '../shared/AnuncioPopup';
 
 const accentText = {
   'ecg-azul': 'text-ecg-azul',
@@ -16,6 +17,13 @@ const MainPortal = ({ companies, onSelectCompany }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 lg:p-12 overflow-x-hidden">
       {showEncuesta && <EncuestaModal onClose={() => setShowEncuesta(false)} />}
+
+      {/* Popup de anuncios del portal — cargado dinámicamente desde Supabase */}
+      <AnuncioPopup
+        destino="portal"
+        popupId="portal-principal"
+        delay={1000}
+      />
 
       {/* Botón flotante encuesta */}
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]">

@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, BarChart3, Eye, UserCog, Crown, Menu, LogIn,
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
   KeyRound, Lock, CheckCircle, AlertCircle, EyeOff,
-  RotateCcw, AlertTriangle, Clock, UserX, ShieldCheck, Star,
+  RotateCcw, AlertTriangle, Clock, UserX, ShieldCheck, Star, Megaphone,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
@@ -16,6 +16,7 @@ import CotizacionesComplexSection from '../admin/CotizacionesComplexSection';
 import GanttSection from '../admin/GanttSection';
 import ProfileSection from '../shared/ProfileSection';
 import EncuestasSection from '../admin/EncuestasSection';
+import AnunciosSection from '../admin/AnunciosSection';
 
 /* ─── Status maps ─── */
 
@@ -1108,6 +1109,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
     { id: 'tareas',        label: 'Tareas',              icon: <ListChecks size={17} />,        color: 'text-violet-400', badge: badges.tareas   },
     { id: 'mensajes',      label: 'Mensajes',            icon: <MessageSquare size={17} />,color: 'text-rose-400',   badge: badges.mensajes },
     { id: 'encuestas',     label: 'Encuestas',           icon: <Star size={17} />,              color: 'text-yellow-400'  },
+    { id: 'anuncios',      label: 'Anuncios / Pop-ups',  icon: <Megaphone size={17} />,         color: 'text-indigo-400'  },
     ...(isSuperAdmin ? [
       { id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' },
       { id: 'recuperacion', label: 'Recuperar Cuentas', icon: <RotateCcw size={17} />, color: 'text-amber-400' },
@@ -1299,6 +1301,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           )}
           {activeTab === 'encuestas' && (
             <EncuestasSection currentUser={currentUser} />
+          )}
+          {activeTab === 'anuncios' && (
+            <AnunciosSection currentUser={currentUser} />
           )}
           {activeTab === 'usuarios' && nivel >= 3 && (
             <GestionUsuariosSection currentUser={currentUser} onImpersonate={onImpersonate} />
