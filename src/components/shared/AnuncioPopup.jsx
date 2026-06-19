@@ -152,75 +152,73 @@ const AnuncioPopup = ({
       {/* Modal */}
       <div className="fixed inset-0 z-[901] flex items-center justify-center p-4 pointer-events-none animate-fadeIn">
         <div
-          className={`relative w-full max-w-sm pointer-events-auto rounded-3xl overflow-hidden shadow-2xl transition-all duration-355 ${
+          className={`relative w-full pointer-events-auto rounded-3xl overflow-hidden shadow-2xl transition-all duration-355 ${
+            anuncio.soloImagen ? 'max-w-xl' : 'max-w-sm'
+          } ${
             closing ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}
           style={{ animation: closing ? '' : 'popupIn 0.42s cubic-bezier(0.34,1.56,0.64,1) both' }}
         >
           {anuncio.soloImagen ? (
             /* ── MODO SOLO IMAGEN ── */
-            <div className="relative overflow-hidden w-full bg-slate-950 flex items-center justify-center"
-                 style={{ minHeight: '260px' }}>
-              {anuncio.ctaLink ? (
-                <a
-                  href={anuncio.ctaLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={close}
-                  className="w-full h-full block cursor-pointer hover:opacity-95 transition-opacity"
-                >
+            <div className="flex flex-col w-full bg-slate-950">
+              <div className="relative w-full overflow-hidden flex items-center justify-center">
+                {anuncio.ctaLink ? (
+                  <a
+                    href={anuncio.ctaLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={close}
+                    className="w-full h-full block cursor-pointer hover:opacity-95 transition-opacity"
+                  >
+                    <img
+                      src={anuncio.image}
+                      alt={anuncio.title || "Anuncio"}
+                      className="w-full h-auto object-cover max-h-[75vh]"
+                    />
+                  </a>
+                ) : (
                   <img
                     src={anuncio.image}
                     alt={anuncio.title || "Anuncio"}
-                    className="w-full h-auto object-cover max-h-[70vh]"
+                    className="w-full h-auto object-cover max-h-[75vh]"
                   />
-                </a>
-              ) : (
-                <img
-                  src={anuncio.image}
-                  alt={anuncio.title || "Anuncio"}
-                  className="w-full h-auto object-cover max-h-[70vh]"
-                />
-              )}
+                )}
 
-              {/* Botón cerrar */}
-              <button
-                onClick={close}
-                className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors shadow-lg"
-              >
-                <X size={15} />
-              </button>
+                {/* Botón cerrar */}
+                <button
+                  onClick={close}
+                  className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors shadow-lg"
+                >
+                  <X size={15} />
+                </button>
 
-              {/* Badges sobre la imagen */}
-              {anuncio.badge && (
-                <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
-                  <span className="bg-yellow-400 text-yellow-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
-                    {anuncio.badge}
-                  </span>
-                </div>
-              )}
-
-              {/* Gradiente sutil inferior para el countdown */}
-              {countdown && (
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
-              )}
-
-              {/* Countdown superpuesto al final de la imagen */}
-              {countdown && (
-                <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-col items-center gap-1 px-4">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <Clock size={11} className="text-white/80 animate-pulse" />
-                    <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest drop-shadow">
-                      Tiempo restante
+                {/* Badges sobre la imagen */}
+                {anuncio.badge && (
+                  <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
+                    <span className="bg-yellow-400 text-yellow-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                      {anuncio.badge}
                     </span>
                   </div>
-                  <div className="flex items-end gap-1.5">
+                )}
+              </div>
+
+              {/* Countdown EN UN CONTENEDOR SEPARADO INFERIOR (no tapa la foto) */}
+              {countdown && (
+                <div className="bg-slate-900 py-3.5 px-6 border-t border-slate-800 flex flex-col items-center gap-1.5">
+                  <div className="flex items-center gap-1">
+                    <Clock size={12} className="text-slate-400 animate-pulse" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Tiempo restante de la oferta
+                    </span>
+                  </div>
+                  <div className="flex items-end gap-2.5">
                     <DigitBlock val={countdown.d} label="días" />
-                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <span className="text-slate-500 font-black text-xl mb-3">:</span>
                     <DigitBlock val={countdown.h} label="hrs"  />
-                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <span className="text-slate-500 font-black text-xl mb-3">:</span>
                     <DigitBlock val={countdown.m} label="min"  />
-                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <span className="text-slate-500 font-black text-xl mb-3">:</span>
                     <DigitBlock val={countdown.s} label="seg"  />
                   </div>
                 </div>
