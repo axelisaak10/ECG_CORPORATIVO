@@ -545,10 +545,14 @@ export async function apiEncuestaGetEstadisticas() {
 }
 
 // ── Anuncios / Pop-ups ────────────────────────────────────────────────────────
+// Nota: las llamadas van a /api/users?resource=anuncios para no superar
+// el límite de 12 funciones serverless del plan Hobby de Vercel.
+
+const ANUNCIOS_BASE = `${BASE_URL}/api/users?resource=anuncios`;
 
 /** Lista todos los anuncios (requiere token, nivel >= 1) */
 export async function apiGetAnuncios() {
-  const res = await fetch(`${BASE_URL}/api/anuncios`, { headers: authHeaders(false) });
+  const res = await fetch(ANUNCIOS_BASE, { headers: authHeaders(false) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener anuncios.');
   return data.anuncios || [];
@@ -557,8 +561,8 @@ export async function apiGetAnuncios() {
 /** Lista anuncios activos y vigentes para un destino (público, sin token) */
 export async function apiGetAnunciosPublicos(destino) {
   const url = destino
-    ? `${BASE_URL}/api/anuncios?destino=${encodeURIComponent(destino)}`
-    : `${BASE_URL}/api/anuncios`;
+    ? `${ANUNCIOS_BASE}&destino=${encodeURIComponent(destino)}`
+    : ANUNCIOS_BASE;
   const res = await fetch(url);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al obtener anuncios.');
@@ -567,7 +571,7 @@ export async function apiGetAnunciosPublicos(destino) {
 
 /** Crea un nuevo anuncio (nivel >= 1) */
 export async function apiCreateAnuncio(anuncio) {
-  const res = await fetch(`${BASE_URL}/api/anuncios`, {
+  const res = await fetch(ANUNCIOS_BASE, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify(anuncio),
@@ -579,7 +583,7 @@ export async function apiCreateAnuncio(anuncio) {
 
 /** Actualiza campos de un anuncio (nivel >= 1 para los propios, >= 2 para cualquiera) */
 export async function apiUpdateAnuncio(id, updates) {
-  const res = await fetch(`${BASE_URL}/api/anuncios?id=${encodeURIComponent(id)}`, {
+  const res = await fetch(`${ANUNCIOS_BASE}&id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify(updates),
@@ -596,7 +600,7 @@ export async function apiToggleAnuncio(id, activo) {
 
 /** Elimina un anuncio (nivel >= 2) */
 export async function apiDeleteAnuncio(id) {
-  const res = await fetch(`${BASE_URL}/api/anuncios?id=${encodeURIComponent(id)}`, {
+  const res = await fetch(`${ANUNCIOS_BASE}&id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: authHeaders(false),
   });

@@ -3,7 +3,7 @@ const { verifyToken }  = require('./lib/jwt');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -12,6 +12,102 @@ module.exports = async function handler(req, res) {
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+  // ══════════════════════════════════════════════════════════════════
+  // RECURSO: ANUNCIOS  (?resource=anuncios)
+  // ══════════════════════════════════════════════════════════════════
+  if (req.query?.resource === 'anuncios') {
+
+    // ── GET público (sin token) — anuncios activos por destino ────────
+    if (req.method === 'GET' && !req.headers.authorization) {
+      const { destino } = req.query;
+      const today = new Date().toISOString().split('T')[0];
+      let query = supabase
+        .from('anuncios')
+        .select('id,titulo,subtitulo,cuerpo,tipo,icono,badge,destino,cta_texto,cta_link,imagen_url,fecha_fin,activo')
+        .eq('activo', true)
+        .or(`fecha_fin.is.null,fecha_fin.gte.${today}`)
+        .order('created_at', { ascending: false });
+      if (destino) query = query.eq('destino', destino);
+      const { data, error } = await query;
+      if (error) return res.status(500).json({ error: 'Error al obtener anuncios.' });
+      return res.json({ anuncios: data || [] });
+    }
+
+    // ── A partir de aquí requiere token ────────────────────────────
+    const payload = verifyToken(req);
+    if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
+    const { sub: userId, nivel, name: userName } = payload;
+
+    // ── GET autenticado — todos los anuncios (nivel >= 1) ──────────
+    if (req.method === 'GET') {
+      if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+      const { data, error } = await supabase
+        .from('anuncios').select('*').order('created_at', { ascending: false });
+      if (error) return res.status(500).json({ error: 'Error al obtener anuncios.' });
+      return res.json({ anuncios: data || [] });
+    }
+
+    // ── POST — crear anuncio (nivel >= 1) ─────────────────────────
+    if (req.method === 'POST') {
+      if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+      const { titulo, subtitulo, cuerpo, tipo, icono, badge, destino,
+              cta_texto, cta_link, imagen_url, fecha_fin, activo } = req.body;
+      if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
+      if (!cuerpo?.trim()) return res.status(400).json({ error: 'El cuerpo es requerido.' });
+      const validTipos  = ['oferta','novedad','evento','aviso','promocion'];
+      const validIconos = ['Tag','Zap','Gift','Bell','Sparkles'];
+      const validDest   = ['portal','empresa_1','empresa_2','empresa_3'];
+      if (tipo    && !validTipos.includes(tipo))   return res.status(400).json({ error: 'Tipo inválido.'    });
+      if (icono   && !validIconos.includes(icono)) return res.status(400).json({ error: 'Icono inválido.'   });
+      if (destino && !validDest.includes(destino)) return res.status(400).json({ error: 'Destino inválido.' });
+      const { data, error } = await supabase.from('anuncios').insert([{
+        titulo: titulo.trim(), subtitulo: subtitulo?.trim() || '',
+        cuerpo: cuerpo.trim(), tipo: tipo || 'aviso', icono: icono || 'Bell',
+        badge: badge?.trim() || '', destino: destino || 'portal',
+        cta_texto: cta_texto?.trim() || '', cta_link: cta_link?.trim() || '',
+        imagen_url: imagen_url?.trim() || '', fecha_fin: fecha_fin || null,
+        activo: activo !== undefined ? activo : true,
+        creado_por: userName || 'Desconocido', usuario_id: userId || null,
+      }]).select().single();
+      if (error) return res.status(500).json({ error: error.message || 'Error al crear anuncio.' });
+      return res.status(201).json({ anuncio: data });
+    }
+
+    // ── PATCH — editar/toggle (nivel >= 1, solo propios si nivel < 2) ─
+    if (req.method === 'PATCH') {
+      if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'ID requerido.' });
+      if (nivel < 2) {
+        const { data: ex } = await supabase.from('anuncios').select('usuario_id').eq('id', id).single();
+        if (!ex || String(ex.usuario_id) !== String(userId))
+          return res.status(403).json({ error: 'Solo puedes editar tus propios anuncios.' });
+      }
+      const allowed = ['titulo','subtitulo','cuerpo','tipo','icono','badge',
+                       'destino','cta_texto','cta_link','imagen_url','fecha_fin','activo'];
+      const updates = {};
+      for (const k of allowed) { if (k in req.body) updates[k] = req.body[k]; }
+      const { data, error } = await supabase.from('anuncios').update(updates).eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: error.message || 'Error al actualizar.' });
+      return res.json({ anuncio: data });
+    }
+
+    // ── DELETE — eliminar (nivel >= 2) ────────────────────────────
+    if (req.method === 'DELETE') {
+      if (nivel < 2) return res.status(403).json({ error: 'Se requiere Admin para eliminar.' });
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'ID requerido.' });
+      const { error } = await supabase.from('anuncios').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message || 'Error al eliminar.' });
+      return res.json({ ok: true });
+    }
+
+    return res.status(405).json({ error: 'Método no permitido.' });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // RECURSO: USUARIOS  (comportamiento original)
+  // ══════════════════════════════════════════════════════════════════
   const payload = verifyToken(req);
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
 
@@ -19,7 +115,6 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     if (payload.nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
 
-    // Si se solicita usuarios eliminados (solo superadmin)
     const showDeleted = req.query?.deleted === 'true';
 
     if (showDeleted) {
@@ -97,7 +192,6 @@ module.exports = async function handler(req, res) {
     const { id } = req.body;
     if (!id) return res.status(400).json({ error: 'id requerido.' });
 
-    // Verificar que el usuario existe y está eliminado
     const { data: user } = await supabase
       .from('Usuarios')
       .select('id, deleted_at')
@@ -123,18 +217,12 @@ module.exports = async function handler(req, res) {
     const { id, permanent } = req.body;
     if (!id) return res.status(400).json({ error: 'id requerido.' });
 
-    // Eliminación permanente (solo desde la sección de recuperación)
     if (permanent) {
-      const { error } = await supabase
-        .from('Usuarios')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('Usuarios').delete().eq('id', id);
       if (error) return res.status(500).json({ error: 'Error al eliminar usuario permanentemente.' });
       return res.json({ message: 'Usuario eliminado permanentemente.' });
     }
 
-    // Soft-delete: marcar con timestamp
     const { error } = await supabase
       .from('Usuarios')
       .update({ deleted_at: new Date().toISOString() })

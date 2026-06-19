@@ -67,7 +67,7 @@ const AnuncioPopup = ({
     const fetchAndShow = async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
-        const url   = `/api/anuncios?destino=${encodeURIComponent(destino)}`;
+        const url   = `/api/users?resource=anuncios&destino=${encodeURIComponent(destino)}`;
         const res   = await fetch(url);
         const data  = res.ok ? await res.json() : { anuncios: [] };
 
