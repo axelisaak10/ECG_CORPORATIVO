@@ -46,8 +46,61 @@ const isExpired = (f) => f && new Date(f) < new Date(new Date().toDateString());
 
 // ── Preview del popup ─────────────────────────────────────────────────────────
 const PopupPreview = ({ anuncio, onClose }) => {
+  const isSoloImagen = anuncio.solo_imagen || anuncio.soloImagen;
   const style = TIPO_STYLES[anuncio.tipo] || TIPO_STYLES.aviso;
   const IconComp = ICON_MAP[anuncio.icono] || Bell;
+  const hasImage = !!anuncio.imagen_url || !!anuncio.image;
+  const imageUrl = anuncio.imagen_url || anuncio.image;
+
+  if (isSoloImagen) {
+    return (
+      <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative w-full max-w-sm pointer-events-auto rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative overflow-hidden w-full bg-slate-950 flex items-center justify-center"
+               style={{ minHeight: '260px' }}>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt="Vista previa"
+                className="w-full h-auto object-cover max-h-[60vh]"
+              />
+            ) : (
+              <div className="p-8 text-center text-slate-400 text-xs">Sin URL de imagen configurada</div>
+            )}
+
+            <button onClick={onClose} className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 rounded-full p-1.5 z-10 text-white transition-colors">
+              <X size={15} />
+            </button>
+
+            {anuncio.badge && (
+              <div className="absolute top-3 left-3 z-10">
+                <span className="bg-yellow-400 text-yellow-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                  {anuncio.badge}
+                </span>
+              </div>
+            )}
+
+            {/* Simulación del timer */}
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
+            <div className="absolute bottom-4 left-0 right-0 z-10 flex flex-col items-center gap-1">
+              <span className="text-[9px] font-bold text-white/80 uppercase tracking-widest">
+                ⏱️ Tiempo restante (Simulado)
+              </span>
+              <div className="flex gap-1.5 text-white/90 text-sm font-black bg-black/40 backdrop-blur-sm px-3 py-1 rounded-xl">
+                <span>02d</span> : <span>14h</span> : <span>35m</span> : <span>18s</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-900 px-4 py-2.5 text-center text-xs text-slate-400 font-bold border-t border-slate-800">
+            Vista previa — Modo Solo Imagen
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Modo Estándar
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -74,6 +127,12 @@ const PopupPreview = ({ anuncio, onClose }) => {
             </div>
           </div>
         </div>
+        {/* Imagen si existe en modo estándar */}
+        {imageUrl && (
+          <div className="relative h-44 overflow-hidden bg-slate-900">
+            <img src={imageUrl} alt="Anuncio" className="w-full h-full object-cover" />
+          </div>
+        )}
         {/* Body */}
         <div className="bg-white p-5">
           <p className="text-gray-600 text-sm leading-relaxed">{anuncio.cuerpo || 'Descripción del anuncio...'}</p>
@@ -104,6 +163,7 @@ const AnuncioForm = ({ initial = {}, onSave, onClose, saving }) => {
     imagen_url:initial.imagen_url || '',
     fecha_fin: initial.fecha_fin  ? initial.fecha_fin.split('T')[0] : '',
     activo:    initial.activo !== undefined ? initial.activo : true,
+    solo_imagen: initial.solo_imagen || false,
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -112,8 +172,12 @@ const AnuncioForm = ({ initial = {}, onSave, onClose, saving }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.titulo.trim()) return;
-    if (!form.cuerpo.trim()) return;
+    if (!form.solo_imagen) {
+      if (!form.titulo.trim()) return;
+      if (!form.cuerpo.trim()) return;
+    } else {
+      if (!form.imagen_url.trim()) return;
+    }
     onSave({
       ...form,
       fecha_fin: form.fecha_fin || null,
@@ -171,131 +235,205 @@ const AnuncioForm = ({ initial = {}, onSave, onClose, saving }) => {
               </div>
             </div>
 
-            {/* Ícono + Badge (2 columnas) */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Modo Solo Imagen Toggle */}
+            <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-3 border border-slate-200">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ícono</label>
-                <div className="flex gap-2 flex-wrap">
-                  {ICONOS.map(ic => {
-                    const Ic = ICON_MAP[ic];
-                    return (
-                      <button
-                        key={ic}
-                        type="button"
-                        onClick={() => set('icono', ic)}
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border-2 ${
-                          form.icono === ic
-                            ? `bg-gradient-to-br ${style.bg} text-white border-transparent shadow-md`
-                            : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'
-                        }`}
-                        title={ic}
-                      >
-                        <Ic size={15} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Badge <span className="text-slate-300 normal-case">(etiqueta)</span></label>
-                <input
-                  type="text"
-                  value={form.badge}
-                  onChange={e => set('badge', e.target.value)}
-                  placeholder="Ej: ¡NUEVO!, 20% OFF"
-                  maxLength={20}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
-                />
-              </div>
-            </div>
-
-            {/* Título */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Título <span className="text-red-400">*</span></label>
-              <input
-                type="text"
-                required
-                value={form.titulo}
-                onChange={e => set('titulo', e.target.value)}
-                placeholder="Título principal del anuncio"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
-              />
-            </div>
-
-            {/* Subtítulo */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Subtítulo <span className="text-slate-300 normal-case">(opcional)</span></label>
-              <input
-                type="text"
-                value={form.subtitulo}
-                onChange={e => set('subtitulo', e.target.value)}
-                placeholder="Subtítulo o nombre de la empresa"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
-              />
-            </div>
-
-            {/* Cuerpo */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descripción <span className="text-red-400">*</span></label>
-              <textarea
-                required
-                value={form.cuerpo}
-                onChange={e => set('cuerpo', e.target.value)}
-                placeholder="Descripción completa del anuncio u oferta..."
-                rows={3}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300 resize-none"
-              />
-            </div>
-
-            {/* CTA + Fecha (2 columnas) */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Texto del botón CTA <span className="text-slate-300 normal-case">(opcional)</span></label>
-                <input
-                  type="text"
-                  value={form.cta_texto}
-                  onChange={e => set('cta_texto', e.target.value)}
-                  placeholder="Ej: Ver más, Contactar"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fecha de vencimiento <span className="text-slate-300 normal-case">(vacío = sin límite)</span></label>
-                <input
-                  type="date"
-                  value={form.fecha_fin}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={e => set('fecha_fin', e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-            </div>
-
-            {/* Link CTA */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Link del botón <span className="text-slate-300 normal-case">(URL completa, opcional)</span></label>
-              <input
-                type="url"
-                value={form.cta_link}
-                onChange={e => set('cta_link', e.target.value)}
-                placeholder="https://wa.me/... o https://..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
-              />
-            </div>
-
-            {/* Activar al crear */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-3.5 border border-slate-200">
-              <div>
-                <p className="text-sm font-bold text-slate-700">Publicar inmediatamente</p>
-                <p className="text-xs text-slate-400 mt-0.5">Si está activo, el pop-up aparecerá al guardar</p>
+                <p className="text-xs font-bold text-slate-700">🖼️ Modo Solo Imagen</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Muestra únicamente la imagen y el contador de tiempo</p>
               </div>
               <button
                 type="button"
-                onClick={() => set('activo', !form.activo)}
-                className={`transition-colors ${form.activo ? 'text-blue-600' : 'text-slate-300'}`}
+                onClick={() => set('solo_imagen', !form.solo_imagen)}
+                className={`transition-colors ${form.solo_imagen ? 'text-indigo-600' : 'text-slate-300'}`}
               >
-                {form.activo ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                {form.solo_imagen ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
               </button>
+            </div>
+
+            {/* URL Imagen (Destacada si es Solo Imagen) */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                URL de la Imagen {form.solo_imagen && <span className="text-red-400">*</span>}
+              </label>
+              <input
+                type="url"
+                required={form.solo_imagen}
+                value={form.imagen_url}
+                onChange={e => set('imagen_url', e.target.value)}
+                placeholder="https://ejemplo.com/anuncio-oferta.png"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+              />
+              {form.imagen_url && (
+                <div className="mt-2.5 relative rounded-2xl overflow-hidden border border-slate-100 max-h-36 bg-slate-950 flex items-center justify-center">
+                  <img
+                    src={form.imagen_url}
+                    alt="Vista previa de imagen"
+                    className="max-h-32 object-contain w-full"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Campos condicionales si no es modo Solo Imagen */}
+            {!form.solo_imagen ? (
+              <>
+                {/* Ícono + Badge (2 columnas) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ícono</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {ICONOS.map(ic => {
+                        const Ic = ICON_MAP[ic];
+                        return (
+                          <button
+                            key={ic}
+                            type="button"
+                            onClick={() => set('icono', ic)}
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border-2 ${
+                              form.icono === ic
+                                ? `bg-gradient-to-br ${style.bg} text-white border-transparent shadow-md`
+                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'
+                            }`}
+                            title={ic}
+                          >
+                            <Ic size={15} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Badge <span className="text-slate-300 normal-case">(etiqueta)</span></label>
+                    <input
+                      type="text"
+                      value={form.badge}
+                      onChange={e => set('badge', e.target.value)}
+                      placeholder="Ej: ¡NUEVO!, 20% OFF"
+                      maxLength={20}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                    />
+                  </div>
+                </div>
+
+                {/* Título */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Título <span className="text-red-400">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={form.titulo}
+                    onChange={e => set('titulo', e.target.value)}
+                    placeholder="Título principal del anuncio"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                  />
+                </div>
+
+                {/* Subtítulo */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Subtítulo <span className="text-slate-300 normal-case">(opcional)</span></label>
+                  <input
+                    type="text"
+                    value={form.subtitulo}
+                    onChange={e => set('subtitulo', e.target.value)}
+                    placeholder="Subtítulo o nombre de la empresa"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                  />
+                </div>
+
+                {/* Cuerpo */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descripción <span className="text-red-400">*</span></label>
+                  <textarea
+                    required
+                    value={form.cuerpo}
+                    onChange={e => set('cuerpo', e.target.value)}
+                    placeholder="Descripción completa del anuncio u oferta..."
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300 resize-none"
+                  />
+                </div>
+
+                {/* CTA Texto + Link */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Texto del botón CTA <span className="text-slate-300 normal-case">(opcional)</span></label>
+                    <input
+                      type="text"
+                      value={form.cta_texto}
+                      onChange={e => set('cta_texto', e.target.value)}
+                      placeholder="Ej: Ver más, Contactar"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Link del botón / clic <span className="text-slate-300 normal-case">(opcional)</span></label>
+                    <input
+                      type="url"
+                      value={form.cta_link}
+                      onChange={e => set('cta_link', e.target.value)}
+                      placeholder="https://wa.me/... o https://..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Opciones simplificadas para Solo Imagen */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Badge <span className="text-slate-300 normal-case">(opcional)</span></label>
+                    <input
+                      type="text"
+                      value={form.badge}
+                      onChange={e => set('badge', e.target.value)}
+                      placeholder="Ej: ¡LIMITADO!, 30% OFF"
+                      maxLength={20}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Link al hacer clic <span className="text-slate-300 normal-case">(opcional)</span></label>
+                    <input
+                      type="url"
+                      value={form.cta_link}
+                      onChange={e => set('cta_link', e.target.value)}
+                      placeholder="https://wa.me/... o https://..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder-slate-300"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Fecha de vencimiento y Activo */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fecha de vencimiento <span className="text-red-400 font-black">*</span> <span className="text-slate-300 normal-case">(requerido para cuenta atrás)</span></label>
+                <input
+                  type="date"
+                  required
+                  value={form.fecha_fin}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => set('fecha_fin', e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-2.5 border border-slate-200 h-[48px]">
+                  <span className="text-xs font-bold text-slate-700">Publicar ya</span>
+                  <button
+                    type="button"
+                    onClick={() => set('activo', !form.activo)}
+                    className={`transition-colors ${form.activo ? 'text-blue-600' : 'text-slate-300'}`}
+                  >
+                    {form.activo ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                  </button>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -555,6 +693,9 @@ const AnunciosSection = ({ currentUser }) => {
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-extrabold text-slate-800 text-sm">{anuncio.titulo}</span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tipo.color}`}>{tipo.label}</span>
+                      {anuncio.solo_imagen && (
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">🖼️ Solo Imagen</span>
+                      )}
                       {anuncio.badge && (
                         <span className="text-[10px] font-black bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{anuncio.badge}</span>
                       )}
@@ -562,7 +703,9 @@ const AnunciosSection = ({ currentUser }) => {
                         <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">⏰ Vencido</span>
                       )}
                     </div>
-                    <p className="text-slate-500 text-xs leading-relaxed line-clamp-1 mb-2">{anuncio.cuerpo}</p>
+                    <p className="text-slate-500 text-xs leading-relaxed line-clamp-1 mb-2">
+                      {anuncio.solo_imagen ? `[Imagen URL] ${anuncio.imagen_url}` : anuncio.cuerpo}
+                    </p>
                     <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-medium">
                       <span className="flex items-center gap-1">
                         {DESTINOS.find(d => d.value === anuncio.destino)?.icon}

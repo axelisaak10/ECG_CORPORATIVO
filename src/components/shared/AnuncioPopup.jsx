@@ -1,22 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Tag, Zap, Gift, Bell, ArrowRight, Sparkles } from 'lucide-react';
-
-// ── Iconos disponibles ────────────────────────────────────────────────────────
-const ICONS = { Tag, Zap, Gift, Bell, Sparkles };
+import { X, ChevronLeft, ChevronRight, ArrowRight, Clock } from 'lucide-react';
 
 // ── Colores de tipo ───────────────────────────────────────────────────────────
 const typeStyles = {
-  oferta:    { bg: 'from-rose-500 to-pink-600',    badge: 'bg-rose-100 text-rose-700',    label: '🔥 Oferta especial' },
-  novedad:   { bg: 'from-violet-500 to-purple-600', badge: 'bg-violet-100 text-violet-700', label: '✨ Novedad' },
-  evento:    { bg: 'from-amber-500 to-orange-600', badge: 'bg-amber-100 text-amber-700',   label: '📅 Evento' },
-  aviso:     { bg: 'from-blue-500 to-blue-700',    badge: 'bg-blue-100 text-blue-700',    label: '📢 Aviso importante' },
-  promocion: { bg: 'from-emerald-500 to-teal-600', badge: 'bg-emerald-100 text-emerald-700', label: '🎁 Promoción' },
+  oferta:    { bg: 'from-rose-600 to-pink-700',     badge: '🔥 Oferta especial' },
+  novedad:   { bg: 'from-violet-600 to-purple-700', badge: '✨ Novedad'          },
+  evento:    { bg: 'from-amber-500 to-orange-600',  badge: '📅 Evento'           },
+  aviso:     { bg: 'from-blue-600 to-blue-800',     badge: '📢 Aviso importante' },
+  promocion: { bg: 'from-emerald-500 to-teal-700',  badge: '🎁 Promoción'        },
 };
 
-// ── Helper: convierte un anuncio de la API al formato interno del popup ────────
+// ── Normaliza anuncio de API al formato interno ───────────────────────────────
 const normalizeApiAnuncio = (a) => ({
   type:     a.tipo       || 'aviso',
-  icon:     a.icono      || 'Bell',
   badge:    a.badge      || '',
   title:    a.titulo     || '',
   subtitle: a.subtitulo  || '',
@@ -24,45 +20,60 @@ const normalizeApiAnuncio = (a) => ({
   cta:      a.cta_texto  || '',
   ctaLink:  a.cta_link   || '',
   image:    a.imagen_url || '',
-  expiry:   a.fecha_fin  ? (a.fecha_fin.includes('T') ? a.fecha_fin : a.fecha_fin + 'T23:59:59') : undefined,
+  expiry:   a.fecha_fin
+    ? (a.fecha_fin.includes('T') ? a.fecha_fin : a.fecha_fin + 'T23:59:59')
+    : undefined,
+  soloImagen: a.solo_imagen || false,
 });
+
+// ── Bloque de dígito del countdown ───────────────────────────────────────────
+const DigitBlock = ({ val, label }) => (
+  <div className="flex flex-col items-center">
+    <div className="bg-black/50 backdrop-blur-md rounded-xl px-3 py-1.5 min-w-[48px] text-center">
+      <span className="text-2xl font-black text-white tabular-nums leading-none">
+        {String(val).padStart(2, '0')}
+      </span>
+    </div>
+    <span className="text-[10px] font-bold text-white/70 mt-1 uppercase tracking-wider">{label}</span>
+  </div>
+);
 
 // ── Dot de navegación ─────────────────────────────────────────────────────────
 const NavDot = ({ active, onClick }) => (
   <button
     onClick={onClick}
     className={`rounded-full transition-all duration-300 ${
-      active ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+      active ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/40 hover:bg-white/70'
     }`}
   />
 );
 
 /**
- * AnuncioPopup — popup de anuncios/ofertas
+ * AnuncioPopup — popup centrado en imagen con countdown superpuesto
  *
  * Props:
  *   destino      : 'portal' | 'empresa_1' | 'empresa_2' | 'empresa_3'
  *   popupId      : string único para evitar mostrarlo 2x por sesión
  *   delay        : ms antes de mostrarse (default 900)
- *   anunciosExtra: Array<anuncio> (formato interno) — anuncios estáticos adicionales
+ *   anunciosExtra: fallback estático
  */
 const AnuncioPopup = ({
-  destino   = 'portal',
-  popupId   = 'general',
-  delay     = 900,
-  anunciosExtra = [],   // anuncios estáticos (fallback / legado)
+  destino       = 'portal',
+  popupId       = 'general',
+  delay         = 900,
+  anunciosExtra = [],
 }) => {
-  const [anuncios, setAnuncios] = useState([]);
-  const [visible,  setVisible]  = useState(false);
-  const [current,  setCurrent]  = useState(0);
-  const [closing,  setClosing]  = useState(false);
+  const [anuncios,  setAnuncios]  = useState([]);
+  const [visible,   setVisible]   = useState(false);
+  const [current,   setCurrent]   = useState(0);
+  const [closing,   setClosing]   = useState(false);
   const [countdown, setCountdown] = useState(null);
 
-  // ── Cargar anuncios desde la API ────────────────────────────────────────────
+  // ── Carga desde API ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     const key = `ecg_popup_seen_${popupId}`;
-    if (sessionStorage.getItem(key)) return; // ya se vio en esta sesión
+    if (sessionStorage.getItem(key)) return;
 
     const fetchAndShow = async () => {
       try {
@@ -81,7 +92,6 @@ const AnuncioPopup = ({
         setAnuncios(combined);
         setTimeout(() => { if (!cancelled) setVisible(true); }, delay);
       } catch {
-        // Si la API falla, mostrar anuncios estáticos si existen
         if (anunciosExtra.length > 0) {
           setAnuncios(anunciosExtra);
           setTimeout(() => { if (!cancelled) setVisible(true); }, delay);
@@ -94,7 +104,7 @@ const AnuncioPopup = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destino, popupId, delay]);
 
-  // ── Countdown para anuncio con expiry ───────────────────────────────────────
+  // ── Countdown ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const anuncio = anuncios[current];
     if (!anuncio?.expiry) { setCountdown(null); return; }
@@ -125,113 +135,207 @@ const AnuncioPopup = ({
 
   if (!visible || anuncios.length === 0) return null;
 
-  const anuncio  = anuncios[current];
-  const style    = typeStyles[anuncio.type] || typeStyles.aviso;
-  const IconComp = ICONS[anuncio.icon] || Bell;
+  const anuncio = anuncios[current];
+  const style   = typeStyles[anuncio.type] || typeStyles.aviso;
+  const hasImage = !!anuncio.image;
 
   return (
     <>
       {/* Overlay */}
       <div
-        className={`fixed inset-0 z-[900] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${closing ? 'opacity-0' : 'opacity-100'}`}
+        className={`fixed inset-0 z-[900] bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
+          closing ? 'opacity-0' : 'opacity-100'
+        }`}
         onClick={close}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-[901] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[901] flex items-center justify-center p-4 pointer-events-none animate-fadeIn">
         <div
-          className={`relative w-full max-w-md pointer-events-auto rounded-3xl overflow-hidden shadow-2xl transition-all duration-350 ${
+          className={`relative w-full max-w-sm pointer-events-auto rounded-3xl overflow-hidden shadow-2xl transition-all duration-355 ${
             closing ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}
-          style={{ animation: closing ? '' : 'popupIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}
+          style={{ animation: closing ? '' : 'popupIn 0.42s cubic-bezier(0.34,1.56,0.64,1) both' }}
         >
-          {/* Header */}
-          <div className={`relative bg-gradient-to-br ${style.bg} p-6 pb-8 text-white overflow-hidden`}>
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
-            <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
+          {anuncio.soloImagen ? (
+            /* ── MODO SOLO IMAGEN ── */
+            <div className="relative overflow-hidden w-full bg-slate-950 flex items-center justify-center"
+                 style={{ minHeight: '260px' }}>
+              {anuncio.ctaLink ? (
+                <a
+                  href={anuncio.ctaLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={close}
+                  className="w-full h-full block cursor-pointer hover:opacity-95 transition-opacity"
+                >
+                  <img
+                    src={anuncio.image}
+                    alt={anuncio.title || "Anuncio"}
+                    className="w-full h-auto object-cover max-h-[70vh]"
+                  />
+                </a>
+              ) : (
+                <img
+                  src={anuncio.image}
+                  alt={anuncio.title || "Anuncio"}
+                  className="w-full h-auto object-cover max-h-[70vh]"
+                />
+              )}
 
-            <button
-              onClick={close}
-              className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors z-10"
-            >
-              <X size={16} />
-            </button>
+              {/* Botón cerrar */}
+              <button
+                onClick={close}
+                className="absolute top-3 right-3 z-30 bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors shadow-lg"
+              >
+                <X size={15} />
+              </button>
 
-            <div className="flex items-center gap-2 mb-4">
-              <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full">
-                {style.label}
-              </span>
+              {/* Badges sobre la imagen */}
               {anuncio.badge && (
-                <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2.5 py-1 rounded-full">
-                  {anuncio.badge}
-                </span>
+                <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
+                  <span className="bg-yellow-400 text-yellow-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                    {anuncio.badge}
+                  </span>
+                </div>
+              )}
+
+              {/* Gradiente sutil inferior para el countdown */}
+              {countdown && (
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
+              )}
+
+              {/* Countdown superpuesto al final de la imagen */}
+              {countdown && (
+                <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-col items-center gap-1 px-4">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Clock size={11} className="text-white/80 animate-pulse" />
+                    <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest drop-shadow">
+                      Tiempo restante
+                    </span>
+                  </div>
+                  <div className="flex items-end gap-1.5">
+                    <DigitBlock val={countdown.d} label="días" />
+                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <DigitBlock val={countdown.h} label="hrs"  />
+                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <DigitBlock val={countdown.m} label="min"  />
+                    <span className="text-white/80 font-black text-lg mb-2.5 drop-shadow">:</span>
+                    <DigitBlock val={countdown.s} label="seg"  />
+                  </div>
+                </div>
               )}
             </div>
+          ) : (
+            /* ── MODO ESTÁNDAR (CON TEXTO) ── */
+            <>
+              {/* ── ZONA IMAGEN (o gradiente si no hay imagen) ── */}
+              <div className={`relative ${hasImage ? '' : `bg-gradient-to-br ${style.bg}`} overflow-hidden`}
+                   style={{ minHeight: hasImage ? '260px' : '160px' }}>
 
-            <div className="flex items-start gap-3 relative z-10">
-              <div className="bg-white/20 rounded-2xl p-3 flex-shrink-0">
-                <IconComp size={22} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black leading-snug">{anuncio.title}</h2>
-                {anuncio.subtitle && (
-                  <p className="text-white/80 text-sm mt-0.5 font-medium">{anuncio.subtitle}</p>
+                {/* Imagen de fondo */}
+                {hasImage && (
+                  <img
+                    src={anuncio.image}
+                    alt={anuncio.title}
+                    className="w-full object-cover"
+                    style={{ minHeight: '260px', maxHeight: '340px' }}
+                  />
                 )}
-              </div>
-            </div>
 
-            {anuncio.image && (
-              <div className="mt-4 rounded-2xl overflow-hidden h-36 relative z-10">
-                <img src={anuncio.image} alt={anuncio.title} className="w-full h-full object-cover" />
-              </div>
-            )}
-          </div>
+                {/* Gradiente oscuro sobre la imagen (siempre, para legibilidad) */}
+                <div className={`absolute inset-0 ${
+                  hasImage
+                    ? 'bg-gradient-to-t from-black/85 via-black/30 to-black/20'
+                    : `bg-gradient-to-br ${style.bg} opacity-90`
+                }`} />
 
-          {/* Cuerpo */}
-          <div className="bg-white p-6">
-            <p className="text-gray-600 text-sm leading-relaxed">{anuncio.body}</p>
+                {/* Botón cerrar */}
+                <button
+                  onClick={close}
+                  className="absolute top-3 right-3 z-20 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors"
+                >
+                  <X size={15} />
+                </button>
 
-            {/* Countdown */}
-            {countdown && (
-              <div className="mt-4 bg-gray-50 rounded-2xl p-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 text-center">⏱ Tiempo restante</p>
-                <div className="flex justify-center gap-3">
-                  {[{ val: countdown.d, label: 'días' }, { val: countdown.h, label: 'hrs' }, { val: countdown.m, label: 'min' }, { val: countdown.s, label: 'seg' }].map(({ val, label }) => (
-                    <div key={label} className="flex flex-col items-center">
-                      <span className="text-2xl font-black text-gray-800 tabular-nums w-10 text-center">{String(val).padStart(2, '0')}</span>
-                      <span className="text-xs text-gray-400 font-bold">{label}</span>
+                {/* Badge tipo + badge extra */}
+                <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
+                  <span className="bg-black/40 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full">
+                    {style.badge}
+                  </span>
+                  {anuncio.badge && (
+                    <span className="bg-yellow-400 text-yellow-900 text-[11px] font-black px-2.5 py-1 rounded-full">
+                      {anuncio.badge}
+                    </span>
+                  )}
+                </div>
+
+                {/* ── COUNTDOWN superpuesto en la imagen ── */}
+                {countdown && (
+                  <div className="absolute bottom-16 left-0 right-0 z-20 flex flex-col items-center gap-1.5 px-4">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Clock size={11} className="text-white/70" />
+                      <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
+                        Tiempo restante
+                      </span>
                     </div>
-                  ))}
+                    <div className="flex items-end gap-2.5">
+                      <DigitBlock val={countdown.d} label="días" />
+                      <span className="text-white/60 font-black text-xl mb-3">:</span>
+                      <DigitBlock val={countdown.h} label="hrs"  />
+                      <span className="text-white/60 font-black text-xl mb-3">:</span>
+                      <DigitBlock val={countdown.m} label="min"  />
+                      <span className="text-white/60 font-black text-xl mb-3">:</span>
+                      <DigitBlock val={countdown.s} label="seg"  />
+                    </div>
+                  </div>
+                )}
+
+                {/* Título y subtítulo sobre la imagen */}
+                <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-4 pt-8">
+                  <h2 className="text-lg font-black text-white leading-snug drop-shadow-md">
+                    {anuncio.title}
+                  </h2>
+                  {anuncio.subtitle && (
+                    <p className="text-white/75 text-xs font-semibold mt-0.5">{anuncio.subtitle}</p>
+                  )}
                 </div>
               </div>
-            )}
 
-            {anuncio.cta && (
-              <a
-                href={anuncio.ctaLink || '#'}
-                target={anuncio.ctaLink ? '_blank' : '_self'}
-                rel="noreferrer"
-                onClick={close}
-                className={`mt-4 w-full flex items-center justify-center gap-2 bg-gradient-to-r ${style.bg} text-white font-bold text-sm py-3 px-6 rounded-2xl hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md`}
-              >
-                {anuncio.cta}
-                <ArrowRight size={15} />
-              </a>
-            )}
+              {/* ── ZONA INFERIOR: descripción + CTA ── */}
+              <div className="bg-white px-5 py-4 space-y-3">
+                {anuncio.body && (
+                  <p className="text-gray-600 text-sm leading-relaxed">{anuncio.body}</p>
+                )}
 
-            <button
-              onClick={close}
-              className="mt-3 w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
-            >
-              Cerrar
-            </button>
-          </div>
+                {anuncio.cta && (
+                  <a
+                    href={anuncio.ctaLink || '#'}
+                    target={anuncio.ctaLink ? '_blank' : '_self'}
+                    rel="noreferrer"
+                    onClick={close}
+                    className={`flex items-center justify-center gap-2 w-full bg-gradient-to-r ${style.bg} text-white font-bold text-sm py-3 rounded-2xl hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md`}
+                  >
+                    {anuncio.cta}
+                    <ArrowRight size={14} />
+                  </a>
+                )}
 
-          {/* Navegación multi-anuncio */}
+                <button
+                  onClick={close}
+                  className="w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── Navegación multi-anuncio ── */}
           {anuncios.length > 1 && (
-            <div className={`bg-gradient-to-r ${style.bg} px-4 py-3 flex items-center justify-between`}>
+            <div className={`bg-gradient-to-r ${style.bg} px-4 py-2.5 flex items-center justify-between`}>
               <button onClick={prev} className="bg-white/20 hover:bg-white/30 text-white rounded-full p-1.5 transition-colors">
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} />
               </button>
               <div className="flex items-center gap-1.5">
                 {anuncios.map((_, i) => (
@@ -239,7 +343,7 @@ const AnuncioPopup = ({
                 ))}
               </div>
               <button onClick={next} className="bg-white/20 hover:bg-white/30 text-white rounded-full p-1.5 transition-colors">
-                <ChevronRight size={16} />
+                <ChevronRight size={15} />
               </button>
             </div>
           )}
@@ -248,8 +352,8 @@ const AnuncioPopup = ({
 
       <style>{`
         @keyframes popupIn {
-          from { opacity: 0; transform: scale(0.92) translateY(16px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
+          from { opacity: 0; transform: scale(0.90) translateY(20px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    }
         }
       `}</style>
     </>

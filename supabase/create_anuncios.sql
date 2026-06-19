@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS anuncios (
 
   -- Imagen del anuncio (opcional, URL)
   imagen_url    TEXT          DEFAULT '',
+  solo_imagen   BOOLEAN       NOT NULL DEFAULT FALSE,
 
   -- Vigencia
   fecha_fin     DATE          DEFAULT NULL,  -- NULL = sin vencimiento

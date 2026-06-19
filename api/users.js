@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
       const today = new Date().toISOString().split('T')[0];
       let query = supabase
         .from('anuncios')
-        .select('id,titulo,subtitulo,cuerpo,tipo,icono,badge,destino,cta_texto,cta_link,imagen_url,fecha_fin,activo')
+        .select('id,titulo,subtitulo,cuerpo,tipo,icono,badge,destino,cta_texto,cta_link,imagen_url,fecha_fin,activo,solo_imagen')
         .eq('activo', true)
         .or(`fecha_fin.is.null,fecha_fin.gte.${today}`)
         .order('created_at', { ascending: false });
@@ -51,9 +51,20 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
       const { titulo, subtitulo, cuerpo, tipo, icono, badge, destino,
-              cta_texto, cta_link, imagen_url, fecha_fin, activo } = req.body;
-      if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
-      if (!cuerpo?.trim()) return res.status(400).json({ error: 'El cuerpo es requerido.' });
+              cta_texto, cta_link, imagen_url, fecha_fin, activo, solo_imagen } = req.body;
+      
+      let finalTitulo = titulo?.trim();
+      let finalCuerpo = cuerpo?.trim();
+
+      if (solo_imagen) {
+        if (!imagen_url?.trim()) return res.status(400).json({ error: 'La URL de la imagen es requerida para el modo de solo imagen.' });
+        if (!finalTitulo) finalTitulo = 'Anuncio de Imagen';
+        if (!finalCuerpo) finalCuerpo = 'Contenido de imagen';
+      } else {
+        if (!finalTitulo) return res.status(400).json({ error: 'El título es requerido.' });
+        if (!finalCuerpo) return res.status(400).json({ error: 'El cuerpo es requerido.' });
+      }
+
       const validTipos  = ['oferta','novedad','evento','aviso','promocion'];
       const validIconos = ['Tag','Zap','Gift','Bell','Sparkles'];
       const validDest   = ['portal','empresa_1','empresa_2','empresa_3'];
@@ -61,12 +72,13 @@ module.exports = async function handler(req, res) {
       if (icono   && !validIconos.includes(icono)) return res.status(400).json({ error: 'Icono inválido.'   });
       if (destino && !validDest.includes(destino)) return res.status(400).json({ error: 'Destino inválido.' });
       const { data, error } = await supabase.from('anuncios').insert([{
-        titulo: titulo.trim(), subtitulo: subtitulo?.trim() || '',
-        cuerpo: cuerpo.trim(), tipo: tipo || 'aviso', icono: icono || 'Bell',
+        titulo: finalTitulo, subtitulo: subtitulo?.trim() || '',
+        cuerpo: finalCuerpo, tipo: tipo || 'aviso', icono: icono || 'Bell',
         badge: badge?.trim() || '', destino: destino || 'portal',
         cta_texto: cta_texto?.trim() || '', cta_link: cta_link?.trim() || '',
         imagen_url: imagen_url?.trim() || '', fecha_fin: fecha_fin || null,
         activo: activo !== undefined ? activo : true,
+        solo_imagen: !!solo_imagen,
         creado_por: userName || 'Desconocido', usuario_id: userId || null,
       }]).select().single();
       if (error) return res.status(500).json({ error: error.message || 'Error al crear anuncio.' });
@@ -84,7 +96,7 @@ module.exports = async function handler(req, res) {
           return res.status(403).json({ error: 'Solo puedes editar tus propios anuncios.' });
       }
       const allowed = ['titulo','subtitulo','cuerpo','tipo','icono','badge',
-                       'destino','cta_texto','cta_link','imagen_url','fecha_fin','activo'];
+                       'destino','cta_texto','cta_link','imagen_url','fecha_fin','activo','solo_imagen'];
       const updates = {};
       for (const k of allowed) { if (k in req.body) updates[k] = req.body[k]; }
       const { data, error } = await supabase.from('anuncios').update(updates).eq('id', id).select().single();
