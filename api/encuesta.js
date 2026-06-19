@@ -101,12 +101,12 @@ module.exports = async function handler(req, res) {
       }])
       .select().single();
 
-    if (insError) return res.status(500).json({ error: 'Error al iniciar encuesta pública.' });
+    if (insError) return res.status(500).json({ error: 'Error al iniciar encuesta pública: ' + insError.message });
 
     const { data: preguntas, error: qError } = await supabase
       .from('encuesta_preguntas').select('*').eq('activa', true).order('orden').order('created_at');
 
-    if (qError) return res.status(500).json({ error: 'Error al obtener preguntas.' });
+    if (qError) return res.status(500).json({ error: 'Error al obtener preguntas: ' + qError.message });
 
     return res.json({ valido: true, codigo: codigoData, preguntas: preguntas || [] });
   }
