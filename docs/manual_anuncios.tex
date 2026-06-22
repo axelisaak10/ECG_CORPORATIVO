@@ -1,0 +1,157 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{array}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Manual de Uso: Anuncios y Pop-ups - ECG Corporativo},
+    pdfpagemode=FullScreen,
+}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{blue!80!black}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{blue!60!black}}
+  {\thesubsection}{1em}{}
+
+\title{\textbf{Manual de Uso: Gestión de Anuncios y Pop-ups\\ ECG Corporativo}}
+\author{\textbf{Equipo de Desarrollo y Soporte}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introducción al Sistema de Anuncios}
+El sistema de anuncios permite a los administradores y trabajadores mostrar ventanas emergentes (\textit{pop-ups}) al inicio de la sesión del usuario. Estos anuncios pueden configurarse de manera global (para el menú principal del portal) o segmentarse específicamente para cada una de las empresas de la corporación.
+
+\subsection{Características Clave}
+\begin{itemize}
+    \item \textbf{Segmentación por destino:} Permite elegir si el anuncio aparece en el Portal Principal o en una empresa específica de la corporación.
+    \item \textbf{Control de vigencia:} Configuración de una fecha límite; el anuncio dejará de mostrarse automáticamente después de esa fecha.
+    \item \textbf{Contador regresivo (cuenta atrás):} Los pop-ups calculan y muestran el tiempo restante exacto de vigencia de forma dinámica y visual.
+    \item \textbf{Habilitación rápida:} Permite activar o desactiva anuncios con un solo interruptor sin necesidad de eliminarlos de la base de datos.
+\end{itemize}
+
+\section{Formatos Disponibles}
+El sistema soporta dos estilos de diseño altamente optimizados y adaptables:
+
+\subsection{Modo Estándar (Tarjeta con Texto)}
+Ideal para avisos informativos, novedades o promociones detalladas.
+\begin{itemize}
+    \item \textbf{Elementos en pantalla:} Ícono representativo, etiqueta de tipo (\textit{badge}), título, subtítulo, descripción textual completa, imagen descriptiva (opcional) y un botón de llamada a la acción (\textit{CTA}) personalizable.
+    \item \textbf{Uso recomendado:} Comunicados corporativos, avisos de mantenimiento, lanzamiento de nuevos servicios o promociones que requieran explicación.
+\end{itemize}
+
+\subsection{Modo Solo Imagen (Banner con Cuenta Atrás)}
+Diseñado específicamente para campañas de marketing visual u ofertas de alto impacto gráfico.
+\begin{itemize}
+    \item \textbf{Elementos en pantalla:} Únicamente la imagen de tu banner, una etiqueta opcional en la esquina superior izquierda, y una \textbf{barra inferior dedicada} para la cuenta atrás.
+    \item \textbf{Visualización optimizada:} El pop-up se amplía automáticamente a un formato más grande (\textit{max-w-xl}) y el temporizador se coloca debajo de la foto. De esta manera, \textbf{los números nunca tapan los textos o caras} de la imagen.
+    \item \textbf{Interactividad:} Si se configura un enlace, \textbf{toda la imagen se vuelve cliqueable}, actuando como un acceso directo a la promoción (por ejemplo, a un chat de WhatsApp o landing page).
+    \item \textbf{Uso recomendado:} Flyers de descuentos, ofertas especiales de fin de semana, o posters publicitarios prediseñados de gran calidad.
+\end{itemize}
+
+\newpage
+
+\section{Guía de Configuración de Campos (Formulario)}
+Al crear o editar un anuncio en el panel administrativo, se deben configurar los siguientes parámetros:
+
+\begin{table}[htbp]
+\centering
+\caption{Campos de Configuración de Anuncios}
+\label{tab:campos}
+\begin{tabular}{m{3cm} c m{9cm}}
+\toprule
+\textbf{Campo} & \textbf{Obligatorio} & \textbf{Descripción / Recomendación} \\
+\midrule
+\textbf{Tipo} & Sí & Define el color del pop-up y la etiqueta del tipo. Opciones: \textit{Oferta}, \textit{Novedad}, \textit{Evento}, \textit{Aviso} o \textit{Promoción}. \\
+\addlinespace
+\textbf{Destino} & Sí & Lugar de despliegue del anuncio. Opciones: \textit{Portal Principal} o la empresa correspondiente. \\
+\addlinespace
+\textbf{Modo Solo Imagen} & Opcional & Interruptor que cambia el diseño al formato visual de solo imagen (oculta los campos de texto estándar). \\
+\addlinespace
+\textbf{URL de la Imagen} & Sí (en Solo Imagen) & Enlace directo a la imagen. Debe ser una URL de internet pública (ej. \url{https://servidor.com/imagen.png}). \\
+\addlinespace
+\textbf{Título} & Sí (en Estándar) & Título llamativo del anuncio (se autodefine en el servidor si usas Solo Imagen). \\
+\addlinespace
+\textbf{Descripción} & Sí (en Estándar) & Cuerpo del mensaje o términos de la promoción (se autodefine en el servidor si usas Solo Imagen). \\
+\addlinespace
+\textbf{Badge} & Opcional & Pequeño texto destacado en fondo amarillo. Ej: \texttt{¡GRATIS!}, \texttt{30\% OFF}, \texttt{EXCLUSIVO}. \\
+\addlinespace
+\textbf{Link al hacer clic} & Opcional & URL a donde se redirigirá al usuario cuando haga clic en la imagen (Solo Imagen) o en el botón (Estándar). Ej. \url{https://wa.me/521XXXXXXXXXX} \\
+\addlinespace
+\textbf{Fecha de vencimiento} & Sí & Fecha límite de la campaña. Se utiliza para calcular el reloj de cuenta atrás. El pop-up expira y desaparece a las 23:59:59 de ese día. \\
+\addlinespace
+\textbf{Publicar ya} & Sí & Interruptor de estado del anuncio. Si se apaga, el anuncio se guarda como borrador inactivo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Gestión en el Panel Administrativo}
+
+\subsection{Crear un anuncio}
+\begin{enumerate}
+    \item Dirígete a la sección de \textbf{Gestión de Anuncios} en el panel de administración.
+    \item Haz clic en el botón \textbf{`+ Nuevo anuncio'} en la esquina superior derecha.
+    \item Rellena los campos correspondientes según el formato deseado y presiona \textbf{`Crear anuncio'}.
+\end{enumerate}
+
+\subsection{Modificar un anuncio}
+\begin{itemize}
+    \item \textbf{Desactivar temporalmente:} Haz clic en el interruptor de estado (icono de interruptor verde/gris) en la lista para ocultar el anuncio instantáneamente sin borrarlo.
+    \item \textbf{Editar detalles:} Haz clic en el botón azul de editar (icono de lápiz 📝). Modifica los campos necesarios y guarda los cambios.
+    \item \textbf{Eliminar permanentemente:} Haz clic en el botón rojo de eliminar (icono de papelera 🗑️) y confirma la acción (disponible únicamente para nivel Administrador o superior).
+    \item \textbf{Vista Previa en tiempo real:} Utiliza el botón de ojo (👁️) en la lista para observar exactamente cómo se mostrará el pop-up a tus usuarios finales sin necesidad de guardarlo primero.
+\end{itemize}
+
+\newpage
+
+\section{Referencia Técnica (Base de Datos Supabase)}
+El sistema almacena la configuración de cada pop-up en la tabla \texttt{anuncios} en PostgreSQL. La estructura SQL de la base de datos es la siguiente:
+
+\begin{verbatim}
+CREATE TABLE IF NOT EXISTS anuncios (
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo        TEXT          NOT NULL,
+  subtitulo     TEXT          DEFAULT '',
+  cuerpo        TEXT          NOT NULL,
+  tipo          TEXT          NOT NULL DEFAULT 'aviso'
+                                CHECK (tipo IN ('oferta','novedad','evento',
+                                                'aviso','promocion')),
+  icono         TEXT          DEFAULT 'Bell'
+                                CHECK (icono IN ('Tag','Zap','Gift',
+                                                'Bell','Sparkles')),
+  badge         TEXT          DEFAULT '',
+  destino       TEXT          NOT NULL DEFAULT 'portal'
+                                CHECK (destino IN ('portal','empresa_1',
+                                                'empresa_2','empresa_3')),
+  cta_texto     TEXT          DEFAULT '',
+  cta_link      TEXT          DEFAULT '',
+  imagen_url    TEXT          DEFAULT '',
+  solo_imagen   BOOLEAN       NOT NULL DEFAULT FALSE,
+  fecha_fin     DATE          DEFAULT NULL,
+  activo        BOOLEAN       NOT NULL DEFAULT TRUE,
+  creado_por    TEXT          NOT NULL DEFAULT '',
+  usuario_id    INTEGER,
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+\end{verbatim}
+
+\end{document}
