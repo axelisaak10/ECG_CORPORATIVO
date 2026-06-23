@@ -17,6 +17,7 @@ import GanttSection from '../admin/GanttSection';
 import ProfileSection from '../shared/ProfileSection';
 import EncuestasSection from '../admin/EncuestasSection';
 import AnunciosSection from '../admin/AnunciosSection';
+import TutorialesSection from '../admin/TutorialesSection';
 
 /* ─── Status maps ─── */
 
@@ -1114,6 +1115,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
       { id: 'usuarios', label: 'Gestión de Usuarios', icon: <UserCog size={17} />, color: 'text-purple-400' },
       { id: 'recuperacion', label: 'Recuperar Cuentas', icon: <RotateCcw size={17} />, color: 'text-amber-400' },
     ] : []),
+    { id: 'tutoriales',    label: 'Tutoriales / Guías',  icon: <GraduationCap size={17} />,color: 'text-pink-400'   },
     { id: 'perfil', label: 'Mi Perfil', icon: <User size={17} />, color: 'text-cyan-400' },
   ];
 
@@ -1310,6 +1312,9 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
           )}
           {activeTab === 'recuperacion' && nivel >= 3 && (
             <RecuperacionCuentasSection />
+          )}
+          {activeTab === 'tutoriales' && (
+            <TutorialesSection />
           )}
           {activeTab === 'perfil' && (
             <ProfileSection
