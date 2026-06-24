@@ -229,55 +229,311 @@ const ItemSection = ({ title, subtitle, storageKey, formFields, detailFields, st
 };
 
 /* ─── Sección Resumen ─── */
-const ResumenSection = () => {
-  // Self-contained: reads fresh state on every mount (happens on each tab switch)
-  const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('ecg_users') || '[]'));
-  const [cotizCount] = useState(() => JSON.parse(localStorage.getItem('ecg_cotizaciones') || '[]').length);
+
+/* Mini gráfica de barras SVG (sin librerías externas) */
+const BarChart = ({ data, color = '#6366f1', height = 60 }) => {
+  const max = Math.max(...data.map(d => d.value), 1);
+  const w = 100 / data.length;
+  return (
+    <svg viewBox={`0 0 100 ${height}`} className="w-full" preserveAspectRatio="none">
+      {data.map((d, i) => {
+        const barH = (d.value / max) * (height - 8);
+        return (
+          <g key={i}>
+            <rect
+              x={i * w + w * 0.15}
+              y={height - barH - 4}
+              width={w * 0.7}
+              height={barH + 4}
+              rx="3"
+              fill={color}
+              opacity="0.15"
+            />
+            <rect
+              x={i * w + w * 0.15}
+              y={height - barH}
+              width={w * 0.7}
+              height={barH}
+              rx="3"
+              fill={color}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+/* Mini gráfica de dona SVG */
+const DonutChart = ({ segments, size = 80 }) => {
+  const r = 30;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth="10" />
+      {segments.map((seg, i) => {
+        const dash = (seg.value / total) * circumference;
+        const gap = circumference - dash;
+        const el = (
+          <circle
+            key={i}
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth="10"
+            strokeDasharray={`${dash} ${gap}`}
+            strokeDashoffset={-offset * circumference / total}
+            strokeLinecap="butt"
+            style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px` }}
+          />
+        );
+        offset += seg.value;
+        return el;
+      })}
+    </svg>
+  );
+};
+
+/* Tarjeta KPI con mini gráfica */
+const KpiCard = ({ label, value, icon, iconBg, iconColor, chartData, chartColor, sub }) => (
+  <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className="text-3xl font-black text-slate-800 mt-0.5">{value}</p>
+        {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
+      </div>
+      <div className={`w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+        <span className={iconColor}>{icon}</span>
+      </div>
+    </div>
+    {chartData && chartData.length > 0 && (
+      <div className="h-10 mt-1">
+        <BarChart data={chartData} color={chartColor} height={40} />
+      </div>
+    )}
+  </div>
+);
+
+const ResumenSection = ({ onNavigate }) => {
+  const [users]      = useState(() => JSON.parse(localStorage.getItem('ecg_users') || '[]'));
+  const [cotizRaw]   = useState(() => JSON.parse(localStorage.getItem('ecg_cotizaciones') || '[]'));
+  const [tareasRaw]  = useState(() => JSON.parse(localStorage.getItem('ecg_tareas') || '[]'));
+  const [encRaw]     = useState(() => JSON.parse(localStorage.getItem('ecg_encuesta_respuestas') || '[]'));
+  const [anunRaw]    = useState(() => JSON.parse(localStorage.getItem('ecg_anuncios') || '[]'));
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [usersList, setUsersList] = useState(users);
+
   const companyIcons = [<GraduationCap size={20} />, <Leaf size={20} />, <Cog size={20} />];
 
+  /* ── Estadísticas derivadas ── */
+  const cotizPorEstado = {
+    en_proceso: cotizRaw.filter(c => c.estado === 'en_proceso').length,
+    aceptada:   cotizRaw.filter(c => c.estado === 'aceptada').length,
+    rechazada:  cotizRaw.filter(c => c.estado === 'rechazada').length,
+  };
+  const tareasPorEstado = {
+    pendiente:      tareasRaw.filter(t => t.estado === 'pendiente').length,
+    en_desarrollo:  tareasRaw.filter(t => t.estado === 'en_desarrollo').length,
+    completado:     tareasRaw.filter(t => t.estado === 'completado').length,
+  };
+  const anunciosActivos = anunRaw.filter(a => a.publicado).length;
+
+  /* Simulación de barras históricas con los datos reales */
+  const barMonths = ['E', 'F', 'M', 'A', 'M', 'J'];
+  const makeBars = (total) => barMonths.map((m, i) => ({
+    label: m,
+    value: i === barMonths.length - 1 ? total : Math.max(0, total - Math.round(Math.random() * 2)),
+  }));
+
   const handleDelete = (id) => {
-    const updated = users.filter(u => u.id !== id);
+    const updated = usersList.filter(u => u.id !== id);
     localStorage.setItem('ecg_users', JSON.stringify(updated));
-    setUsers(updated);
+    setUsersList(updated);
     setConfirmDelete(null);
   };
 
   return (
-    <div>
-      <div className="mb-8">
+    <div className="space-y-8">
+      {/* ── Encabezado ── */}
+      <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Panel de Administración</h1>
         <p className="text-slate-500 mt-0.5 text-sm">Resumen general del portal ECG Corporativo</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usuarios</p>
-            <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center"><Users size={17} className="text-blue-600" /></div>
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="Usuarios"
+          value={usersList.length}
+          sub="en el sistema"
+          icon={<Users size={18} />}
+          iconBg="bg-sky-100" iconColor="text-sky-600"
+          chartData={makeBars(usersList.length)}
+          chartColor="#0ea5e9"
+        />
+        <KpiCard
+          label="Cotizaciones"
+          value={cotizRaw.length}
+          sub={`${cotizPorEstado.aceptada} aceptadas`}
+          icon={<FileText size={18} />}
+          iconBg="bg-emerald-100" iconColor="text-emerald-600"
+          chartData={makeBars(cotizRaw.length)}
+          chartColor="#10b981"
+        />
+        <KpiCard
+          label="Tareas"
+          value={tareasRaw.length}
+          sub={`${tareasPorEstado.completado} completadas`}
+          icon={<ListChecks size={18} />}
+          iconBg="bg-violet-100" iconColor="text-violet-600"
+          chartData={makeBars(tareasRaw.length)}
+          chartColor="#8b5cf6"
+        />
+        <KpiCard
+          label="Encuestas"
+          value={encRaw.length}
+          sub="respuestas recibidas"
+          icon={<Star size={18} />}
+          iconBg="bg-amber-100" iconColor="text-amber-600"
+          chartData={makeBars(encRaw.length)}
+          chartColor="#f59e0b"
+        />
+      </div>
+
+      {/* ── Gráficas de detalle ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Cotizaciones por estado */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <FileText size={15} className="text-emerald-500" /> Cotizaciones por Estado
+          </h3>
+          <div className="flex items-center gap-4">
+            <DonutChart
+              size={90}
+              segments={[
+                { value: cotizPorEstado.en_proceso || 1, color: '#3b82f6' },
+                { value: cotizPorEstado.aceptada   || 0, color: '#10b981' },
+                { value: cotizPorEstado.rechazada  || 0, color: '#ef4444' },
+              ]}
+            />
+            <div className="space-y-2 flex-1">
+              {[
+                { label: 'En proceso', value: cotizPorEstado.en_proceso, color: 'bg-blue-500'  },
+                { label: 'Aceptadas',  value: cotizPorEstado.aceptada,   color: 'bg-emerald-500' },
+                { label: 'Rechazadas', value: cotizPorEstado.rechazada,  color: 'bg-red-500'   },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${s.color}`} />
+                  <span className="text-[11px] text-slate-500 flex-1">{s.label}</span>
+                  <span className="text-[11px] font-black text-slate-700">{s.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-4xl font-black text-slate-800">{users.length}</p>
-          <p className="text-xs text-slate-400 mt-1">registrados en el sistema</p>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Empresas</p>
-            <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center"><Building2 size={17} className="text-green-600" /></div>
+
+        {/* Tareas por estado */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <ListChecks size={15} className="text-violet-500" /> Tareas por Estado
+          </h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Pendientes',     value: tareasPorEstado.pendiente,     color: 'bg-slate-400',   pct: tareasRaw.length ? tareasPorEstado.pendiente / tareasRaw.length * 100 : 0 },
+              { label: 'En desarrollo',  value: tareasPorEstado.en_desarrollo, color: 'bg-blue-500',    pct: tareasRaw.length ? tareasPorEstado.en_desarrollo / tareasRaw.length * 100 : 0 },
+              { label: 'Completadas',    value: tareasPorEstado.completado,    color: 'bg-emerald-500', pct: tareasRaw.length ? tareasPorEstado.completado / tareasRaw.length * 100 : 0 },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-500">{s.label}</span>
+                  <span className="font-black text-slate-700">{s.value}</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: `${Math.max(s.pct, s.value > 0 ? 8 : 0)}%` }} />
+                </div>
+              </div>
+            ))}
+            {tareasRaw.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-2">Sin tareas registradas aún</p>
+            )}
           </div>
-          <p className="text-4xl font-black text-slate-800">{companiesData.length}</p>
-          <p className="text-xs text-slate-400 mt-1">empresas en el portal</p>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cotizaciones</p>
-            <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center"><FileText size={17} className="text-orange-500" /></div>
+
+        {/* Anuncios y resumen general */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <Megaphone size={15} className="text-indigo-500" /> Resumen Módulos
+          </h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Anuncios activos',    value: anunciosActivos,  total: anunRaw.length,    color: 'bg-indigo-400'  },
+              { label: 'Total anuncios',      value: anunRaw.length,   total: Math.max(anunRaw.length, 5), color: 'bg-indigo-200' },
+              { label: 'Respuestas encuesta', value: encRaw.length,    total: Math.max(encRaw.length, 10), color: 'bg-amber-400' },
+              { label: 'Empresas activas',    value: companiesData.length, total: companiesData.length, color: 'bg-emerald-400' },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-500">{s.label}</span>
+                  <span className="font-black text-slate-700">{s.value}</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: `${s.total ? (s.value / s.total) * 100 : 0}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="text-4xl font-black text-slate-800">{cotizCount}</p>
-          <p className="text-xs text-slate-400 mt-1">cotizaciones registradas</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm mb-8">
+      {/* ── ACCESO RÁPIDO A TUTORIALES ── */}
+      <div
+        onClick={() => onNavigate && onNavigate('tutoriales')}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 p-6 cursor-pointer group hover:shadow-2xl hover:shadow-pink-200 transition-all duration-300"
+      >
+        {/* Decoraciones */}
+        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500" />
+        <div className="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500" />
+        <div className="absolute top-4 right-28 w-6 h-6 rounded-full bg-white/20" />
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+              <GraduationCap size={26} className="text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">Centro de aprendizaje</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white">Nuevo</span>
+              </div>
+              <h2 className="text-xl font-black text-white">Tutoriales Interactivos</h2>
+              <p className="text-white/80 text-xs mt-0.5">
+                Aprende a usar Cotizaciones, Anuncios, Tareas y Encuestas con simuladores paso a paso
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-bold px-5 py-3 rounded-2xl transition-all group-hover:translate-x-1 whitespace-nowrap flex-shrink-0">
+            Ir a tutoriales
+            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+
+        {/* Mini módulos pill */}
+        <div className="relative z-10 flex flex-wrap gap-2 mt-5">
+          {['📋 Cotizaciones', '📣 Anuncios', '✅ Tareas', '⭐ Encuestas'].map(m => (
+            <span key={m} className="text-[11px] font-bold text-white/90 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+              {m}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Empresas del Portal ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="px-6 py-5 border-b border-slate-100">
           <h2 className="text-lg font-extrabold text-slate-800">Empresas del Portal</h2>
         </div>
@@ -295,12 +551,13 @@ const ResumenSection = () => {
         </div>
       </div>
 
+      {/* ── Usuarios Registrados ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-lg font-extrabold text-slate-800">Usuarios Registrados</h2>
-          <span className="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">{users.length} total</span>
+          <span className="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">{usersList.length} total</span>
         </div>
-        {users.length === 0 ? (
+        {usersList.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <Users size={40} className="text-slate-200 mx-auto mb-3" />
             <p className="text-slate-400 font-medium">No hay usuarios registrados aún.</p>
@@ -318,7 +575,7 @@ const ResumenSection = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {users.map(user => (
+                {usersList.map(user => (
                   <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -1271,7 +1528,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
         </div>
 
         <div className="p-4 md:p-8">
-          {activeTab === 'resumen' && <ResumenSection />}
+          {activeTab === 'resumen' && <ResumenSection onNavigate={handleNav} />}
           {activeTab === 'cotizaciones' && (
             <CotizacionesComplexSection currentUser={currentUser} readOnly={!isAdmin} />
           )}
