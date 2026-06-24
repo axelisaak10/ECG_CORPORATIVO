@@ -347,7 +347,7 @@ const ResumenSection = ({ onNavigate }) => {
   const barMonths = ['E', 'F', 'M', 'A', 'M', 'J'];
   const makeBars = (total) => barMonths.map((m, i) => ({
     label: m,
-    value: i === barMonths.length - 1 ? total : Math.max(0, total - Math.round(Math.random() * 2)),
+  value: i === barMonths.length - 1 ? total : Math.max(0, total - Math.round(Math.random() * 2)),
   }));
 
   const handleDelete = (id) => {
@@ -365,141 +365,14 @@ const ResumenSection = ({ onNavigate }) => {
         <p className="text-slate-500 mt-0.5 text-sm">Resumen general del portal ECG Corporativo</p>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="Usuarios"
-          value={usersList.length}
-          sub="en el sistema"
-          icon={<Users size={18} />}
-          iconBg="bg-sky-100" iconColor="text-sky-600"
-          chartData={makeBars(usersList.length)}
-          chartColor="#0ea5e9"
-        />
-        <KpiCard
-          label="Cotizaciones"
-          value={cotizRaw.length}
-          sub={`${cotizPorEstado.aceptada} aceptadas`}
-          icon={<FileText size={18} />}
-          iconBg="bg-emerald-100" iconColor="text-emerald-600"
-          chartData={makeBars(cotizRaw.length)}
-          chartColor="#10b981"
-        />
-        <KpiCard
-          label="Tareas"
-          value={tareasRaw.length}
-          sub={`${tareasPorEstado.completado} completadas`}
-          icon={<ListChecks size={18} />}
-          iconBg="bg-violet-100" iconColor="text-violet-600"
-          chartData={makeBars(tareasRaw.length)}
-          chartColor="#8b5cf6"
-        />
-        <KpiCard
-          label="Encuestas"
-          value={encRaw.length}
-          sub="respuestas recibidas"
-          icon={<Star size={18} />}
-          iconBg="bg-amber-100" iconColor="text-amber-600"
-          chartData={makeBars(encRaw.length)}
-          chartColor="#f59e0b"
-        />
-      </div>
-
-      {/* ── Gráficas de detalle ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Cotizaciones por estado */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
-            <FileText size={15} className="text-emerald-500" /> Cotizaciones por Estado
-          </h3>
-          <div className="flex items-center gap-4">
-            <DonutChart
-              size={90}
-              segments={[
-                { value: cotizPorEstado.en_proceso || 1, color: '#3b82f6' },
-                { value: cotizPorEstado.aceptada   || 0, color: '#10b981' },
-                { value: cotizPorEstado.rechazada  || 0, color: '#ef4444' },
-              ]}
-            />
-            <div className="space-y-2 flex-1">
-              {[
-                { label: 'En proceso', value: cotizPorEstado.en_proceso, color: 'bg-blue-500'  },
-                { label: 'Aceptadas',  value: cotizPorEstado.aceptada,   color: 'bg-emerald-500' },
-                { label: 'Rechazadas', value: cotizPorEstado.rechazada,  color: 'bg-red-500'   },
-              ].map(s => (
-                <div key={s.label} className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${s.color}`} />
-                  <span className="text-[11px] text-slate-500 flex-1">{s.label}</span>
-                  <span className="text-[11px] font-black text-slate-700">{s.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Tareas por estado */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
-            <ListChecks size={15} className="text-violet-500" /> Tareas por Estado
-          </h3>
-          <div className="space-y-3">
-            {[
-              { label: 'Pendientes',     value: tareasPorEstado.pendiente,     color: 'bg-slate-400',   pct: tareasRaw.length ? tareasPorEstado.pendiente / tareasRaw.length * 100 : 0 },
-              { label: 'En desarrollo',  value: tareasPorEstado.en_desarrollo, color: 'bg-blue-500',    pct: tareasRaw.length ? tareasPorEstado.en_desarrollo / tareasRaw.length * 100 : 0 },
-              { label: 'Completadas',    value: tareasPorEstado.completado,    color: 'bg-emerald-500', pct: tareasRaw.length ? tareasPorEstado.completado / tareasRaw.length * 100 : 0 },
-            ].map(s => (
-              <div key={s.label}>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-slate-500">{s.label}</span>
-                  <span className="font-black text-slate-700">{s.value}</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: `${Math.max(s.pct, s.value > 0 ? 8 : 0)}%` }} />
-                </div>
-              </div>
-            ))}
-            {tareasRaw.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-2">Sin tareas registradas aún</p>
-            )}
-          </div>
-        </div>
-
-        {/* Anuncios y resumen general */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
-            <Megaphone size={15} className="text-indigo-500" /> Resumen Módulos
-          </h3>
-          <div className="space-y-3">
-            {[
-              { label: 'Anuncios activos',    value: anunciosActivos,  total: anunRaw.length,    color: 'bg-indigo-400'  },
-              { label: 'Total anuncios',      value: anunRaw.length,   total: Math.max(anunRaw.length, 5), color: 'bg-indigo-200' },
-              { label: 'Respuestas encuesta', value: encRaw.length,    total: Math.max(encRaw.length, 10), color: 'bg-amber-400' },
-              { label: 'Empresas activas',    value: companiesData.length, total: companiesData.length, color: 'bg-emerald-400' },
-            ].map(s => (
-              <div key={s.label}>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-slate-500">{s.label}</span>
-                  <span className="font-black text-slate-700">{s.value}</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${s.color} rounded-full transition-all duration-700`} style={{ width: `${s.total ? (s.value / s.total) * 100 : 0}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── ACCESO RÁPIDO A TUTORIALES ── */}
+      {/* ── ACCESO RÁPIDO A TUTORIALES — primero ── */}
       <div
         onClick={() => onNavigate && onNavigate('tutoriales')}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 p-6 cursor-pointer group hover:shadow-2xl hover:shadow-pink-200 transition-all duration-300"
       >
-        {/* Decoraciones */}
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500" />
         <div className="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500" />
         <div className="absolute top-4 right-28 w-6 h-6 rounded-full bg-white/20" />
-
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -511,24 +384,201 @@ const ResumenSection = ({ onNavigate }) => {
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white">Nuevo</span>
               </div>
               <h2 className="text-xl font-black text-white">Tutoriales Interactivos</h2>
-              <p className="text-white/80 text-xs mt-0.5">
-                Aprende a usar Cotizaciones, Anuncios, Tareas y Encuestas con simuladores paso a paso
-              </p>
+              <p className="text-white/80 text-xs mt-0.5">Aprende a usar Cotizaciones, Anuncios, Tareas y Encuestas con simuladores paso a paso</p>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-bold px-5 py-3 rounded-2xl transition-all group-hover:translate-x-1 whitespace-nowrap flex-shrink-0">
-            Ir a tutoriales
-            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+            Ir a tutoriales <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+        <div className="relative z-10 flex flex-wrap gap-2 mt-5">
+          {['📋 Cotizaciones', '📣 Anuncios', '✅ Tareas', '⭐ Encuestas'].map(m => (
+            <span key={m} className="text-[11px] font-bold text-white/90 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">{m}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Usuarios"      value={usersList.length}  sub="en el sistema"         icon={<Users size={18} />}     iconBg="bg-sky-100"     iconColor="text-sky-600"     chartData={makeBars(usersList.length)}  chartColor="#0ea5e9" />
+        <KpiCard label="Cotizaciones"  value={cotizRaw.length}   sub={`${cotizPorEstado.aceptada} aceptadas`} icon={<FileText size={18} />}  iconBg="bg-emerald-100" iconColor="text-emerald-600" chartData={makeBars(cotizRaw.length)}   chartColor="#10b981" />
+        <KpiCard label="Tareas"        value={tareasRaw.length}  sub={`${tareasPorEstado.completado} completadas`} icon={<ListChecks size={18} />} iconBg="bg-violet-100"  iconColor="text-violet-600"  chartData={makeBars(tareasRaw.length)}  chartColor="#8b5cf6" />
+        <KpiCard label="Encuestas"     value={encRaw.length}     sub="respuestas recibidas"  icon={<Star size={18} />}      iconBg="bg-amber-100"   iconColor="text-amber-600"   chartData={makeBars(encRaw.length)}     chartColor="#f59e0b" />
+      </div>
+
+      {/* ── Gráficas 2 × 2 ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* 1. Cotizaciones por estado — dona */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <FileText size={15} className="text-emerald-500" /> Cotizaciones por Estado
+          </h3>
+          <div className="flex items-center gap-5">
+            <div className="relative flex-shrink-0">
+              <DonutChart size={110} segments={[
+                { value: cotizPorEstado.en_proceso || 1, color: '#3b82f6' },
+                { value: cotizPorEstado.aceptada   || 0, color: '#10b981' },
+                { value: cotizPorEstado.rechazada  || 0, color: '#ef4444' },
+              ]} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-lg font-black text-slate-800">{cotizRaw.length}</span>
+                <span className="text-[9px] text-slate-400 font-semibold">total</span>
+              </div>
+            </div>
+            <div className="space-y-3 flex-1">
+              {[
+                { label: 'En proceso', value: cotizPorEstado.en_proceso, hex: '#3b82f6', bar: 'bg-blue-500'    },
+                { label: 'Aceptadas',  value: cotizPorEstado.aceptada,   hex: '#10b981', bar: 'bg-emerald-500' },
+                { label: 'Rechazadas', value: cotizPorEstado.rechazada,  hex: '#ef4444', bar: 'bg-red-500'     },
+              ].map(s => (
+                <div key={s.label}>
+                  <div className="flex justify-between text-[11px] mb-1">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full" style={{ background: s.hex }} /> {s.label}
+                    </span>
+                    <span className="font-black text-slate-700">{s.value}</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${s.bar} rounded-full transition-all duration-700`}
+                      style={{ width: `${cotizRaw.length ? Math.max((s.value / cotizRaw.length) * 100, s.value > 0 ? 6 : 0) : 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Mini módulos pill */}
-        <div className="relative z-10 flex flex-wrap gap-2 mt-5">
-          {['📋 Cotizaciones', '📣 Anuncios', '✅ Tareas', '⭐ Encuestas'].map(m => (
-            <span key={m} className="text-[11px] font-bold text-white/90 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
-              {m}
-            </span>
-          ))}
+        {/* 2. Usuarios por Rol — dona */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <Users size={15} className="text-sky-500" /> Usuarios por Rol
+          </h3>
+          {(() => {
+            const roles = {
+              superadmin: usersList.filter(u => (u.nivel ?? u.nivelAcceso) >= 3).length,
+              admin:      usersList.filter(u => (u.nivel ?? u.nivelAcceso) === 2).length,
+              trabajador: usersList.filter(u => (u.nivel ?? u.nivelAcceso) === 1).length,
+              usuario:    usersList.filter(u => !(u.nivel ?? u.nivelAcceso) || (u.nivel ?? u.nivelAcceso) === 0).length,
+            };
+            const totalU = usersList.length || 1;
+            const segs = [
+              { label: 'Superadmin', value: roles.superadmin, hex: '#8b5cf6', bar: 'bg-violet-500'  },
+              { label: 'Admin',      value: roles.admin,      hex: '#3b82f6', bar: 'bg-blue-500'    },
+              { label: 'Trabajador', value: roles.trabajador, hex: '#10b981', bar: 'bg-emerald-500' },
+              { label: 'Usuario',    value: roles.usuario,    hex: '#94a3b8', bar: 'bg-slate-400'   },
+            ];
+            return (
+              <div className="flex items-center gap-5">
+                <div className="relative flex-shrink-0">
+                  <DonutChart size={110} segments={segs.map(s => ({ value: s.value || (usersList.length === 0 ? 1 : 0), color: s.hex }))} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-lg font-black text-slate-800">{usersList.length}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">usuarios</span>
+                  </div>
+                </div>
+                <div className="space-y-3 flex-1">
+                  {segs.map(s => (
+                    <div key={s.label}>
+                      <div className="flex justify-between text-[11px] mb-1">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ background: s.hex }} /> {s.label}
+                        </span>
+                        <span className="font-black text-slate-700">{s.value}</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full ${s.bar} rounded-full transition-all duration-700`}
+                          style={{ width: `${Math.max((s.value / totalU) * 100, s.value > 0 ? 6 : 0)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* 3. Tareas por estado — barras verticales + horizontales */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <ListChecks size={15} className="text-violet-500" /> Tareas por Estado
+          </h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Pendientes',    value: tareasPorEstado.pendiente,     hex: '#94a3b8', bar: 'bg-slate-400',   pct: tareasRaw.length ? tareasPorEstado.pendiente / tareasRaw.length * 100 : 0 },
+              { label: 'En desarrollo', value: tareasPorEstado.en_desarrollo, hex: '#3b82f6', bar: 'bg-blue-500',    pct: tareasRaw.length ? tareasPorEstado.en_desarrollo / tareasRaw.length * 100 : 0 },
+              { label: 'Completadas',   value: tareasPorEstado.completado,    hex: '#10b981', bar: 'bg-emerald-500', pct: tareasRaw.length ? tareasPorEstado.completado / tareasRaw.length * 100 : 0 },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-500 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ background: s.hex }} /> {s.label}
+                  </span>
+                  <span className="font-black text-slate-700">{s.value}</span>
+                </div>
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${s.bar} rounded-full transition-all duration-700`}
+                    style={{ width: `${Math.max(s.pct, s.value > 0 ? 6 : 0)}%` }} />
+                </div>
+              </div>
+            ))}
+            {tareasRaw.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Sin tareas registradas aún</p>}
+          </div>
+          {tareasRaw.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <BarChart data={[
+                { value: tareasPorEstado.pendiente },
+                { value: tareasPorEstado.en_desarrollo },
+                { value: tareasPorEstado.completado },
+              ]} color="#8b5cf6" height={50} />
+              <div className="flex mt-1">
+                {['Pendientes', 'En desarrollo', 'Completadas'].map(l => (
+                  <span key={l} className="text-[9px] text-slate-400 flex-1 text-center">{l}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Módulos — barras horizontales */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-extrabold text-slate-700 mb-4 flex items-center gap-2">
+            <Megaphone size={15} className="text-indigo-500" /> Resumen Módulos
+          </h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Anuncios activos',    value: anunciosActivos,      total: Math.max(anunRaw.length, 1),  hex: '#6366f1', bar: 'bg-indigo-500'  },
+              { label: 'Total anuncios',      value: anunRaw.length,       total: Math.max(anunRaw.length, 5),  hex: '#a5b4fc', bar: 'bg-indigo-300'  },
+              { label: 'Respuestas encuesta', value: encRaw.length,        total: Math.max(encRaw.length, 10),  hex: '#f59e0b', bar: 'bg-amber-400'   },
+              { label: 'Empresas activas',    value: companiesData.length, total: companiesData.length,         hex: '#10b981', bar: 'bg-emerald-500' },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-500 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ background: s.hex }} /> {s.label}
+                  </span>
+                  <span className="font-black text-slate-700">{s.value}</span>
+                </div>
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${s.bar} rounded-full transition-all duration-700`}
+                    style={{ width: `${s.total ? Math.max((s.value / s.total) * 100, s.value > 0 ? 6 : 0) : 0}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <BarChart data={[
+              { value: anunciosActivos },
+              { value: anunRaw.length },
+              { value: encRaw.length },
+              { value: companiesData.length },
+            ]} color="#6366f1" height={50} />
+            <div className="flex mt-1">
+              {['Activos', 'Anuncios', 'Encuestas', 'Empresas'].map(l => (
+                <span key={l} className="text-[9px] text-slate-400 flex-1 text-center">{l}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
