@@ -6,9 +6,10 @@ import {
   User, DollarSign, Clock, Calendar, Tag, Link2, Image,
   PlayCircle, Sparkles, ArrowRight, Check, X, BarChart2,
   ClipboardList, Send, RefreshCw, BookOpen, Info,
-  Wrench, Percent, Save, Download, Users, HelpCircle,
+  Wrench, Percent, Package, Save, Download, Users, HelpCircle,
   Bell, Zap, Gift, AlertCircle, Lock, Shield
 } from 'lucide-react';
+
 
 /* ─────────────────────────────────────────────
    Utilidades de Formato
