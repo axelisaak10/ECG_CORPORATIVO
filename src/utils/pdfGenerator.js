@@ -6,7 +6,15 @@ import autoTable from 'jspdf-autotable';
  * @param {Object} cot - Quotation data
  */
 export const generateCotizacionPDF = async (cot) => {
-  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: 'letter',
+    encryption: {
+      userPassword: '', // Abre sin contraseña
+      ownerPassword: 'ECGCorporativo2026', // Contraseña requerida para editar o copiar texto
+      userPermissions: ['print'] // Solo permite imprimir, restringe edición y copiado
+    }
+  });
   const pageWidth  = doc.internal.pageSize.getWidth();   // 215.9 mm
   const pageHeight = doc.internal.pageSize.getHeight();  // 279.4 mm
   const marginL = 16;
