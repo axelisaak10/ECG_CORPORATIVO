@@ -14,6 +14,7 @@ import {
   apiCreateGanttProyecto, apiCreateGanttTarea,
 } from '../../utils/api';
 import { generateCotizacionPDF } from '../../utils/pdfGenerator';
+import { generateCotizacionWord } from '../../utils/wordGenerator';
 
 // ── Costos de tiempo (hardcoded) ──────────────────────────────────────────────
 const COSTOS_TIEMPO = {
@@ -361,6 +362,13 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
               title="Descargar PDF"
             >
               <Download size={14} /> PDF
+            </button>
+            <button
+              onClick={() => generateCotizacionWord(cot)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-bold transition-colors"
+              title="Descargar Word (Editable)"
+            >
+              <FileText size={14} /> Word
             </button>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
               <X size={16} />
@@ -1137,6 +1145,7 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => onView(cot)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Ver detalle"><Eye size={14} /></button>
                         <button onClick={() => generateCotizacionPDF(cot)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Descargar PDF"><Download size={14} /></button>
+                        <button onClick={() => generateCotizacionWord(cot)} className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Descargar Word (Editable)"><FileText size={14} /></button>
                         {!readOnly && <>
                           <button onClick={() => onEdit(cot)} className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg" title="Editar"><Pencil size={14} /></button>
                           <button onClick={() => setConfirmDel(cot.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={14} /></button>
