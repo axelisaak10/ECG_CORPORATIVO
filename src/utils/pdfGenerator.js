@@ -1,194 +1,30 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 /**
- * Generates a PDF for a quotation matching the corporate ECG style.
+ * Generates a secured, flattened (rasterized image-only) PDF for a quotation matching the corporate ECG style.
+ * This blocks any text selection, copying, or conversion to Word, while keeping printing/viewing perfect.
  * @param {Object} cot - Quotation data
  */
 export const generateCotizacionPDF = async (cot) => {
-  const doc = new jsPDF({
-    unit: 'mm',
-    format: 'letter',
-    encryption: {
-      userPassword: '', // Abre sin contraseña
-      ownerPassword: 'ECGCorporativo2026', // Contraseña requerida para editar o copiar texto
-      userPermissions: ['print'] // Solo permite imprimir, restringe edición y copiado
-    }
-  });
-  const pageWidth  = doc.internal.pageSize.getWidth();   // 215.9 mm
-  const pageHeight = doc.internal.pageSize.getHeight();  // 279.4 mm
-  const marginL = 16;
-  const marginR = 16;
-  const contentWidth = pageWidth - marginL - marginR;
-
-  // ── Colors ──────────────────────────────────────────────────────────────────
-  const red       = [204, 0, 0];
-  const black     = [0, 0, 0];
-  const darkGray  = [50, 50, 50];
-  const midGray   = [120, 120, 120];
-  const lightGray = [210, 210, 210];
-  const white     = [255, 255, 255];
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
   const fmt = (n) =>
     `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const fmtDate = (d) => {
     const date = d ? new Date(d) : new Date();
     const months = [
-      'ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
-      'JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'
+      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
     ];
     return `${date.getDate()} DE ${months[date.getMonth()]} DE ${date.getFullYear()}`;
   };
 
-  const loadImage = (url) =>
-    new Promise((resolve) => {
-      const img = new Image();
-      img.src = url;
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-    });
-
-  // ── Load assets ─────────────────────────────────────────────────────────────
-  const logo = await loadImage('/assets/logos/centro.png');
-
-  // ============================================================
-  //  HELPER: draw logo watermark centered on current page
-  // ============================================================
-  const drawWatermark = () => {
-    if (!logo) return;
-    // Logo watermark: centered, large, very low opacity
-    const wmW = 130; // mm wide
-    const wmH = 130; // mm tall (adjust if logo is not square)
-    const wmX = (pageWidth  - wmW) / 2;
-    const wmY = (pageHeight - wmH) / 2;
-    doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.08 }));
-    doc.addImage(logo, 'PNG', wmX, wmY, wmW, wmH);
-    doc.restoreGraphicsState();
-  };
-
-  // ============================================================
-  //  HELPER: draw header (used on every page)
-  // ============================================================
-  const drawHeader = () => {
-    const hL = marginL;
-    const hR = pageWidth / 2 + 2;
-    const lineH = 5;
-    let y = 14;
-
-    // Left col – client info
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...black);
-    doc.text((cot.clientes?.nombre || '').toUpperCase(), hL, y);
-    y += lineH;
-
-    if (cot.clientes?.cargo) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...darkGray);
-      doc.text(cot.clientes.cargo.toUpperCase(), hL, y);
-      y += lineH;
-    }
-
-    if (cot.clientes?.empresa) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...black);
-      doc.text(cot.clientes.empresa.toUpperCase(), hL, y);
-      y += lineH;
-    }
-
-    // Right col – location, date, quotation title & description
-    const rAlign = { align: 'right' };
-    const rX = pageWidth - marginR;
-    let ry = 14;
-
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...black);
-    const fecha = fmtDate(cot.created_at);
-    doc.text(`EL MARQUÉS, QRO A ${fecha}`, rX, ry, rAlign);
-    ry += lineH;
-
-    // Quotation number & title in red bold
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...red);
-    const folio = cot.folio || cot.id || 'S/N';
-    const titleLine = `COTIZACION ${folio} ${(cot.titulo || '').toUpperCase()}`;
-    const splitTitle = doc.splitTextToSize(titleLine, contentWidth / 2);
-    splitTitle.forEach((line) => {
-      doc.text(line, rX, ry, rAlign);
-      ry += lineH;
-    });
-
-    // Subtitle / description in normal black
-    if (cot.descripcion) {
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkGray);
-      doc.setFontSize(8);
-      const splitDesc = doc.splitTextToSize(cot.descripcion, contentWidth / 2);
-      splitDesc.forEach((line) => {
-        doc.text(line, rX, ry, rAlign);
-        ry += 4.5;
-      });
-    }
-
-    // Horizontal rule
-    const ruleY = Math.max(y, ry) + 2;
-    doc.setDrawColor(...lightGray);
-    doc.setLineWidth(0.5);
-    doc.line(marginL, ruleY, pageWidth - marginR, ruleY);
-
-    return ruleY + 4; // next Y position after header
-  };
-
-  // ============================================================
-  //  HELPER: draw footer
-  // ============================================================
-  const drawFooter = () => {
-    const fy = pageHeight - 10;
-    doc.setDrawColor(...lightGray);
-    doc.setLineWidth(0.3);
-    doc.line(marginL, fy - 3, pageWidth - marginR, fy - 3);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...midGray);
-    doc.text(
-      'Tel. (442) 773 4562 Y 6691732 correo: centroecging@gmail.com',
-      pageWidth / 2, fy + 1, { align: 'center' }
-    );
-  };
-
-  // ============================================================
-  //  PAGE 1 — Quotation Table
-  // ============================================================
-  drawWatermark();
-  let currentY = drawHeader();
-
-  // Intro paragraph
-  const introPara =
-    'Por medio de la presente reciba un cordial saludo por parte del todo el personal que colabora en esta empresa, así mismo aprovecho este medio para enviarle la cotización; la cual consta de lo siguiente';
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...darkGray);
-  const splitIntro = doc.splitTextToSize(introPara, contentWidth);
-  doc.text(splitIntro, marginL, currentY);
-  currentY += splitIntro.length * 5 + 4;
-
-  // ── Build table rows ───────────────────────────────────────────────────────
-  // We build a flat list with category rows and item rows, numbered A, B, C…
-  // and sub-items a.1, a.2 / b.1, b.2…
-
+  // ── Build table rows (same logic as PDF) ──────────────────────────────────
   const tableBody = [];
-  const catLetters  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-  // Totals we need
+  const catLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let grandTotal = 0;
 
-  // Process articulos grouped by categoria
+  // Process articles grouped by category
   const grouped = {};
   if (cot.articulos && cot.articulos.length > 0) {
     cot.articulos.forEach((a) => {
@@ -198,21 +34,23 @@ export const generateCotizacionPDF = async (cot) => {
     });
   }
 
-  // Labour / mano de obra as its own category if defined
   const hasManoObra = (cot.horas || 0) > 0 || (cot.dias || 0) > 0 ||
                       (cot.semanas || 0) > 0 || (cot.meses || 0) > 0;
 
+  const totalDias = (cot.horas || 0) / 8 + (cot.dias || 0) +
+                    (cot.semanas || 0) * 7 + (cot.meses || 0) * 30;
+
+  // Build rows array
   Object.entries(grouped).forEach(([catName, items], catIdx) => {
     const catLetter = catLetters[catIdx] || String(catIdx + 1);
     const catLetterLow = catLetter.toLowerCase();
 
-    // Category header row (merged-style, centered grey)
+    // Category header row
     tableBody.push({
       type: 'category',
       label: catName.toUpperCase(),
     });
 
-    // Sub-letter row for the category label
     tableBody.push({
       type: 'catLetter',
       letter: catLetter + '.',
@@ -221,7 +59,7 @@ export const generateCotizacionPDF = async (cot) => {
 
     items.forEach((a, itemIdx) => {
       const precioFinal = a.precio * (1 + (a.margen || 0) / 100);
-      const subtotal    = precioFinal * a.cantidad;
+      const subtotal = precioFinal * a.cantidad;
       grandTotal += subtotal;
       const hasQty = subtotal > 0;
 
@@ -242,8 +80,6 @@ export const generateCotizacionPDF = async (cot) => {
     const moIdx = Object.keys(grouped).length;
     const moLetter = catLetters[moIdx] || 'B';
     const moLetterLow = moLetter.toLowerCase();
-    const totalDias = (cot.horas || 0) / 8 + (cot.dias || 0) +
-                      (cot.semanas || 0) * 7 + (cot.meses || 0) * 30;
     const subtotalMO = cot.totales?.tiempo || 0;
     grandTotal += subtotalMO;
 
@@ -269,12 +105,11 @@ export const generateCotizacionPDF = async (cot) => {
       });
     }
 
-    // Tools as sub-items
     if (cot.herramientas && cot.herramientas.length > 0) {
       const nextOffset = (cot.empleados?.length || 0);
       cot.herramientas.forEach((h, hIdx) => {
         const rentaFinal = (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100);
-        const subtotalH  = rentaFinal * h.cantidad * totalDias;
+        const subtotalH = rentaFinal * h.cantidad * totalDias;
         grandTotal += subtotalH;
         tableBody.push({
           type: 'item',
@@ -289,261 +124,19 @@ export const generateCotizacionPDF = async (cot) => {
     }
   }
 
-  // ── Render main table ──────────────────────────────────────────────────────
-  // Convert our logical rows into autoTable body
-  const atHead = [['ÍTEM', 'DESCRIPCIÓN', 'CANT', 'UNIDAD', 'COSTO UNITARIO', 'IMPORTE']];
-  const atBody = [];
-  const rowMeta = []; // track row type for didParseCell
-
-  tableBody.forEach((row) => {
-    if (row.type === 'category') {
-      atBody.push(['', row.label, '', '', 'INSTALACIÓN DE ' + row.label, '']);
-      rowMeta.push('category');
-    } else if (row.type === 'catLetter') {
-      atBody.push([
-        row.letter,
-        (row.label || '') + (row.desc ? '\n' + row.desc : ''),
-        row.cant || '',
-        row.unidad || '',
-        row.costoUnit || '',
-        row.importe || '',
-      ]);
-      rowMeta.push('catLetter');
-    } else {
-      atBody.push([row.item, row.desc, row.cant, row.unidad, row.costoUnit, row.importe]);
-      rowMeta.push('item');
-    }
-  });
-
-  // Total row
-  atBody.push(['', 'TOTAL, DE MAT Y MO', '', '', '', fmt(grandTotal || cot.total || 0)]);
-  rowMeta.push('total');
-
-  autoTable(doc, {
-    startY: currentY,
-    head: atHead,
-    body: atBody,
-    theme: 'grid',
-    headStyles: {
-      fillColor: red,
-      textColor: white,
-      fontStyle: 'bold',
-      fontSize: 8,
-      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
-      halign: 'center',
-    },
-    styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
-      textColor: black,
-      lineColor: lightGray,
-      lineWidth: 0.3,
-      overflow: 'linebreak',
-    },
-    columnStyles: {
-      0: { cellWidth: 14,  halign: 'center' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 14,  halign: 'center' },
-      3: { cellWidth: 18,  halign: 'center' },
-      4: { cellWidth: 28,  halign: 'right' },
-      5: { cellWidth: 28,  halign: 'right', fontStyle: 'bold' },
-    },
-    margin: { left: marginL, right: marginR },
-    didParseCell: (data) => {
-      const ri = data.row.index;
-      const meta = rowMeta[ri];
-      if (meta === 'category') {
-        // Merge-style: center all cells, gray background
-        data.cell.styles.fillColor = [230, 230, 230];
-        data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.halign = 'center';
-        data.cell.styles.fontSize = 7.5;
-      } else if (meta === 'catLetter') {
-        data.cell.styles.fontStyle = 'bold';
-      } else if (meta === 'total') {
-        data.cell.styles.fontStyle = 'bold';
-        data.cell.styles.fillColor = [255, 245, 245];
-        if (data.column.index === 1) {
-          data.cell.styles.textColor = red;
-          data.cell.styles.halign = 'right';
-        }
-        if (data.column.index === 5) {
-          data.cell.styles.textColor = red;
-        }
-      }
-    },
-    // Draw watermark & footer on each new page created by table overflow
-    didDrawPage: (data) => {
-      if (data.pageNumber > 1) {
-        drawWatermark();
-        drawHeader();
-      }
-      drawFooter();
-    },
-  });
-
-  currentY = doc.lastAutoTable.finalY + 8;
-
-  // ── Optional product image ─────────────────────────────────────────────────
-  if (cot.imagen_url) {
-    const prodImg = await loadImage(cot.imagen_url);
-    if (prodImg) {
-      const imgW = 70;
-      const imgH = 50;
-      const imgX = (pageWidth - imgW) / 2;
-      if (currentY + imgH > pageHeight - 20) {
-        doc.addPage();
-        drawWatermark();
-        drawHeader();
-        currentY = 46;
-      }
-      doc.addImage(prodImg, 'JPEG', imgX, currentY, imgW, imgH);
-      currentY += imgH + 6;
-    }
-  }
-
-  drawFooter();
-
-  // ============================================================
-  //  PAGE 2 — Tiempos de Entrega y Condiciones Comerciales
-  // ============================================================
-  doc.addPage();
-  drawWatermark();
-  const p2StartY = drawHeader();
-
-  // Big title
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
-  doc.text('TIEMPOS DE ENTREGA Y CONDICIONES COMERCIALES', pageWidth / 2, p2StartY + 10, { align: 'center' });
-
-  // Underline title
-  const titleText = 'TIEMPOS DE ENTREGA Y CONDICIONES COMERCIALES';
-  const titleW = doc.getTextWidth(titleText);
-  doc.setDrawColor(...black);
-  doc.setLineWidth(0.5);
-  doc.line((pageWidth - titleW) / 2, p2StartY + 12, (pageWidth + titleW) / 2, p2StartY + 12);
-
-  let p2Y = p2StartY + 22;
-
-  const drawSection = (title, items) => {
-    doc.setFontSize(9.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...red);
-    doc.text(title + ':', marginL, p2Y);
-    p2Y += 6;
-
-    items.forEach((item) => {
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...darkGray);
-      // Bullet circle
-      doc.setDrawColor(...midGray);
-      doc.setLineWidth(0.4);
-      doc.circle(marginL + 3, p2Y - 1.5, 1.5, 'S');
-      const splitItem = doc.splitTextToSize(item, contentWidth - 10);
-      doc.text(splitItem, marginL + 8, p2Y);
-      p2Y += splitItem.length * 4.8 + 1;
-    });
-    p2Y += 4;
-  };
-
-  // Tiempos de entrega
-  const tiemposItems = [];
+  // ── Build delivery and commercial terms strings ──────────────────────────
   let totalDiasStr = '';
-  if ((cot.horas || 0) > 0)   totalDiasStr += `${cot.horas} horas `;
-  if ((cot.dias || 0) > 0)    totalDiasStr += `${cot.dias} día(s) `;
+  if ((cot.horas || 0) > 0) totalDiasStr += `${cot.horas} horas `;
+  if ((cot.dias || 0) > 0) totalDiasStr += `${cot.dias} día(s) `;
   if ((cot.semanas || 0) > 0) totalDiasStr += `${cot.semanas} semana(s) `;
-  if ((cot.meses || 0) > 0)   totalDiasStr += `${cot.meses} mes(es) `;
+  if ((cot.meses || 0) > 0) totalDiasStr += `${cot.meses} mes(es) `;
 
-  tiemposItems.push(
-    `Materiales, equipo e insumos: ${totalDiasStr || '10 – 15 día(s)'} hábiles, a partir del cumplimiento de las condiciones comerciales`
-  );
-  drawSection('TIEMPOS DE ENTREGA', tiemposItems);
+  const deliveryTimeText = `Materiales, equipo e insumos: ${totalDiasStr || '10 – 15 día(s)'} hábiles, a partir del cumplimiento de las condiciones comerciales`;
 
-  drawSection('CONDICIONES COMERCIALES', [
-    'Los precios son expresados en PESOS MEXICANOS MNX',
-    'Los precios no incluyen el 16% I.V.A.',
-    'Se requiere Emisión de orden de compra a favor de centro de ingeniería y abastecimiento ECG',
-    '100 % del importe de materiales.',
-    '50% de anticipo del importe de mano de obra y 50% restante a los 15 días de haber entregado el equipo funcionando.',
-    'Vigencia de cotización: 10 días naturales.',
-    'La elaboración de esta cotización se basa en la información que nos proporciona el cliente.',
-    'Es obligación del cliente revisar y aprobar la presente cotización, si existiera algún faltante o diferencia de acuerdo con sus necesidades será necesaria una nueva cotización.',
-  ]);
-
-  drawSection('GARANTÍAS', [
-    '1 AÑO DE GARANTÍA EN EQUIPO Y MATERIALES',
-  ]);
-
-  // Closing text
-  p2Y += 4;
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...darkGray);
-  doc.text(
-    'Sin más por el momento y en espera de poder ser parte de su éxito, quedamos a sus más apreciables órdenes.',
-    marginL, p2Y
-  );
-  p2Y += 14;
-
-  // "Atentamente"
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
-  doc.text('ATENTAMENTE', pageWidth / 2, p2Y, { align: 'center' });
-  p2Y += 16;
-
-  // Signature line
-  const sigLineW = 70;
-  const sigLineX = (pageWidth - sigLineW) / 2;
-  doc.setDrawColor(...black);
-  doc.setLineWidth(0.5);
-  doc.line(sigLineX, p2Y, sigLineX + sigLineW, p2Y);
-  p2Y += 6;
-
-  // Engineer name
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...red);
-  doc.text('ING, JUAN ERASMO CUAYA GRANADOS', pageWidth / 2, p2Y, { align: 'center' });
-  p2Y += 5;
-  doc.setTextColor(...black);
-  doc.text('CED. PROF. 8101909', pageWidth / 2, p2Y, { align: 'center' });
-  p2Y += 5;
-  doc.text('REPSE  576749', pageWidth / 2, p2Y, { align: 'center' });
-  p2Y += 6;
-  doc.setTextColor(...red);
-  doc.text('NUESTRO ÉXITO DEPENDE DEL ÉXITO DE NUESTROS CLIENTES', pageWidth / 2, p2Y, { align: 'center' });
-
-  drawFooter();
-
-  // ============================================================
-  //  PAGE 3 — Términos de Venta
-  // ============================================================
-  doc.addPage();
-  drawWatermark();
-  const p3StartY = drawHeader();
-  let p3Y = p3StartY + 4;
-
-  // Big title
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...black);
-  const termsTitle = 'TÉRMINOS DE VENTA CENTRO DE INGENIERIA Y ABASTECIMIENTO ECG SA DE CV';
-  const splitTermsTitle = doc.splitTextToSize(termsTitle, contentWidth);
-  doc.text(splitTermsTitle, pageWidth / 2, p3Y, { align: 'center' });
-  p3Y += splitTermsTitle.length * 6 + 2;
-
-  // Underline
-  doc.setDrawColor(...black);
-  doc.setLineWidth(0.5);
-  doc.line(marginL, p3Y, pageWidth - marginR, p3Y);
-  p3Y += 5;
-
+  // ── Terms Content ──────────────────────────────────────────────────────────
   const termsContent = [
     { bold: 'GENERAL. ', text: 'Estos términos y condiciones de venta (junto con cualquier cotización o especificación por escrito del Vendedor directamente asociada) gobernará exclusivamente la venta o licencia otorgada por el Vendedor de todos los productos y servicios (incluyendo sin limitación, productos para equipamiento, software y programas, capacitación, programación, mantenimiento, ingeniería, repuestos y servicios de reparación colectivamente los "Productos") otorgados bajo la presente. Ninguna adición o modificación a estos términos y condiciones será obligatoria para centro de ingeniería y abastecimiento e. (denominado en lo sucesivo como "CENTRO ECG") a menos que haya indicado su acuerdo por escrito firmado por su representante autorizado. El Vendedor no reconoce otro u otros términos y condiciones que puedan ser opuestos por el cliente que no sean de otra manera consistente con estos u otros términos y condiciones fijados en la cotización, especificación o aceptación del pedido del Vendedor.' },
-    { bold: 'TÉRMINOS DE PAGO. ', text: 'Salvo que se disponga algo diferente por escrito por el Vendedor en una Cotización o en relación a una aceptación del Pedido, los términos de pago son 50% ANTICIPO desde la fecha de la factura con crédito continuo (PREVIA A PROBACIÓN DE CENTRO ECG) aprobado según lo determine CENTRO ECG, anticipadamente y/o contra la entrega del material en los casos en que no se tenga crédito. La liquidación de las facturas de venta se hará en la misma moneda en que se haya acordado la misma y que se haya aceptado el pedido el vendedor. En caso de pago de facturas en moneda nacional que hayan sido realizadas en otra moneda, el tipo de cambio a considerar será el libre bancario vigente a la fecha de pago y CENTRO ECG se reserva el derecho a determinar la institución que lo fije.' },
+    { bold: 'TÉRMINOS DE PAGO. ', text: 'Salvo que se disponga algo diferente por escrito por el Vendedor en una Cotización o en relación a una aceptación del Pedido, los términos de pago son 50% ANTICIPO desde la fecha de la factura con crédito continuo (PREVIA A PROBACIÓN DE CENTRO ECG) aprobado según lo determine CENTRO ECG, anticipadamente y/o contra la entrega del material en los casos en que no se tenga crédito. La liquidación de las facturas de venta se hará en la misma moneda en que se haya acordado la misma y que se haya aceptado el pedido el vendedor. En caso de pago de facturas en moneda nacional que hayan sido realizadas en otra moneda, el tipo de cambio a considerar será el libre bancario vigente a la fecha de pago y CENTRO ECG se reserva el derecho a determinar la institución que lo fije. ' },
     { bold: 'CENTRO ECG ', text: 'se reserva el derecho de suspender cualquier cumplimiento adicional bajo este contrato o de cualquier otra obligación para con el cliente en el caso de que el pago no sea realizado a término. No se permite ningún pago por compensación o penalización a menos que haya sido aprobado por CENTRO ECG.' },
     { bold: 'TÉRMINOS DE ENTREGA. ', text: 'Los términos de entrega son LAB en el almacén del cliente siempre y cuando se encuentre dentro del estado de Querétaro. En lo que respecta a los costos de envío, riesgo de pérdida y transferencia del título, excepto el título a todos los derechos a la propiedad intelectual asociados con los Productos, (por ejemplo, programas) siguen siendo determinados por CENTRO ECG (o sus proveedores y licenciantes), y dichos Productos son puestos a disposición o bajo licencia para ser usados por el cliente según este contrato u otro contrato de licencia del Vendedor o sus proveedores.' },
     { bold: 'GARANTÍAS. ', text: '' },
@@ -554,98 +147,19 @@ export const generateCotizacionPDF = async (cot) => {
     { bold: 'E. ESPECIFICACIONES DEL CLIENTE: ', text: 'El Vendedor no garantiza y no será responsable por el diseño, materiales o criterio de construcción entregado o especificado por el Cliente e incorporado en los Productos o para Productos fabricados por o comprados de otros fabricantes o vendedores especificados por el Cliente. Cualquier garantía aplicable a dichos Productos especificados por el Cliente se limitará solamente a la garantía, si la hubiera, extendida por el fabricante o vendedor original que no sea el Vendedor en la medida permitida en dicha garantía.' },
   ];
 
-  // Render terms paragraphs
-  termsContent.forEach(({ bold, text }) => {
-    if (p3Y > pageHeight - 25) {
-      drawFooter();
-      doc.addPage();
-      drawWatermark();
-      drawHeader();
-      p3Y = 46;
-    }
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...black);
-    const boldWidth = doc.getTextWidth(bold);
-
-    const combined = bold + text;
-    const splitLines = doc.splitTextToSize(combined, contentWidth);
-
-    // Render with bold on the first portion
-    splitLines.forEach((line, lineIdx) => {
-      if (lineIdx === 0) {
-        // bold part
-        const boldPart = bold.length <= line.length ? bold : line;
-        doc.setFont('helvetica', 'bold');
-        doc.text(boldPart, marginL, p3Y);
-        if (bold.length < line.length) {
-          doc.setFont('helvetica', 'normal');
-          doc.text(line.substring(bold.length), marginL + doc.getTextWidth(boldPart), p3Y);
-        }
-      } else {
-        doc.setFont('helvetica', 'normal');
-        doc.text(line, marginL, p3Y);
-      }
-      p3Y += 4.5;
-    });
-    p3Y += 1;
-  });
-
-  drawFooter();
-
-  // ============================================================
-  //  PAGE(S) — Additional Terms (continued)
-  // ============================================================
   const termsContent2 = [
     { bold: 'H. LAS GARANTÍAS ANTERIORES SE OFRECEN EN LUGAR DE TODAS LAS OTRAS GARANTÍAS, YA SEAN EXPRESAS, IMPLÍCITAS O ESTATUTARIAS, INCLUYENDO GARANTÍAS IMPLÍCITAS DE COMERCIABILIDAD O APTITUD PARA UN USO PARTICULAR, O GARANTÍAS DE RENDIMIENTO O APLICACIÓN, Y SE EXTIENDE SOLAMENTE A CLIENTES QUE COMPRAN DEL VENDEDOR O SU DISTRIBUIDOR AUTORIZADO.', text: '' },
-    { bold: 'LÍMITE DE LA RESPONSABILIDAD. ', text: 'EN NINGÚN CASO SERÁ EL VENDEDOR RESPONSABLE POR DAÑOS INCIDENTALES, INDIRECTOS O CONSECUENTES DE NINGÚN TIPO. LA RESPONSABILIDAD ACUMULATIVA MÁXIMA DEL VENDEDOR EN RELACIÓN CON TODOS LOS OTROS RECLAMOS Y RESPONSABILIDADES, INCLUYENDO LA RESPONSABILIDAD CON RESPECTO A DAÑOS Y OBLIGACIONES DIRECTAS BAJO CUALQUIER TEORÍA LEGAL O EQUITATIVA, SE ASEGURARÁ O NO, NO EXCEDERÁ EL COSTO DE LOS PRODUCTOS QUE DAN ORIGEN AL RECLAMO O RESPONSABILIDAD. CUALQUIER ACCIÓN EN CONTRA DEL VENDEDOR DEBE SER PRESENTADA DENTRO DE LOS DIECIOCHO (18) MESES DESPUÉS DE QUE OCURRA LA CAUSA DE LA ACCIÓN. ESTAS RENUNCIAS Y LIMITACIONES DE RESPONSABILIDAD SE APLICARÁN SOBRE CUALQUIER OTRA DISPOSICIÓN EN CONTRARIO EN EL CONTRATO Y SIN CUIDADO DE LA FORMA DE ACCIÓN, YA SEA CONTRACTUAL, POR DISPOSICIÓN DE LEY O DE CUALQUIER OTRA MANERA, Y SE EXTENDERÁ ADEMÁS PARA EL BENEFICIO DE LOS PROVEEDORES DEL VENDEDOR, DISTRIBUIDORES Y OTROS REVENDEDORES AUTORIZADOS COMO TERCEROS BENEFICIARIOS. CADA DISPOSICIÓN DEL CONTRATO QUE INDICA UNA LIMITACIÓN DE LA RESPONSABILIDAD, RENUNCIA A LA GARANTÍA, O CONDICIÓN O EXCLUSIÓN DE DAÑOS ES DIVISIBLE E INDEPENDIENTE DE CUALQUIER OTRA DISPOSICIÓN Y SERÁ EJECUTADA COMO TAL. EL VENDEDOR POR SER ÚNICAMENTE DISTRIBUIDOR DE LOS PRODUCTOS, NO PUEDE ACEPTAR NINGÚN JUICIO O DEMANDA POR LOS PRODUCTOS QUE VENDE Y SE LIMITARÁ A HACER EXTENSIVA LA RESPONSABILIDAD DE ESTOS AL FABRICANTE DEL PRODUCTO.' },
-    { bold: 'PROGRAMAS BAJO LICENCIA. ', text: 'Los Productos compuestos por programas pueden estar sujetos a términos y condiciones adicionales indicadas en los contratos de licencia del Vendedor separados que controlarán en la medida necesaria la resolución de cualquier conflicto con los términos y condiciones indicados en el presente. Dichos Productos no serán entregados ni puestos a disposición hasta que el cliente esté de acuerdo con el contrato, términos y condiciones de dichos contratos de licencia separados.' },
+    { bold: 'LÍMITE DE LA RESPONSABILIDAD. ', text: 'EN NINGÚN CASO SERÁ EL VENDEDOR RESPONSABLE POR DAÑOS INCIDENTALES, INDIRECTOS O CONSECUENTES DE NINGÚN TIPO. LA RESPONSABILIDAD ACUMULATIVA MÁXIMA DEL VENDEDOR EN RELACIÓN CON TODOS LOS OTROS RECLAMOS Y RESPONSABILIDADES, INCLUYENDO LA RESPONSABILIDAD CON RESPECTO A DAÑOS Y OBLIGACIONES DIRECTAS BAJO CUALQUIER TEORÍA LEGAL O EQUITATIVA, SE ASEGURARÁ O NO, NO EXCEDERÁ EL COSTO DE LOS PRODUCTOS QUE DAN ORIGEN AL RECLAMO O RESPONSABILIDAD. CUALQUIER ACCIÓN EN CONTRA DEL VENDEDOR DEBE SER PRESENTADA DENTRO DE LOS DIECIOCHO (18) MESES DESPUÉS DE QUE OCURRA LA CAUSA DE LA ACCIÓN. ESTAS RENUNCIAS Y LIMITACIONES DE RESPONSABILIDAD SE APLICARÁN SOBRE CUALQUIER OTRA DISPOSICIÓN EN CONTRARIO EN EL CONTRATO Y SIN CUIDADO DE LA FORMA DE ACCIÓN, YA SEA CONTRACTUAL, POR DISPOSICIÓN DE LEY O DE CUALQUIER OTRA MANERA, Y SE EXTENDERÁ ADEMÁS PARA EL BENEFICIO DE LOS PROVEEDORES DEL VENDEDOR, DISTRIBUIDORES Y OTROS REVENDEDORES AUTORIZADOS COMO TERCEROS BENEFICIARIOS.' },
+    { bold: 'PROGRAMAS BAJO LICENCIA. ', text: 'Los Productos compuestos por programas pueden estar sujetos a términos y condiciones adicionales indicadas en los contratos de licencia del Vendedor separados que controlarán en la medida necesaria la resolución de cualquier conflicto con los términos y condiciones indicados en el presente.' },
     { bold: 'EMPAQUETADO Y MARCADO. ', text: 'El empaquetado o marcado específico del cliente puede estar sujeto a disponibilidad y cargos adicionales no incluidos en el precio de los Productos.' },
     { bold: 'PESOS Y DIMENSIONES. ', text: 'Los pesos y dimensiones publicados son cálculos o aproximaciones solamente, no están garantizados y están sujetos a cambio por el fabricante sin previo aviso.' },
-    { bold: 'COTIZACIONES. ', text: 'Las cotizaciones por escrito son válidas durante 15 días desde la fecha de emisión a menos que se indique lo contrario con excepción de las expresadas en dólares ya que tienen vigencia de 24 horas y si el tipo de cambio sufre una variación mayor al 2%, pierde su validez. Las cotizaciones verbales vencen el mismo día en que son hechas. Las existencias especificadas en las mismas están sujetas a previo. Todos los errores especialmente los tipográficos están sujetos a corrección.' },
-    { bold: 'PRECIOS. ', text: 'Los precios y cualquier otra información indicada en cualquier publicación del Vendedor (incluyendo los catálogos de productos y folletos), están sujetos a cambio sin notificación y serán confirmados por cotización específica. Dichas publicaciones no son ofertas de ventas y se mantienen solamente como fuente de información general. Será a cargo del cliente el Impuesto al Valor Agregado o cualquier otro impuesto similar. Los productos compuestos por servicios de tiempo y material serán provistos de acuerdo con las tarifas de servicio especificadas por el Vendedor (más los gastos de viaje y horas extras correspondientes) en efecto en la fecha en que se presten dichos servicios, a menos de que sea confirmado de otra manera en la cotización por escrito del Vendedor o la aceptación del pedido correspondiente. El tiempo de servicio cobrable incluye el tiempo de viaje desde y hasta al lugar de trabajo y todo el tiempo que los representantes del Vendedor están disponibles para trabajar y el tiempo de espera (en el lugar de trabajo o no) para prestar los servicios.' },
-    { bold: 'CAMBIOS. ', text: 'Los cambios en el pedido solicitados por el cliente, incluyendo los que afecten la identidad, alcance y entrega de los Productos deben de constar por escrito, están sujetos a la Política de Cambios y Devoluciones vigente para el cliente y están también a la aprobación previa del Vendedor, a los ajustes en los precios, programación y otros términos y condiciones que se afecten. En cualquier caso, el Vendedor se reserva el derecho de rechazar cualquier cambio que considere inseguro, técnicamente no aconsejable o inconsistente con las pautas y normas de calidad e ingeniería establecidas, o sea incompatible con la capacidad de diseño o fabricación del Vendedor.' },
-    { bold: 'DEVOLUCIONES. ', text: 'Todas las devoluciones de Productos estarán sujetas a la aprobación previa del Vendedor y a la Política de Cambios y Devoluciones del mismo. Las devoluciones de productos no garantizados sin usar y vendibles a cambio de crédito estarán sujetas a las políticas de devoluciones del Vendedor en efecto en dicho momento, incluyendo los cargos correspondientes de re almacenaje de dicha mercancía y otras condiciones de devolución. Los productos devueltos bajo la garantía deben estar debidamente empaquetados y despachados a la dirección especificada por el Vendedor. Los paquetes de despacho deben estar claramente marcados según las instrucciones del Vendedor y despachados con flete prepagado por el cliente.' },
+    { bold: 'COTIZACIONES. ', text: 'Las cotizaciones por escrito son válidas durante 15 días desde la fecha de emisión a menos que se indique lo contrario con excepción de las expresadas en dólares ya que tienen vigencia de 24 horas y si el tipo de cambio sufre una variación mayor al 2%, pierde su validez. Existencias especificadas en las mismas están sujetas a previo venta. Todos los errores especialmente los tipográficos están sujetos a corrección.' },
+    { bold: 'PRECIOS. ', text: 'Los precios y cualquier otra información indicada en cualquier publicación del Vendedor (incluyendo los catálogos de productos y folletos), están sujetos a cambio sin notificación y serán confirmados por cotización específica. Será a cargo del cliente el Impuesto al Valor Agregado o cualquier otro impuesto similar.' },
+    { bold: 'CAMBIOS. ', text: 'Los cambios en el pedido solicitados por el cliente, incluyendo los que afecten la identidad, alcance y entrega de los Productos deben de constar por escrito, están sujetos a la Política de Cambios y Devoluciones vigente para el cliente y están también a la aprobación previa del Vendedor, a los ajustes en los precios, programación y otros términos y condiciones que se afecten.' },
+    { bold: 'DEVOLUCIONES. ', text: 'Todas las devoluciones de Productos estarán sujetas a la aprobación previa del Vendedor y a la Política de Cambios y Devoluciones del mismo. Las devoluciones de productos no garantizados sin usar y vendibles a cambio de crédito estarán sujetas a las políticas de devoluciones del Vendedor en efecto en dicho momento, incluyendo los cargos correspondientes de re almacenaje de dicha mercancía y otras condiciones de devolución.' },
     { bold: 'POLÍTICA DE CAMBIOS Y DEVOLUCIONES.', text: '' },
   ];
 
-  doc.addPage();
-  drawWatermark();
-  drawHeader();
-  let p4Y = 46;
-
-  termsContent2.forEach(({ bold, text }) => {
-    if (p4Y > pageHeight - 25) {
-      drawFooter();
-      doc.addPage();
-      drawWatermark();
-      drawHeader();
-      p4Y = 46;
-    }
-    const combined = bold + text;
-    const splitLines = doc.splitTextToSize(combined, contentWidth);
-    splitLines.forEach((line, lineIdx) => {
-      if (lineIdx === 0) {
-        const boldPart = bold.length <= line.length ? bold : line;
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...black);
-        doc.text(boldPart, marginL, p4Y);
-        if (bold.length < line.length) {
-          doc.setFont('helvetica', 'normal');
-          doc.text(line.substring(bold.length), marginL + doc.getTextWidth(boldPart), p4Y);
-        }
-      } else {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.text(line, marginL, p4Y);
-      }
-      p4Y += 4.5;
-    });
-    p4Y += 1;
-  });
-
-  // Políticas bullet list
   const politicasItems = [
     'Toda devolución o cambio deberá notificarse al Vendedor en un plazo no mayor de 10 días después de la entrega del mismo.',
     'Todas las devoluciones autorizadas generarán la Nota de Crédito correspondiente después de su recepción y aprobación de la inspección en el Almacén.',
@@ -656,39 +170,324 @@ export const generateCotizacionPDF = async (cot) => {
     'Productos cuya aprobación signifique a ECG INGENIERIA Y MANTENIMIENTO el tener más de 6 meses de inventario.',
   ];
 
-  if (p4Y > pageHeight - 60) {
-    drawFooter();
-    doc.addPage();
-    drawWatermark();
-    drawHeader();
-    p4Y = 46;
+  // ── Split items table if too many rows ────────────────────────────────────
+  const page1Rows = [];
+  const page1bRows = [];
+
+  if (tableBody.length <= 15) {
+    page1Rows.push(...tableBody);
+  } else {
+    page1Rows.push(...tableBody.slice(0, 12));
+    page1bRows.push(...tableBody.slice(12));
   }
 
-  politicasItems.forEach((item) => {
-    if (p4Y > pageHeight - 25) {
-      drawFooter();
-      doc.addPage();
-      drawWatermark();
-      drawHeader();
-      p4Y = 46;
+  const totalPages = page1bRows.length === 0 ? 4 : 5;
+
+  const renderRowHTML = (row) => {
+    if (row.type === 'category') {
+      return `
+        <tr style="background-color: #eeeeee; font-weight: bold; text-align: center;">
+          <td colspan="6" style="border: 0.5px solid #d3d3d3; padding: 4px;">${row.label}</td>
+        </tr>
+      `;
+    } else if (row.type === 'catLetter') {
+      return `
+        <tr style="font-weight: bold;">
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; vertical-align: top;">${row.letter}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; vertical-align: top;">
+            ${row.label}
+            ${row.desc ? `<br/><span style="font-size: 7.5pt; color: #555555; font-weight: normal;">${row.desc}</span>` : ''}
+          </td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; vertical-align: top;">${row.cant || ''}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; vertical-align: top;">${row.unidad || ''}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: right; vertical-align: top;">${row.costoUnit || ''}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: right; vertical-align: top; font-weight: bold;">${row.importe || ''}</td>
+        </tr>
+      `;
+    } else {
+      return `
+        <tr>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; color: #777777; vertical-align: top;">${row.item}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; vertical-align: top;">${row.desc}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; vertical-align: top;">${row.cant}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: center; vertical-align: top;">${row.unidad}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: right; vertical-align: top;">${row.costoUnit}</td>
+          <td style="border: 0.5px solid #d3d3d3; padding: 4px; text-align: right; vertical-align: top;">${row.importe}</td>
+        </tr>
+      `;
     }
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...darkGray);
-    doc.setDrawColor(...midGray);
-    doc.setLineWidth(0.4);
-    doc.circle(marginL + 3, p4Y - 1.5, 1.5, 'S');
-    const splitItem = doc.splitTextToSize(item, contentWidth - 10);
-    doc.text(splitItem, marginL + 8, p4Y);
-    p4Y += splitItem.length * 4.5 + 1;
+  };
+
+  // ── Pages HTML Definition ─────────────────────────────────────────────────
+  const page1Content = `
+    <div style="font-size: 9pt; color: #333333; margin-bottom: 12px; text-align: justify; line-height: 1.3;">
+      Por medio de la presente reciba un cordial saludo por parte del todo el personal que colabora en esta empresa, así mismo aprovecho este medio para enviarle la cotización; la cual consta de lo siguiente:
+    </div>
+    
+    <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+      <thead>
+        <tr style="background-color: #cc0000; color: #ffffff; font-weight: bold;">
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">ÍTEM</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: left;">DESCRIPCIÓN</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">CANT</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 10%; text-align: center;">UNIDAD</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">P. UNITARIO</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">IMPORTE</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${page1Rows.map(renderRowHTML).join('')}
+        ${page1bRows.length === 0 ? `
+          <tr style="font-weight: bold; background-color: #fff5f5; color: #cc0000;">
+            <td></td>
+            <td style="text-align: right; padding: 5px;" colspan="4">TOTAL DE MATERIALES Y MANO DE OBRA</td>
+            <td style="text-align: right; padding: 5px;">${fmt(grandTotal || cot.total || 0)}</td>
+          </tr>
+        ` : ''}
+      </tbody>
+    </table>
+    
+    ${page1bRows.length === 0 && cot.imagen_url ? `
+      <div style="text-align: center; margin-top: 15px;">
+        <span style="font-size: 8pt; color: #666; display: block; margin-bottom: 4px;">Imagen de referencia:</span>
+        <img src="${cot.imagen_url}" style="max-height: 140px; max-width: 250px; border: 0.5px solid #d3d3d3; padding: 3px; border-radius: 4px;" />
+      </div>
+    ` : ''}
+  `;
+
+  const page1bContent = `
+    <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+      <thead>
+        <tr style="background-color: #cc0000; color: #ffffff; font-weight: bold;">
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">ÍTEM</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: left;">DESCRIPCIÓN</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">CANT</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 10%; text-align: center;">UNIDAD</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">P. UNITARIO</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">IMPORTE</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${page1bRows.map(renderRowHTML).join('')}
+        <tr style="font-weight: bold; background-color: #fff5f5; color: #cc0000;">
+          <td></td>
+          <td style="text-align: right; padding: 5px;" colspan="4">TOTAL DE MATERIALES Y MANO DE OBRA</td>
+          <td style="text-align: right; padding: 5px;">${fmt(grandTotal || cot.total || 0)}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    ${cot.imagen_url ? `
+      <div style="text-align: center; margin-top: 15px;">
+        <span style="font-size: 8pt; color: #666; display: block; margin-bottom: 4px;">Imagen de referencia:</span>
+        <img src="${cot.imagen_url}" style="max-height: 140px; max-width: 250px; border: 0.5px solid #d3d3d3; padding: 3px; border-radius: 4px;" />
+      </div>
+    ` : ''}
+  `;
+
+  const page2Content = `
+    <div style="text-align: center; margin-top: 5px; margin-bottom: 15px;">
+      <h2 style="font-size: 13pt; margin: 0; font-weight: bold; color: #000000;">TIEMPOS DE ENTREGA Y CONDICIONES COMERCIALES</h2>
+      <div style="border-bottom: 2px solid #000000; width: 420px; margin: 4px auto 0 auto;"></div>
+    </div>
+    
+    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+      TIEMPOS DE ENTREGA:
+    </div>
+    <ul style="margin: 0; padding-left: 15px; margin-bottom: 12px; font-size: 8.5pt; color: #333333;">
+      <li style="list-style-type: circle; margin-bottom: 4px; text-align: justify;">${deliveryTimeText}</li>
+    </ul>
+    
+    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+      CONDICIONES COMERCIALES:
+    </div>
+    <ul style="margin: 0; padding-left: 15px; margin-bottom: 12px; font-size: 8.5pt; color: #333333; line-height: 1.35;">
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Los precios son expresados en PESOS MEXICANOS MNX</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Los precios no incluyen el 16% I.V.A.</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Se requiere Emisión de orden de compra a favor de centro de ingeniería y abastecimiento ECG</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">100 % del importe de materiales.</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">50% de anticipo del importe de mano de obra y 50% restante a los 15 días de haber entregado el equipo funcionando.</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Vigencia de cotización: 10 días naturales.</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">La elaboración de esta cotización se basa en la información que nos proporciona el cliente.</li>
+      <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Es obligación del cliente revisar y aprobar la presente cotización, si existiera algún faltante o diferencia de acuerdo con sus necesidades será necesaria una nueva cotización.</li>
+    </ul>
+    
+    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+      GARANTÍAS:
+    </div>
+    <ul style="margin: 0; padding-left: 15px; margin-bottom: 15px; font-size: 8.5pt; color: #333333;">
+      <li style="list-style-type: circle; margin-bottom: 4px; text-align: justify;">1 AÑO DE GARANTÍA EN EQUIPO Y MATERIALES</li>
+    </ul>
+    
+    <div style="font-size: 9pt; text-align: justify; margin-bottom: 20px; color: #333333; line-height: 1.3;">
+      Sin más por el momento y en espera de poder ser parte de su éxito, quedamos a sus más apreciables órdenes.
+    </div>
+    
+    <div style="text-align: center; font-weight: bold; font-size: 9pt; margin-bottom: 25px;">
+      ATENTAMENTE
+    </div>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <tr>
+        <td style="text-align: center;">
+          <div style="border-top: 1px solid #000000; width: 250px; margin: 0 auto; margin-bottom: 6px;"></div>
+          <div style="font-size: 9.5pt; font-weight: bold; color: #cc0000;">ING. JUAN ERASMO CUAYA GRANADOS</div>
+          <div style="font-size: 8.5pt; font-weight: bold; color: #333333; margin-top: 2px;">CED. PROF. 8101909</div>
+          <div style="font-size: 8.5pt; font-weight: bold; color: #333333; margin-top: 2px; margin-bottom: 8px;">REPSE 576749</div>
+          <div style="font-size: 9pt; font-weight: bold; color: #cc0000; font-style: italic;">NUESTRO ÉXITO DEPENDE DEL ÉXITO DE NUESTROS CLIENTES</div>
+        </td>
+      </tr>
+    </table>
+  `;
+
+  const page3Content = `
+    <div style="text-align: center; margin-top: 5px; margin-bottom: 12px;">
+      <h3 style="font-size: 11pt; font-weight: bold; text-transform: uppercase; margin: 0; color: #000000;">TÉRMINOS DE VENTA CENTRO DE INGENIERÍA Y ABASTECIMIENTO ECG SA DE CV</h3>
+      <div style="border-bottom: 1px solid #000000; width: 100%; margin-top: 4px;"></div>
+    </div>
+    
+    <div style="font-size: 7.6pt; text-align: justify; color: #333333; line-height: 1.35;">
+      <p style="margin: 0 0 6px 0;"><b>GENERAL.</b> ${termsContent[0].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>TÉRMINOS DE PAGO.</b> ${termsContent[1].text} ${termsContent[2].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>TÉRMINOS DE ENTREGA.</b> ${termsContent[3].text}</p>
+      <p style="margin: 0 0 4px 0;"><b>GARANTÍAS.</b></p>
+      <p style="margin: 0 0 4px 0; padding-left: 10px;"><b>A. EQUIPO:</b> ${termsContent[5].text}</p>
+      <p style="margin: 0 0 4px 0; padding-left: 10px;"><b>B. PROGRAMAS:</b> ${termsContent[6].text}</p>
+      <p style="margin: 0 0 4px 0; padding-left: 10px;"><b>C. REPARACIÓN EN FABRICA Y CAMBIO:</b> ${termsContent[7].text}</p>
+      <p style="margin: 0 0 4px 0; padding-left: 10px;"><b>D. SERVICIO:</b> ${termsContent[8].text}</p>
+      <p style="margin: 0 0 4px 0; padding-left: 10px;"><b>E. ESPECIFICACIONES DEL CLIENTE:</b> ${termsContent[9].text}</p>
+    </div>
+  `;
+
+  const page4Content = `
+    <div style="font-size: 7.6pt; text-align: justify; color: #333333; line-height: 1.35;">
+      <p style="margin: 0 0 6px 0;"><b>H. LAS GARANTÍAS ANTERIORES SE OFRECEN EN LUGAR DE TODAS LAS OTRAS GARANTÍAS, YA SEAN EXPRESAS, IMPLÍCITAS O ESTATUTARIAS, INCLUYENDO GARANTÍAS IMPLÍCITAS DE COMERCIABILIDAD O APTITUD PARA UN USO PARTICULAR, O GARANTÍAS DE RENDIMIENTO O APLICACIÓN, Y SE EXTIENDE SOLAMENTE A CLIENTES QUE COMPRAN DEL VENDEDOR O SU DISTRIBUIDOR AUTORIZADO.</b></p>
+      <p style="margin: 0 0 6px 0;"><b>LÍMITE DE LA RESPONSABILIDAD.</b> ${termsContent2[1].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>PROGRAMAS BAJO LICENCIA.</b> ${termsContent2[2].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>COTIZACIONES.</b> ${termsContent2[5].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>PRECIOS.</b> ${termsContent2[6].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>CAMBIOS.</b> ${termsContent2[7].text}</p>
+      <p style="margin: 0 0 6px 0;"><b>DEVOLUCIONES.</b> ${termsContent2[8].text}</p>
+    </div>
+    
+    <div style="color: #cc0000; font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+      POLÍTICA DE CAMBIOS Y DEVOLUCIONES
+    </div>
+    <ul style="margin: 0; padding-left: 15px; font-size: 7.6pt; color: #333333; line-height: 1.3;">
+      ${politicasItems.map(item => `<li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">${item}</li>`).join('')}
+    </ul>
+  `;
+
+  // Helper to wrap content with Page frame
+  const renderPageHTML = (contentHTML, pageNum) => {
+    return `
+      <div class="page" id="page-${pageNum}" style="width: 816px; height: 1056px; box-sizing: border-box; padding: 50px 60px 70px 60px; position: relative; background-color: #ffffff; overflow: hidden; font-family: Arial, sans-serif; float: left;">
+        <!-- Watermark logo -->
+        <img src="/assets/logos/centro.png" style="position: absolute; left: 243px; top: 363px; width: 330px; height: 330px; opacity: 0.06; z-index: 0;" />
+        
+        <!-- Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px; z-index: 10; position: relative; font-family: Arial, sans-serif;">
+          <tr>
+            <td style="width: 50%; text-align: left; vertical-align: top;">
+              <div style="font-weight: bold; font-size: 9.5pt; color: #000000; line-height: 1.2;">${(cot.clientes?.nombre || '').toUpperCase()}</div>
+              ${cot.clientes?.cargo ? `<div style="font-size: 8pt; color: #555555; margin-top: 2px;">${cot.clientes.cargo.toUpperCase()}</div>` : ''}
+              ${cot.clientes?.empresa ? `<div style="font-weight: bold; font-size: 8pt; color: #000000; margin-top: 2px;">${cot.clientes.empresa.toUpperCase()}</div>` : ''}
+            </td>
+            <td style="width: 50%; text-align: right; vertical-align: top;">
+              <div style="font-size: 8pt; color: #000000;">EL MARQUÉS, QRO A ${fmtDate(cot.created_at)}</div>
+              <div style="font-weight: bold; font-size: 10.5pt; color: #cc0000; margin-top: 2px;">COTIZACION ${cot.folio || cot.id || 'S/N'}</div>
+              ${cot.titulo ? `<div style="font-weight: bold; font-size: 9pt; color: #cc0000;">${cot.titulo.toUpperCase()}</div>` : ''}
+              ${cot.descripcion ? `<div style="font-size: 7.5pt; color: #555555; max-width: 320px; display: inline-block; margin-top: 2px;">${cot.descripcion}</div>` : ''}
+            </td>
+          </tr>
+        </table>
+        
+        <div style="border-bottom: 0.5px solid #d3d3d3; margin-bottom: 15px; width: 100%; z-index: 10; position: relative;"></div>
+        
+        <!-- Content Area -->
+        <div style="height: 830px; z-index: 10; position: relative;">
+          ${contentHTML}
+        </div>
+        
+        <!-- Footer -->
+        <div style="position: absolute; bottom: 30px; left: 60px; right: 60px; border-top: 0.3px solid #d3d3d3; padding-top: 6px; text-align: center; font-size: 7.5pt; color: #777777; font-family: Arial, sans-serif; z-index: 10;">
+          Tel. (442) 773 4562 Y 6691732 correo: centroecging@gmail.com
+          <div style="float: right; font-weight: bold; color: #555555;">Página ${pageNum} de ${totalPages}</div>
+        </div>
+      </div>
+    `;
+  };
+
+  // ── Construct full pages wrapper HTML ─────────────────────────────────────
+  let pagesHTML = '';
+  if (page1bRows.length === 0) {
+    pagesHTML += renderPageHTML(page1Content, 1);
+    pagesHTML += renderPageHTML(page2Content, 2);
+    pagesHTML += renderPageHTML(page3Content, 3);
+    pagesHTML += renderPageHTML(page4Content, 4);
+  } else {
+    pagesHTML += renderPageHTML(page1Content, 1);
+    pagesHTML += renderPageHTML(page1bContent, 2);
+    pagesHTML += renderPageHTML(page2Content, 3);
+    pagesHTML += renderPageHTML(page3Content, 4);
+    pagesHTML += renderPageHTML(page4Content, 5);
+  }
+
+  // ── Append hidden container to DOM ────────────────────────────────────────
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '816px';
+  container.style.backgroundColor = '#f0f0f0';
+  document.body.appendChild(container);
+  container.innerHTML = pagesHTML;
+
+  // Wait for all images inside container to load
+  const images = container.querySelectorAll('img');
+  const imgPromises = Array.from(images).map(img => {
+    return new Promise(res => {
+      if (img.complete) res();
+      else {
+        img.onload = res;
+        img.onerror = res;
+      }
+    });
+  });
+  await Promise.all(imgPromises);
+
+  // Wait a moment for browser layout recalculation
+  await new Promise(res => setTimeout(res, 400));
+
+  // ── Initialize and render JPEGs into jsPDF ────────────────────────────────
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: 'letter'
   });
 
-  drawFooter();
+  const pageNodes = container.querySelectorAll('.page');
+  for (let i = 0; i < pageNodes.length; i++) {
+    const pageNode = pageNodes[i];
+    const canvas = await html2canvas(pageNode, {
+      scale: 2, // Generates high-res image
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-  // ============================================================
-  //  SAVE
-  // ============================================================
+    if (i > 0) {
+      doc.addPage();
+    }
+    // Letter format in mm is 215.9 x 279.4
+    doc.addImage(imgData, 'JPEG', 0, 0, 215.9, 279.4);
+  }
+
+  // Save the PDF file
   const clientName = (cot.clientes?.nombre || 'Cliente').replace(/\s+/g, '_');
   const fileName = `Cotizacion_${cot.folio || cot.id}_${clientName}.pdf`;
   doc.save(fileName);
+
+  // Clean up DOM
+  document.body.removeChild(container);
 };
