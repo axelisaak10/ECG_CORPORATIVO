@@ -618,3 +618,43 @@ export async function apiDeleteAnuncio(id) {
   if (!res.ok) throw new Error(data.error || 'Error al eliminar anuncio.');
   return data;
 }
+
+// ── Reportes de Puesta a Tierra ──────────────────────────────────────────────
+export async function apiGetReportesPuestaTierra() {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=reportes_puesta_tierra`, { headers: authHeaders(false) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al obtener reportes de puesta a tierra.');
+  return data.reportes;
+}
+
+export async function apiCreateReportePuestaTierra(fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=reportes_puesta_tierra`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear reporte de puesta a tierra.');
+  return data.reporte;
+}
+
+export async function apiUpdateReportePuestaTierra(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=reportes_puesta_tierra&id=${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar reporte de puesta a tierra.');
+  return data.reporte;
+}
+
+export async function apiDeleteReportePuestaTierra(id) {
+  const res = await fetch(`${BASE_URL}/api/catalogo?r=reportes_puesta_tierra&id=${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(false),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar reporte de puesta a tierra.');
+  return data;
+}

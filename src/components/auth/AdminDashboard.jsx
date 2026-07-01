@@ -6,6 +6,7 @@ import {
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
   KeyRound, Lock, CheckCircle, AlertCircle, EyeOff,
   RotateCcw, AlertTriangle, Clock, UserX, ShieldCheck, Star, Megaphone,
+  Activity,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
@@ -18,6 +19,7 @@ import ProfileSection from '../shared/ProfileSection';
 import EncuestasSection from '../admin/EncuestasSection';
 import AnunciosSection from '../admin/AnunciosSection';
 import TutorialesSection from '../admin/TutorialesSection';
+import ReportesPuestaTierraSection from '../admin/ReportesPuestaTierraSection';
 
 /* ─── Status maps ─── */
 
@@ -1372,6 +1374,7 @@ const RecuperacionCuentasSection = () => {
 /* ─── AdminDashboard ─── */
 const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) => {
   const [activeTab, setActiveTab]   = useState(() => localStorage.getItem('admin_active_tab') || 'resumen');
+  const [dictaminacionSubTab, setDictaminacionSubTab] = useState('generales');
 
   useEffect(() => {
     localStorage.setItem('admin_active_tab', activeTab);
@@ -1583,18 +1586,51 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
             <CotizacionesComplexSection currentUser={currentUser} readOnly={!isAdmin} />
           )}
           {activeTab === 'dictaminacion' && (
-            <ItemSection
-              title="Dictaminación"
-              subtitle={isAdmin ? 'Registro y seguimiento de dictámenes técnicos' : 'Vista de dictámenes (solo lectura)'}
-              storageKey="ecg_dictamenes"
-              formFields={DICTAMEN_FORM_FIELDS}
-              detailFields={DICTAMEN_DETAIL_FIELDS}
-              statusEnum={STATUS_DICTAMEN}
-              tableColumns={DICTAMEN_TABLE_COLS}
-              emptyIcon={<ClipboardList size={38} />}
-              newLabel="Nuevo Dictamen"
-              readOnly={!isAdmin}
-            />
+            <div className="space-y-6">
+              {/* Sub-tabs selector for Dictaminación */}
+              <div className="flex border-b border-slate-200">
+                <button
+                  onClick={() => setDictaminacionSubTab('generales')}
+                  className={`px-5 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2
+                    ${dictaminacionSubTab === 'generales'
+                      ? 'border-ecg-rojo1 text-ecg-rojo1'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                  <ClipboardList size={16} />
+                  Dictámenes Generales
+                </button>
+                <button
+                  onClick={() => setDictaminacionSubTab('puesta_tierra')}
+                  className={`px-5 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2
+                    ${dictaminacionSubTab === 'puesta_tierra'
+                      ? 'border-ecg-rojo1 text-ecg-rojo1'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                  <Activity size={16} />
+                  Medición Puesta a Tierra (REG-ELC-01)
+                </button>
+              </div>
+
+              {/* Sub-tab views */}
+              {dictaminacionSubTab === 'generales' ? (
+                <ItemSection
+                  title="Dictaminación"
+                  subtitle={isAdmin ? 'Registro y seguimiento de dictámenes técnicos' : 'Vista de dictámenes (solo lectura)'}
+                  storageKey="ecg_dictamenes"
+                  formFields={DICTAMEN_FORM_FIELDS}
+                  detailFields={DICTAMEN_DETAIL_FIELDS}
+                  statusEnum={STATUS_DICTAMEN}
+                  tableColumns={DICTAMEN_TABLE_COLS}
+                  emptyIcon={<ClipboardList size={38} />}
+                  newLabel="Nuevo Dictamen"
+                  readOnly={!isAdmin}
+                />
+              ) : (
+                <ReportesPuestaTierraSection currentUser={currentUser} readOnly={!isAdmin} />
+              )}
+            </div>
           )}
           {activeTab === 'trabajos' && (
             <TrabajosSection currentUser={currentUser} />

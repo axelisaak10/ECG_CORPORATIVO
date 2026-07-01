@@ -253,6 +253,90 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ── REPORTES DE PUESTA A TIERRA ────────────────────────────────────────────
+  if (resource === 'reportes_puesta_tierra') {
+    if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
+
+    if (req.method === 'GET') {
+      const { data, error } = await supabase
+        .from('reportes_puesta_tierra')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) return res.status(500).json({ error: 'Error al obtener reportes de puesta a tierra.' });
+      return res.json({ reportes: data || [] });
+    }
+
+    if (req.method === 'POST') {
+      if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+      const fields = req.body;
+      const { data, error } = await supabase.from('reportes_puesta_tierra')
+        .insert([{
+          usuario_id: userId,
+          lugar_fecha: fields.lugar_fecha || null,
+          empresa_cliente: fields.empresa_cliente || null,
+          ubicacion_sitio: fields.ubicacion_sitio || null,
+          fecha_medicion: fields.fecha_medicion || null,
+          hora_ejecucion: fields.hora_ejecucion || null,
+          tecnico_responsable: fields.tecnico_responsable || null,
+          tipo_sistema: fields.tipo_sistema || null,
+          uso_sistema: fields.uso_sistema || null,
+          estado_clima: fields.estado_clima || null,
+          humedad_suelo: fields.humedad_suelo || null,
+          tipo_terreno: fields.tipo_terreno || null,
+          instrumento_marca_modelo: fields.instrumento_marca_modelo || null,
+          instrumento_serie: fields.instrumento_serie || null,
+          instrumento_calibracion: fields.instrumento_calibracion || null,
+          instrumento_metodo: fields.instrumento_metodo || null,
+          distancia_z: fields.distancia_z || null,
+          dist_52_y: fields.dist_52_y || null,
+          res_52: fields.res_52 || null,
+          dist_62_y: fields.dist_62_y || null,
+          res_62: fields.res_62 || null,
+          dist_72_y: fields.dist_72_y || null,
+          res_72: fields.res_72 || null,
+          resistencia_final_registrada: fields.resistencia_final_registrada || null,
+          variacion_terreno: fields.variacion_terreno || null,
+          terreno_estado: fields.terreno_estado || null,
+          limite_solicitado: fields.limite_solicitado || null,
+          conformidad_final: fields.conformidad_final || null,
+          observaciones: fields.observaciones || null,
+          nombre_firma_tecnico: fields.nombre_firma_tecnico || 'ING. JUAN ERASMO CUAYA GRANADOS',
+          nombre_firma_aprobador: fields.nombre_firma_aprobador || 'Representante de la Empresa / Cliente'
+        }])
+        .select().single();
+      if (error) return res.status(500).json({ error: 'Error al crear reporte de puesta a tierra.' });
+      return res.status(201).json({ reporte: data });
+    }
+
+    if (req.method === 'PUT' && id) {
+      if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+      const fields = req.body;
+      const update = {
+        updated_at: new Date().toISOString()
+      };
+      [
+        'lugar_fecha', 'empresa_cliente', 'ubicacion_sitio', 'fecha_medicion', 'hora_ejecucion',
+        'tecnico_responsable', 'tipo_sistema', 'uso_sistema', 'estado_clima', 'humedad_suelo',
+        'tipo_terreno', 'instrumento_marca_modelo', 'instrumento_serie', 'instrumento_calibracion',
+        'instrumento_metodo', 'distancia_z', 'dist_52_y', 'res_52', 'dist_62_y', 'res_62',
+        'dist_72_y', 'res_72', 'resistencia_final_registrada', 'variacion_terreno', 'terreno_estado',
+        'limite_solicitado', 'conformidad_final', 'observaciones', 'nombre_firma_tecnico', 'nombre_firma_aprobador'
+      ].forEach(k => { if (fields[k] !== undefined) update[k] = fields[k]; });
+
+      const { data, error } = await supabase.from('reportes_puesta_tierra')
+        .update(update).eq('id', id).select().single();
+      if (error) return res.status(500).json({ error: 'Error al actualizar reporte de puesta a tierra.' });
+      return res.json({ reporte: data });
+    }
+
+    if (req.method === 'DELETE' && id) {
+      if (nivel < 2) return res.status(403).json({ error: 'Se requiere admin.' });
+      const { error } = await supabase.from('reportes_puesta_tierra').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: 'Error al eliminar reporte de puesta a tierra.' });
+      return res.json({ message: 'Reporte de puesta a tierra eliminado.' });
+    }
+  }
+
   // ── GANTT PROYECTOS ────────────────────────────────────────────────────────
   if (resource === 'gantt-proyectos') {
     if (nivel < 1) return res.status(403).json({ error: 'Sin permiso.' });
