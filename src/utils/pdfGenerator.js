@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
  * This blocks any text selection, copying, or conversion to Word, while keeping printing/viewing perfect.
  * @param {Object} cot - Quotation data
  */
-export const generateCotizacionPDF = async (cot) => {
+export const generateCotizacionPDF = async (cot, isEditable = false) => {
   const fmt = (n) =>
     `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -431,6 +431,60 @@ export const generateCotizacionPDF = async (cot) => {
     pagesHTML += renderPageHTML(page2Content, 3);
     pagesHTML += renderPageHTML(page3Content, 4);
     pagesHTML += renderPageHTML(page4Content, 5);
+  }
+
+  if (isEditable) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cotización ${cot.folio || cot.id || 'S/N'}</title>
+          <style>
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .page {
+                box-shadow: none !important;
+                border: none !important;
+                float: none !important;
+                page-break-after: always;
+                page-break-inside: avoid;
+                margin: 0 !important;
+              }
+            }
+            body {
+              margin: 0;
+              background-color: #f3f4f6;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .page {
+              box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+              margin: 20px;
+              border: 1px solid #e5e7eb;
+            }
+          </style>
+        </head>
+        <body>
+          ${pagesHTML}
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 600);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    return;
   }
 
   // ── Append hidden container to DOM ────────────────────────────────────────
