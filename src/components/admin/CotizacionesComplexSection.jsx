@@ -384,16 +384,9 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
             <button
               onClick={() => generateCotizacionPDF(cot)}
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
-              title="Descargar PDF (Solo Lectura)"
+              title="Descargar PDF"
             >
               <Download size={14} /> PDF
-            </button>
-            <button
-              onClick={() => generateCotizacionPDF(cot, true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg text-xs font-bold transition-colors"
-              title="Descargar PDF (Editable)"
-            >
-              <Printer size={14} /> PDF Editable
             </button>
             <button
               onClick={() => generateCotizacionWord(cot)}
@@ -1185,8 +1178,7 @@ const CotizacionesListTab = ({ cotizaciones, loading, error, readOnly, onView, o
                     ) : (
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => onView(cot)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Ver detalle"><Eye size={14} /></button>
-                        <button onClick={() => generateCotizacionPDF(cot)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Descargar PDF (Solo Lectura)"><Download size={14} /></button>
-                        <button onClick={() => generateCotizacionPDF(cot, true)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" title="Descargar PDF (Editable)"><Printer size={14} /></button>
+                        <button onClick={() => generateCotizacionPDF(cot)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Descargar PDF"><Download size={14} /></button>
                         <button onClick={() => generateCotizacionWord(cot)} className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Descargar Word (Editable)"><FileText size={14} /></button>
                         {!readOnly && <>
                           <button onClick={() => onEdit(cot)} className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg" title="Editar"><Pencil size={14} /></button>
