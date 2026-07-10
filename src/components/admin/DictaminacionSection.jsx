@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { generateDictamenWord } from '../../utils/dictamenWordGenerator';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const uid = () => Math.random().toString(36).slice(2);
@@ -682,6 +683,15 @@ const DictaminacionSection = ({ readOnly = false }) => {
     }
   };
 
+  const handleGenerateWord = (dictamen) => {
+    try {
+      generateDictamenWord(dictamen);
+    } catch (err) {
+      console.error('Error generando Word:', err);
+      alert('Error al generar el archivo Word.');
+    }
+  };
+
   const counts = Object.fromEntries(
     Object.keys(STATUS_MAP).map(k => [k, items.filter(i => i.estado === k).length])
   );
@@ -815,6 +825,14 @@ const DictaminacionSection = ({ readOnly = false }) => {
                             ? <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
                             : <FileDown size={15} />
                           }
+                        </button>
+                        {/* Generar Word (Editable) */}
+                        <button
+                          onClick={() => handleGenerateWord(item)}
+                          title="Descargar Word (Editable)"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        >
+                          <FileText size={15} />
                         </button>
                         {/* Editar */}
                         {!readOnly && (
