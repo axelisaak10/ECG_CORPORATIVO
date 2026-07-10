@@ -538,6 +538,7 @@ const CotizacionForm = ({
   const [dias,    setDias]    = useState(initial?.dias    || 0);
   const [semanas, setSemanas] = useState(initial?.semanas || 0);
   const [meses,   setMeses]   = useState(initial?.meses   || 0);
+  const [porcentajeTiempo, setPorcentajeTiempo] = useState(initial?.porcentaje_tiempo ?? '');
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
   const [selArt,  setSelArt]  = useState('');
@@ -553,9 +554,11 @@ const CotizacionForm = ({
   const totalDias         = calcTotalDias(horas, dias, semanas, meses);
   const totalArticulos    = articulos.reduce((s, a) => s + a.precio * (1 + (a.margen || 0) / 100) * a.cantidad, 0);
   const totalHerramientas = herramientas.reduce((s, h) => s + (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100) * h.cantidad * totalDias, 0);
-  const totalTiempo       = Object.values(COSTOS_TIEMPO).reduce(
+  const totalTiempoBase   = Object.values(COSTOS_TIEMPO).reduce(
     (s, c) => s + c.hr * horas + c.dia * dias + c.semana * semanas + c.mes * meses, 0
   );
+  const pct = parseFloat(porcentajeTiempo) || 0;
+  const totalTiempo = totalTiempoBase * (1 + pct / 100);
   const total = totalArticulos + totalHerramientas + totalTiempo;
 
   // ── Filtered catalogs ──
@@ -634,7 +637,8 @@ const CotizacionForm = ({
         herramientas: herramientas.map(({ _id, ...rest }) => rest),
         empleados,
         horas, dias, semanas, meses,
-        totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo },
+        porcentaje_tiempo: pct || 0,
+        totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo, porcentaje_tiempo: pct },
         total,
       };
       await onSave(payload);
@@ -957,8 +961,37 @@ const CotizacionForm = ({
               );
             })}
           </div>
+
+          {/* Porcentaje adicional al tiempo */}
+          <div className="flex items-center gap-3 mb-3 bg-violet-50 rounded-xl px-4 py-3 border border-violet-100">
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-violet-500 uppercase tracking-wider mb-1">% Adicional al tiempo</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={porcentajeTiempo}
+                  onChange={e => setPorcentajeTiempo(e.target.value)}
+                  placeholder="0"
+                  className="w-20 text-center text-xl font-black border border-violet-300 rounded-xl px-2 py-1.5 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-white"
+                />
+                <span className="text-xl font-black text-violet-400">%</span>
+                {pct > 0 && (
+                  <span className="text-xs font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-lg">
+                    +{fmt(totalTiempoBase * pct / 100)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-violet-400 uppercase tracking-wider mb-1">Base</p>
+              <p className="text-sm font-black text-violet-500">{fmt(totalTiempoBase)}</p>
+            </div>
+          </div>
+
           <div className="bg-violet-50 rounded-xl px-4 py-3 flex justify-between items-center border border-violet-100">
-            <span className="text-sm font-bold text-violet-700">Total por tiempo</span>
+            <span className="text-sm font-bold text-violet-700">Total por tiempo{pct > 0 ? ` (+${pct}%)` : ''}</span>
             <span className="text-base font-black text-violet-700">{fmt(totalTiempo)}</span>
           </div>
         </SectionCard>

@@ -15,11 +15,28 @@ CREATE TABLE IF NOT EXISTS clientes (
 
 -- Catálogo de artículos
 CREATE TABLE IF NOT EXISTS articulos_catalogo (
-  id         UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre     TEXT          NOT NULL,
-  precio     NUMERIC(12,2) NOT NULL DEFAULT 0,
-  unidad     TEXT          DEFAULT 'pza',
-  created_at TIMESTAMPTZ   DEFAULT now()
+  id           UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo       TEXT,
+  nombre       TEXT          NOT NULL,
+  precio       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  unidad       TEXT          DEFAULT 'pza',
+  tabla_origen TEXT          DEFAULT 'articulos_catalogo',
+  created_at   TIMESTAMPTZ   DEFAULT now()
+);
+
+-- Agregar columnas si la tabla ya existe (migraciones seguras)
+ALTER TABLE articulos_catalogo ADD COLUMN IF NOT EXISTS codigo       TEXT;
+ALTER TABLE articulos_catalogo ADD COLUMN IF NOT EXISTS tabla_origen TEXT DEFAULT 'articulos_catalogo';
+
+-- Catálogo Obra Civil
+CREATE TABLE IF NOT EXISTS obra_civil (
+  id           UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo       TEXT,
+  nombre       TEXT          NOT NULL,
+  precio       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  unidad       TEXT          DEFAULT 'pza',
+  tabla_origen TEXT          DEFAULT 'obra_civil',
+  created_at   TIMESTAMPTZ   DEFAULT now()
 );
 
 -- Catálogo de herramientas

@@ -65,8 +65,8 @@ export const generateCotizacionPDF = async (cot) => {
 
       tableBody.push({
         type: 'item',
-        item: `${catLetterLow}. ${itemIdx + 1}`,
-        desc: a.nombre + (a.codigo ? ` [${a.codigo}]` : ''),
+        item: a.codigo ? a.codigo.toUpperCase() : `${catLetterLow}. ${itemIdx + 1}`,
+        desc: a.nombre,
         cant: hasQty ? String(a.cantidad) : '',
         unidad: hasQty ? (a.unidad || 'pza') : '',
         costoUnit: hasQty ? fmt(precioFinal) : '',
@@ -226,19 +226,19 @@ export const generateCotizacionPDF = async (cot) => {
     
     <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
       <thead>
-        <tr style="background-color: #cc0000; color: #ffffff; font-weight: bold;">
+        <tr style="background-color: #800020; color: #ffffff; font-weight: bold;">
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">ÍTEM</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: left;">DESCRIPCIÓN</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: center;">DESCRIPCIÓN</th>
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">CANT</th>
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 10%; text-align: center;">UNIDAD</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">P. UNITARIO</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">IMPORTE</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: center;">P. UNITARIO</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: center;">IMPORTE</th>
         </tr>
       </thead>
       <tbody>
         ${page1Rows.map(renderRowHTML).join('')}
         ${page1bRows.length === 0 ? `
-          <tr style="font-weight: bold; background-color: #fff5f5; color: #cc0000;">
+          <tr style="font-weight: bold; background-color: #fff5f5; color: #800020;">
             <td></td>
             <td style="text-align: right; padding: 5px;" colspan="4">TOTAL DE MATERIALES Y MANO DE OBRA</td>
             <td style="text-align: right; padding: 5px;">${fmt(grandTotal || cot.total || 0)}</td>
@@ -258,18 +258,18 @@ export const generateCotizacionPDF = async (cot) => {
   const page1bContent = `
     <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
       <thead>
-        <tr style="background-color: #cc0000; color: #ffffff; font-weight: bold;">
+        <tr style="background-color: #800020; color: #ffffff; font-weight: bold;">
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">ÍTEM</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: left;">DESCRIPCIÓN</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 48%; text-align: center;">DESCRIPCIÓN</th>
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 8%; text-align: center;">CANT</th>
           <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 10%; text-align: center;">UNIDAD</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">P. UNITARIO</th>
-          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: right;">IMPORTE</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: center;">P. UNITARIO</th>
+          <th style="border: 0.5px solid #d3d3d3; padding: 4px; width: 13%; text-align: center;">IMPORTE</th>
         </tr>
       </thead>
       <tbody>
         ${page1bRows.map(renderRowHTML).join('')}
-        <tr style="font-weight: bold; background-color: #fff5f5; color: #cc0000;">
+        <tr style="font-weight: bold; background-color: #fff5f5; color: #800020;">
           <td></td>
           <td style="text-align: right; padding: 5px;" colspan="4">TOTAL DE MATERIALES Y MANO DE OBRA</td>
           <td style="text-align: right; padding: 5px;">${fmt(grandTotal || cot.total || 0)}</td>
@@ -291,14 +291,14 @@ export const generateCotizacionPDF = async (cot) => {
       <div style="border-bottom: 2px solid #000000; width: 420px; margin: 4px auto 0 auto;"></div>
     </div>
     
-    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+    <div style="color: #800020; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #800020; padding-bottom: 2px;">
       TIEMPOS DE ENTREGA:
     </div>
     <ul style="margin: 0; padding-left: 15px; margin-bottom: 12px; font-size: 8.5pt; color: #333333;">
       <li style="list-style-type: circle; margin-bottom: 4px; text-align: justify;">${deliveryTimeText}</li>
     </ul>
     
-    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+    <div style="color: #800020; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #800020; padding-bottom: 2px;">
       CONDICIONES COMERCIALES:
     </div>
     <ul style="margin: 0; padding-left: 15px; margin-bottom: 12px; font-size: 8.5pt; color: #333333; line-height: 1.35;">
@@ -312,7 +312,7 @@ export const generateCotizacionPDF = async (cot) => {
       <li style="list-style-type: circle; margin-bottom: 3px; text-align: justify;">Es obligación del cliente revisar y aprobar la presente cotización, si existiera algún faltante o diferencia de acuerdo con sus necesidades será necesaria una nueva cotización.</li>
     </ul>
     
-    <div style="color: #cc0000; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+    <div style="color: #800020; font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #800020; padding-bottom: 2px;">
       GARANTÍAS:
     </div>
     <ul style="margin: 0; padding-left: 15px; margin-bottom: 15px; font-size: 8.5pt; color: #333333;">
@@ -331,10 +331,10 @@ export const generateCotizacionPDF = async (cot) => {
       <tr>
         <td style="text-align: center;">
           <div style="border-top: 1px solid #000000; width: 250px; margin: 0 auto; margin-bottom: 6px;"></div>
-          <div style="font-size: 9.5pt; font-weight: bold; color: #cc0000;">ING. JUAN ERASMO CUAYA GRANADOS</div>
+          <div style="font-size: 9.5pt; font-weight: bold; color: #800020;">ING. JUAN ERASMO CUAYA GRANADOS</div>
           <div style="font-size: 8.5pt; font-weight: bold; color: #333333; margin-top: 2px;">CED. PROF. 8101909</div>
           <div style="font-size: 8.5pt; font-weight: bold; color: #333333; margin-top: 2px; margin-bottom: 8px;">REPSE 576749</div>
-          <div style="font-size: 9pt; font-weight: bold; color: #cc0000; font-style: italic;">NUESTRO ÉXITO DEPENDE DEL ÉXITO DE NUESTROS CLIENTES</div>
+          <div style="font-size: 9pt; font-weight: bold; color: #800020; font-style: italic;">NUESTRO ÉXITO DEPENDE DEL ÉXITO DE NUESTROS CLIENTES</div>
         </td>
       </tr>
     </table>
@@ -370,7 +370,7 @@ export const generateCotizacionPDF = async (cot) => {
       <p style="margin: 0 0 6px 0;"><b>DEVOLUCIONES.</b> ${termsContent2[8].text}</p>
     </div>
     
-    <div style="color: #cc0000; font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #cc0000; padding-bottom: 2px;">
+    <div style="color: #800020; font-size: 9pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 0.5px solid #800020; padding-bottom: 2px;">
       POLÍTICA DE CAMBIOS Y DEVOLUCIONES
     </div>
     <ul style="margin: 0; padding-left: 15px; font-size: 7.6pt; color: #333333; line-height: 1.3;">
@@ -395,8 +395,8 @@ export const generateCotizacionPDF = async (cot) => {
             </td>
             <td style="width: 50%; text-align: right; vertical-align: top;">
               <div style="font-size: 8pt; color: #000000;">EL MARQUÉS, QRO A ${fmtDate(cot.created_at)}</div>
-              <div style="font-weight: bold; font-size: 10.5pt; color: #cc0000; margin-top: 2px;">COTIZACION ${cot.folio || cot.id || 'S/N'}</div>
-              ${cot.titulo ? `<div style="font-weight: bold; font-size: 9pt; color: #cc0000;">${cot.titulo.toUpperCase()}</div>` : ''}
+              <div style="font-weight: bold; font-size: 10.5pt; color: #800020; margin-top: 2px;">COTIZACION ${cot.folio || cot.id || 'S/N'}</div>
+              ${cot.titulo ? `<div style="font-weight: bold; font-size: 9pt; color: #800020;">${cot.titulo.toUpperCase()}</div>` : ''}
               ${cot.descripcion ? `<div style="font-size: 7.5pt; color: #555555; max-width: 320px; display: inline-block; margin-top: 2px;">${cot.descripcion}</div>` : ''}
             </td>
           </tr>
