@@ -64,6 +64,31 @@ const ErrorMsg = ({ msg }) => (
   </div>
 );
 
+// ── Section card wrapper (definido a nivel de módulo para evitar re-mounts en cada render) ──
+const SectionCard = ({ icon, title, accent = 'blue', badge, children }) => {
+  const accents = {
+    blue:   { icon: 'text-blue-500',   ring: 'ring-blue-100',  dot: 'bg-blue-500'  },
+    amber:  { icon: 'text-amber-500',  ring: 'ring-amber-100', dot: 'bg-amber-500' },
+    green:  { icon: 'text-green-500',  ring: 'ring-green-100', dot: 'bg-green-500' },
+    violet: { icon: 'text-violet-500', ring: 'ring-violet-100',dot: 'bg-violet-500'},
+  };
+  const a = accents[accent] || accents.blue;
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+        <span className={`${a.icon} flex-shrink-0`}>{icon}</span>
+        <span className="font-extrabold text-slate-800 text-sm flex-1">{title}</span>
+        {badge && (
+          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white ${a.dot}`}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+};
+
 // ── Modal de planificación Gantt al aprobar ───────────────────────────────────
 const GanttPlanModal = ({ cot, trabajadores, onClose }) => {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -642,30 +667,6 @@ const CotizacionForm = ({
     });
   };
 
-  // ── Section card wrapper ──
-  const SectionCard = ({ icon, title, accent = 'blue', badge, children }) => {
-    const accents = {
-      blue:   { icon: 'text-blue-500',   ring: 'ring-blue-100',  dot: 'bg-blue-500'  },
-      amber:  { icon: 'text-amber-500',  ring: 'ring-amber-100', dot: 'bg-amber-500' },
-      green:  { icon: 'text-green-500',  ring: 'ring-green-100', dot: 'bg-green-500' },
-      violet: { icon: 'text-violet-500', ring: 'ring-violet-100',dot: 'bg-violet-500'},
-    };
-    const a = accents[accent] || accents.blue;
-    return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-          <span className={`${a.icon} flex-shrink-0`}>{icon}</span>
-          <span className="font-extrabold text-slate-800 text-sm flex-1">{title}</span>
-          {badge && (
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full text-white ${a.dot}`}>
-              {badge}
-            </span>
-          )}
-        </div>
-        <div className="p-5">{children}</div>
-      </div>
-    );
-  };
 
   return (
     <div className="flex gap-6 items-start">

@@ -20,6 +20,7 @@ import EncuestasSection from '../admin/EncuestasSection';
 import AnunciosSection from '../admin/AnunciosSection';
 import TutorialesSection from '../admin/TutorialesSection';
 import ReportesPuestaTierraSection from '../admin/ReportesPuestaTierraSection';
+import DictaminacionSection from '../admin/DictaminacionSection';
 
 /* ─── Status maps ─── */
 
@@ -1615,18 +1616,7 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
 
               {/* Sub-tab views */}
               {dictaminacionSubTab === 'generales' ? (
-                <ItemSection
-                  title="Dictaminación"
-                  subtitle={isAdmin ? 'Registro y seguimiento de dictámenes técnicos' : 'Vista de dictámenes (solo lectura)'}
-                  storageKey="ecg_dictamenes"
-                  formFields={DICTAMEN_FORM_FIELDS}
-                  detailFields={DICTAMEN_DETAIL_FIELDS}
-                  statusEnum={STATUS_DICTAMEN}
-                  tableColumns={DICTAMEN_TABLE_COLS}
-                  emptyIcon={<ClipboardList size={38} />}
-                  newLabel="Nuevo Dictamen"
-                  readOnly={!isAdmin}
-                />
+                <DictaminacionSection readOnly={!isAdmin} />
               ) : (
                 <ReportesPuestaTierraSection currentUser={currentUser} readOnly={!isAdmin} />
               )}
