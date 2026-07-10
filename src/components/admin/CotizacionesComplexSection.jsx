@@ -1486,6 +1486,7 @@ const CotizacionesComplexSection = ({ currentUser, readOnly = false }) => {
                     { value: 'cajas_y_tableros', label: 'Cajas y Tableros' },
                     { value: 'sistemas_tierra_y_protecciones', label: 'Sistemas Tierra' },
                     { value: 'herramientas_y_estructuras', label: 'Herramientas y Estructuras' },
+                    { value: 'obra_civil', label: 'Obra Civil' },
                   ]
                 }]),
                 { key: 'codigo', label: 'Código', placeholder: 'Ej. tpd13, cxlp01...' },
