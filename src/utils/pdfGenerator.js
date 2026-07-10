@@ -440,7 +440,16 @@ export const generateCotizacionPDF = async (cot, isEditable = false) => {
         <head>
           <title>Cotización ${cot.folio || cot.id || 'S/N'}</title>
           <style>
+            @page {
+              size: letter;
+              margin: 0;
+            }
             @media print {
+              html, body {
+                width: 215.9mm;
+                height: 279.4mm;
+                background-color: #ffffff !important;
+              }
               body {
                 margin: 0;
                 padding: 0;
@@ -454,6 +463,9 @@ export const generateCotizacionPDF = async (cot, isEditable = false) => {
                 page-break-after: always;
                 page-break-inside: avoid;
                 margin: 0 !important;
+                width: 215.9mm !important;
+                height: 279.4mm !important;
+                box-sizing: border-box !important;
               }
             }
             body {
