@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const { verifyToken }  = require('../lib/jwt');
+const { sendTareaAsignadaEmail } = require('../lib/mailer');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,6 +52,47 @@ module.exports = async function handler(req, res) {
       .single();
 
     if (error) return res.status(500).json({ error: 'Error al actualizar tarea.' });
+
+    // ── Notificar si se asignó o reasignó a alguien nuevo ─────────────────────
+    const nuevoAsignado = updateData.asignado_a;
+    if (nuevoAsignado) {
+      try {
+        const { data: usuarioAsignado } = await supabase
+          .from('Usuarios')
+          .select('"Correo", "Nombre Completo"')
+          .eq('id', nuevoAsignado)
+          .maybeSingle();
+
+        // Obtener nombre de quien actualizó la tarea
+        const { data: editor } = await supabase
+          .from('Usuarios')
+          .select('"Nombre Completo"')
+          .eq('id', payload.sub)
+          .maybeSingle();
+
+        if (usuarioAsignado?.['Correo']) {
+          const nombre = Array.isArray(usuarioAsignado['Nombre Completo'])
+            ? usuarioAsignado['Nombre Completo'][0]
+            : (usuarioAsignado['Nombre Completo'] || 'Usuario');
+          const nombreEditor = Array.isArray(editor?.['Nombre Completo'])
+            ? editor['Nombre Completo'][0]
+            : (editor?.['Nombre Completo'] || null);
+
+          await sendTareaAsignadaEmail({
+            toEmail:     usuarioAsignado['Correo'],
+            toName:      nombre,
+            tareaTitle:  data.titulo,
+            tareaDesc:   data.descripcion || '',
+            prioridad:   data.prioridad,
+            fechaLimite: data.fecha_limite,
+            asignadoPor: nombreEditor,
+          });
+        }
+      } catch (mailErr) {
+        console.error('Error al enviar correo de reasignación:', mailErr);
+      }
+    }
+
     return res.json({ tarea: data });
   }
 

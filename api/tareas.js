@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { randomUUID }   = require('crypto');
 const { verifyToken }  = require('./lib/jwt');
+const { sendTareaAsignadaEmail } = require('./lib/mailer');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -55,6 +56,48 @@ module.exports = async function handler(req, res) {
       .single();
 
     if (error) { console.error('Supabase error:', error); return res.status(500).json({ error: error.message || 'Error al crear tarea.' }); }
+
+    // ── Notificar por correo al usuario asignado ──────────────────────────────
+    if (data.asignado_a) {
+      try {
+        // Obtener datos del usuario asignado
+        const { data: usuarioAsignado } = await supabase
+          .from('Usuarios')
+          .select('"Correo", "Nombre Completo"')
+          .eq('id', data.asignado_a)
+          .maybeSingle();
+
+        // Obtener nombre de quien creó la tarea
+        const { data: creador } = await supabase
+          .from('Usuarios')
+          .select('"Nombre Completo"')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (usuarioAsignado?.['Correo']) {
+          const nombre = Array.isArray(usuarioAsignado['Nombre Completo'])
+            ? usuarioAsignado['Nombre Completo'][0]
+            : (usuarioAsignado['Nombre Completo'] || 'Usuario');
+          const nombreCreador = Array.isArray(creador?.['Nombre Completo'])
+            ? creador['Nombre Completo'][0]
+            : (creador?.['Nombre Completo'] || null);
+
+          await sendTareaAsignadaEmail({
+            toEmail:     usuarioAsignado['Correo'],
+            toName:      nombre,
+            tareaTitle:  data.titulo,
+            tareaDesc:   data.descripcion || '',
+            prioridad:   data.prioridad,
+            fechaLimite: data.fecha_limite,
+            asignadoPor: nombreCreador,
+          });
+        }
+      } catch (mailErr) {
+        console.error('Error al enviar correo de tarea:', mailErr);
+        // No bloqueamos la respuesta si falla el correo
+      }
+    }
+
     return res.status(201).json({ tarea: data });
   }
 
