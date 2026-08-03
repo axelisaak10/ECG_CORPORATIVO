@@ -143,61 +143,67 @@ module.exports = async function handler(req, res) {
       .insert([{ usuario_id: user.id, token, expires_at: expiresAt }]);
     if (insertErr) return res.status(500).json({ error: 'Error al generar el enlace de recuperación.' });
 
-    // Enviar email con Resend
-    if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'Servicio de email no configurado.' });
+    // Enviar email con Gmail via Nodemailer
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD)
+      return res.status(500).json({ error: 'Servicio de email no configurado.' });
 
-    const { Resend } = require('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
-    const userName  = Array.isArray(user['Nombre Completo']) ? user['Nombre Completo'][0] : (user['Nombre Completo'] || 'Usuario');
-    const fromAddr  = process.env.RESEND_FROM || 'onboarding@resend.dev';
-
-    const { error: emailErr } = await resend.emails.send({
-      from: `ECG Corporativo <${fromAddr}>`,
-      to:   email,
-      subject: 'Recupera tu contraseña – ECG Corporativo',
-      html: `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
-            <tr><td align="center">
-              <table width="100%" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-                <!-- Header -->
-                <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%);padding:32px 40px;text-align:center;">
-                  <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.2em;color:#93c5fd;text-transform:uppercase;">Portal Empresarial</p>
-                  <h1 style="margin:0;font-size:24px;font-weight:900;color:#ffffff;">ECG <span style="font-weight:300;color:#93c5fd;">Corporativo</span></h1>
-                </td></tr>
-                <!-- Body -->
-                <tr><td style="padding:40px;">
-                  <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#0f172a;">Recuperar contraseña</h2>
-                  <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">Hola <strong>${userName}</strong>, recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
-                  <div style="text-align:center;margin:28px 0;">
-                    <a href="${resetLink}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;">Restablecer contraseña</a>
-                  </div>
-                  <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                  <p style="margin:0 0 24px;font-size:12px;color:#3b82f6;word-break:break-all;">${resetLink}</p>
-                  <div style="border-top:1px solid #e2e8f0;padding-top:20px;">
-                    <p style="margin:0;font-size:12px;color:#94a3b8;">⏱ Este enlace expira en <strong>1 hora</strong> y solo puede usarse una vez.<br>Si no solicitaste este cambio, ignora este correo.</p>
-                  </div>
-                </td></tr>
-                <!-- Footer -->
-                <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;">
-                  <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} ECG Corporativo · Portal Empresarial</p>
-                </td></tr>
-              </table>
-            </td></tr>
-          </table>
-        </body>
-        </html>
-      `,
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
     });
 
-    if (emailErr) {
-      console.error('Resend error:', emailErr);
+    const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://ecgcorporativo.com').replace(/\/$/, '');
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+    const userName  = Array.isArray(user['Nombre Completo']) ? user['Nombre Completo'][0] : (user['Nombre Completo'] || 'Usuario');
+
+    try {
+      await transporter.sendMail({
+        from: `"ECG Corporativo" <${process.env.GMAIL_USER}>`,
+        to:   email,
+        subject: 'Recupera tu contraseña – ECG Corporativo',
+        html: `
+          <!DOCTYPE html>
+          <html lang="es">
+          <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+          <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+              <tr><td align="center">
+                <table width="100%" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                  <!-- Header -->
+                  <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%);padding:32px 40px;text-align:center;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.2em;color:#93c5fd;text-transform:uppercase;">Portal Empresarial</p>
+                    <h1 style="margin:0;font-size:24px;font-weight:900;color:#ffffff;">ECG <span style="font-weight:300;color:#93c5fd;">Corporativo</span></h1>
+                  </td></tr>
+                  <!-- Body -->
+                  <tr><td style="padding:40px;">
+                    <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#0f172a;">Recuperar contraseña</h2>
+                    <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">Hola <strong>${userName}</strong>, recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
+                    <div style="text-align:center;margin:28px 0;">
+                      <a href="${resetLink}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;">Restablecer contraseña</a>
+                    </div>
+                    <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                    <p style="margin:0 0 24px;font-size:12px;color:#3b82f6;word-break:break-all;">${resetLink}</p>
+                    <div style="border-top:1px solid #e2e8f0;padding-top:20px;">
+                      <p style="margin:0;font-size:12px;color:#94a3b8;">⏱ Este enlace expira en <strong>1 hora</strong> y solo puede usarse una vez.<br>Si no solicitaste este cambio, ignora este correo.</p>
+                    </div>
+                  </td></tr>
+                  <!-- Footer -->
+                  <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;">
+                    <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} ECG Corporativo · ecgcorporativo.com</p>
+                  </td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </body>
+          </html>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('Gmail error:', emailErr);
       return res.status(500).json({ error: 'Error al enviar el correo. Intenta de nuevo más tarde.' });
     }
 
