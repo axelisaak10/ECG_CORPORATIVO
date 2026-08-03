@@ -116,20 +116,124 @@ module.exports = async function handler(req, res) {
     return res.status(201).json({ message: 'Cuenta creada exitosamente.' });
   }
 
+  // ── FORGOT-PASSWORD ───────────────────────────────────────────────────────
+  if (action === 'forgot-password') {
+    if (req.method !== 'POST') return res.status(405).end();
+    const email = req.body?.email?.trim();
+    if (!email) return res.status(400).json({ error: 'Correo requerido.' });
+
+    // Respuesta genérica para no revelar si el correo existe (seguridad)
+    const genericMsg = { message: 'Si existe una cuenta con ese correo, recibirás un enlace en breve.' };
+
+    const { data: user } = await supabase
+      .from('Usuarios').select('id, "Nombre Completo"')
+      .eq('Correo', email).is('deleted_at', null).maybeSingle();
+    if (!user) return res.json(genericMsg);
+
+    // Generar token único
+    const token     = randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hora
+
+    // Guardar token en BD (invalidar tokens anteriores del mismo usuario)
+    await supabase.from('password_reset_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('usuario_id', user.id).is('used_at', null);
+
+    const { error: insertErr } = await supabase.from('password_reset_tokens')
+      .insert([{ usuario_id: user.id, token, expires_at: expiresAt }]);
+    if (insertErr) return res.status(500).json({ error: 'Error al generar el enlace de recuperación.' });
+
+    // Enviar email con Resend
+    if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'Servicio de email no configurado.' });
+
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+    const userName  = Array.isArray(user['Nombre Completo']) ? user['Nombre Completo'][0] : (user['Nombre Completo'] || 'Usuario');
+    const fromAddr  = process.env.RESEND_FROM || 'onboarding@resend.dev';
+
+    const { error: emailErr } = await resend.emails.send({
+      from: `ECG Corporativo <${fromAddr}>`,
+      to:   email,
+      subject: 'Recupera tu contraseña – ECG Corporativo',
+      html: `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+        <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+            <tr><td align="center">
+              <table width="100%" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                <!-- Header -->
+                <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%);padding:32px 40px;text-align:center;">
+                  <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.2em;color:#93c5fd;text-transform:uppercase;">Portal Empresarial</p>
+                  <h1 style="margin:0;font-size:24px;font-weight:900;color:#ffffff;">ECG <span style="font-weight:300;color:#93c5fd;">Corporativo</span></h1>
+                </td></tr>
+                <!-- Body -->
+                <tr><td style="padding:40px;">
+                  <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#0f172a;">Recuperar contraseña</h2>
+                  <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">Hola <strong>${userName}</strong>, recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
+                  <div style="text-align:center;margin:28px 0;">
+                    <a href="${resetLink}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;">Restablecer contraseña</a>
+                  </div>
+                  <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                  <p style="margin:0 0 24px;font-size:12px;color:#3b82f6;word-break:break-all;">${resetLink}</p>
+                  <div style="border-top:1px solid #e2e8f0;padding-top:20px;">
+                    <p style="margin:0;font-size:12px;color:#94a3b8;">⏱ Este enlace expira en <strong>1 hora</strong> y solo puede usarse una vez.<br>Si no solicitaste este cambio, ignora este correo.</p>
+                  </div>
+                </td></tr>
+                <!-- Footer -->
+                <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;">
+                  <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} ECG Corporativo · Portal Empresarial</p>
+                </td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+
+    if (emailErr) {
+      console.error('Resend error:', emailErr);
+      return res.status(500).json({ error: 'Error al enviar el correo. Intenta de nuevo más tarde.' });
+    }
+
+    return res.json(genericMsg);
+  }
+
   // ── RESET-PASSWORD ────────────────────────────────────────────────────────
   if (action === 'reset-password') {
     if (req.method !== 'POST') return res.status(405).end();
-    const email       = req.body?.email?.trim();
+    const token       = req.body?.token?.trim();
     const newPassword = req.body?.newPassword?.trim();
-    if (!email || !newPassword) return res.status(400).json({ error: 'Correo y nueva contraseña requeridos.' });
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token y nueva contraseña requeridos.' });
     if (newPassword.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
 
-    const { data: user } = await supabase.from('Usuarios').select('id').eq('Correo', email).maybeSingle();
-    if (!user) return res.status(404).json({ error: 'No existe una cuenta con ese correo.' });
+    // Validar token: debe existir, no haber sido usado y no estar expirado
+    const { data: resetRecord } = await supabase
+      .from('password_reset_tokens')
+      .select('id, usuario_id')
+      .eq('token', token)
+      .is('used_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
 
-    const hash    = await bcrypt.hash(newPassword, 12);
-    const { error } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('Correo', email);
-    if (error) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+    if (!resetRecord) return res.status(400).json({ error: 'El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.' });
+
+    // Actualizar contraseña
+    const hash = await bcrypt.hash(newPassword, 12);
+    const { error: updateErr } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('id', resetRecord.usuario_id);
+    if (updateErr) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+
+    // Marcar token como usado (un solo uso)
+    await supabase.from('password_reset_tokens').update({ used_at: new Date().toISOString() }).eq('id', resetRecord.id);
+
+    // Cerrar todas las sesiones activas del usuario por seguridad
+    await supabase.from('sesiones').delete().eq('usuario_id', resetRecord.usuario_id);
+
     return res.json({ message: 'Contraseña actualizada correctamente.' });
   }
 
