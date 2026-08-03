@@ -1,10 +1,11 @@
 require('dotenv').config();
-const express    = require('express');
-const cors       = require('cors');
+const express      = require('express');
+const cors         = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const { randomUUID }   = require('crypto');
-const bcrypt     = require('bcryptjs');
-const jwt        = require('jsonwebtoken');
+const { randomUUID, randomBytes } = require('crypto');
+const bcrypt       = require('bcryptjs');
+const jwt          = require('jsonwebtoken');
+const nodemailer   = require('nodemailer');
 
 const app = express();
 app.use(express.json());
@@ -23,6 +24,17 @@ function getSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET no configurado.');
   return secret;
+}
+
+// ── Transporter de Gmail ──────────────────────────────────────────────────────
+function createMailTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
 }
 
 function signToken({ userId, nivel, jti }) {
@@ -224,25 +236,141 @@ app.post('/api/auth/register', async (req, res) => {
   return res.status(201).json({ message: 'Cuenta creada exitosamente.' });
 });
 
+// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+// Recibe { email } → genera token seguro → envía email con enlace de recuperación
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const email = req.body.email?.trim()?.toLowerCase();
+  if (!email) return res.status(400).json({ error: 'El correo es requerido.' });
+
+  // Siempre respondemos 200 para no revelar si el correo existe
+  const genericMsg = { message: 'Si ese correo está registrado, recibirás un enlace en breve.' };
+
+  try {
+    const { data: user } = await supabase
+      .from('Usuarios')
+      .select('id, "Nombre Completo"')
+      .eq('Correo', email)
+      .maybeSingle();
+
+    if (!user) return res.json(genericMsg);
+
+    // Invalida tokens anteriores del mismo usuario
+    await supabase.from('password_resets').update({ used: true }).eq('usuario_id', user.id).eq('used', false);
+
+    // Genera token seguro de 64 caracteres hex
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hora
+
+    const { error: insertError } = await supabase.from('password_resets').insert([{
+      usuario_id: user.id,
+      token,
+      expires_at: expiresAt,
+      used: false,
+    }]);
+
+    if (insertError) {
+      console.error('[forgot-password] insert error:', insertError.message);
+      return res.json(genericMsg);
+    }
+
+    // Construir enlace
+    const appUrl = process.env.APP_URL || 'http://localhost:5173';
+    const resetLink = `${appUrl}/reset-password?token=${token}`;
+
+    // Nombre del usuario
+    const rawName = user['Nombre Completo'];
+    const nombre = Array.isArray(rawName) ? rawName[0] : (rawName || 'Usuario');
+
+    // Enviar correo vía Gmail
+    const transporter = createMailTransporter();
+    await transporter.sendMail({
+      from: `"ECG Corporativo" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Recuperación de contraseña — ECG Corporativo',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1e293b;">
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 32px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 900;">ECG <span style="color: #93c5fd; font-weight: 300;">Corporativo</span></h1>
+            <p style="color: #93c5fd; margin: 6px 0 0; font-size: 13px;">Portal Empresarial</p>
+          </div>
+          <div style="background: #ffffff; padding: 32px; border: 1px solid #e2e8f0; border-top: none;">
+            <h2 style="margin: 0 0 8px; font-size: 18px;">Hola, ${nombre}</h2>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+              Recibimos una solicitud para restablecer la contraseña de tu cuenta.<br />
+              Si no fuiste tú, puedes ignorar este correo.
+            </p>
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${resetLink}"
+                 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 14px 32px;
+                        border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;
+                        display: inline-block; letter-spacing: 0.3px;">
+                Restablecer contraseña
+              </a>
+            </div>
+            <p style="color: #94a3b8; font-size: 12px; margin: 24px 0 0; text-align: center;">
+              Este enlace expira en <strong>1 hora</strong>. Solo puede usarse una vez.
+            </p>
+            <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+            <p style="color: #cbd5e1; font-size: 11px; text-align: center; margin: 0;">
+              Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
+              <span style="color: #3b82f6; word-break: break-all;">${resetLink}</span>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log(`[forgot-password] Email enviado a: ${email}`);
+  } catch (err) {
+    console.error('[forgot-password] Error:', err.message);
+    // No revelamos el error al cliente
+  }
+
+  return res.json(genericMsg);
+});
+
 // ── POST /api/auth/reset-password ─────────────────────────────────────────────
+// Recibe { token, newPassword } → valida token → actualiza contraseña
 app.post('/api/auth/reset-password', async (req, res) => {
-  const email       = req.body.email?.trim();
-  const newPassword = req.body.newPassword?.trim();
+  const { token, newPassword } = req.body;
 
-  if (!email || !newPassword)
-    return res.status(400).json({ error: 'Correo y nueva contraseña requeridos.' });
-  if (newPassword.length < 6)
-    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  if (!token || !newPassword)
+    return res.status(400).json({ error: 'Token y nueva contraseña son requeridos.' });
+  if (newPassword.length < 8)
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
 
-  const { data: user } = await supabase
-    .from('Usuarios').select('id').eq('Correo', email).maybeSingle();
-  if (!user)
-    return res.status(404).json({ error: 'No existe una cuenta con ese correo.' });
+  // Buscar token válido (no usado y no expirado)
+  const { data: resetRecord, error: findError } = await supabase
+    .from('password_resets')
+    .select('id, usuario_id, expires_at, used')
+    .eq('token', token)
+    .maybeSingle();
 
+  if (findError || !resetRecord)
+    return res.status(400).json({ error: 'El enlace de recuperación es inválido o ha expirado.' });
+  if (resetRecord.used)
+    return res.status(400).json({ error: 'Este enlace ya fue utilizado. Solicita uno nuevo.' });
+  if (new Date(resetRecord.expires_at) < new Date())
+    return res.status(400).json({ error: 'El enlace ha expirado. Solicita uno nuevo.' });
+
+  // Actualizar contraseña
   const hash = await bcrypt.hash(newPassword, 12);
-  const { error } = await supabase.from('Usuarios').update({ 'Contraseña': hash }).eq('Correo', email);
-  if (error) return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
-  return res.json({ message: 'Contraseña actualizada correctamente.' });
+  const { error: updateError } = await supabase
+    .from('Usuarios')
+    .update({ 'Contraseña': hash })
+    .eq('id', resetRecord.usuario_id);
+
+  if (updateError)
+    return res.status(500).json({ error: 'Error al actualizar la contraseña.' });
+
+  // Marcar token como usado
+  await supabase.from('password_resets').update({ used: true }).eq('id', resetRecord.id);
+
+  // Cerrar todas las sesiones activas del usuario por seguridad
+  await supabase.from('sesiones').delete().eq('usuario_id', resetRecord.usuario_id);
+
+  console.log(`[reset-password] Contraseña actualizada para usuario_id: ${resetRecord.usuario_id}`);
+  return res.json({ message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' });
 });
 
 // ── GET /api/users ────────────────────────────────────────────────────────────

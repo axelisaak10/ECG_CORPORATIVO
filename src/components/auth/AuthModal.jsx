@@ -4,7 +4,7 @@ import {
   Mail, Lock, User, KeyRound, ArrowLeft, Zap, Shield, Globe,
   Phone, Building2, CreditCard, Check,
 } from 'lucide-react';
-import { apiLogin, apiRegister, apiResetPassword } from '../../utils/api';
+import { apiLogin, apiRegister, apiForgotPassword } from '../../utils/api';
 
 // ── Validaciones ───────────────────────────────────────────────────────────
 const RFC_RE  = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/i;
@@ -96,11 +96,10 @@ const AuthModal = ({ onClose, onLogin }) => {
   const regRules    = useMemo(() => pwdRules(regForm.password),    [regForm.password]);
   const rfcStatus   = useMemo(() => validateRfcCurp(regForm.rfc_curp), [regForm.rfc_curp]);
 
-  const [recForm, setRecForm]       = useState({ email: '', password: '', confirm: '' });
+  const [recForm, setRecForm]       = useState({ email: '' });
   const [recError, setRecError]     = useState('');
   const [recSuccess, setRecSuccess] = useState(false);
   const [recLoading, setRecLoading] = useState(false);
-  const [showRecPwd, setShowRecPwd] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -122,11 +121,9 @@ const AuthModal = ({ onClose, onLogin }) => {
   const handleRecover = async (e) => {
     e.preventDefault();
     setRecError('');
-    if (recForm.password.length < 6)         { setRecError('La contraseña debe tener al menos 6 caracteres.'); return; }
-    if (recForm.password !== recForm.confirm) { setRecError('Las contraseñas no coinciden.'); return; }
     setRecLoading(true);
     try {
-      await apiResetPassword(recForm.email, recForm.password);
+      await apiForgotPassword(recForm.email);
       setRecSuccess(true);
     } catch (err) {
       setRecError(err.message);
@@ -344,7 +341,7 @@ const AuthModal = ({ onClose, onLogin }) => {
 
                   <button
                     type="button"
-                    onClick={() => { setTab('recover'); setLoginError(''); setRecError(''); setRecSuccess(false); setRecForm({ email: '', password: '', confirm: '' }); }}
+                    onClick={() => { setTab('recover'); setLoginError(''); setRecError(''); setRecSuccess(false); setRecForm({ email: '' }); }}
                     className="w-full text-center text-[12px] text-blue-500 hover:text-blue-700 font-semibold transition-colors"
                   >
                     ¿Olvidaste tu contraseña?
@@ -474,71 +471,53 @@ const AuthModal = ({ onClose, onLogin }) => {
                     </div>
                     <div>
                       <h3 className="text-lg font-extrabold text-slate-800 leading-tight">Recuperar acceso</h3>
-                      <p className="text-slate-400 text-sm">Ingresa tu correo y nueva contraseña.</p>
+                      <p className="text-slate-400 text-sm">Te enviaremos un enlace a tu correo.</p>
                     </div>
                   </div>
 
                   {recError && <ErrorBanner msg={recError} />}
 
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Correo electrónico</label>
-                      <InputIcon
-                        icon={Mail}
-                        type="email"
-                        value={recForm.email}
-                        onChange={e => { setRecForm({ ...recForm, email: e.target.value.replace(/\s/g, '') }); setRecError(''); }}
-                        placeholder="correo@empresa.com"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Nueva contraseña</label>
-                      <InputIcon
-                        icon={Lock}
-                        type={showRecPwd ? 'text' : 'password'}
-                        value={recForm.password}
-                        onChange={e => { setRecForm({ ...recForm, password: e.target.value }); setRecError(''); }}
-                        placeholder="Mínimo 6 caracteres"
-                        required
-                      >
-                        <PwdToggle show={showRecPwd} onToggle={() => setShowRecPwd(p => !p)} />
-                      </InputIcon>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Confirmar contraseña</label>
-                      <InputIcon
-                        icon={Lock}
-                        type={showRecPwd ? 'text' : 'password'}
-                        value={recForm.confirm}
-                        onChange={e => { setRecForm({ ...recForm, confirm: e.target.value }); setRecError(''); }}
-                        placeholder="Repite tu contraseña"
-                        required
-                      />
-                    </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Correo electrónico</label>
+                    <InputIcon
+                      icon={Mail}
+                      type="email"
+                      value={recForm.email}
+                      onChange={e => { setRecForm({ email: e.target.value.replace(/\s/g, '') }); setRecError(''); }}
+                      placeholder="correo@empresa.com"
+                      required
+                    />
                   </div>
 
-                  <PrimaryBtn loading={recLoading} loadingLabel="Actualizando…" label="Restablecer Contraseña" />
+                  <PrimaryBtn loading={recLoading} loadingLabel="Enviando enlace…" label="Enviar enlace de recuperación" />
+
+                  <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                    Recibirás un correo con un enlace para crear una nueva contraseña.<br/>
+                    El enlace expira en <strong>1 hora</strong>.
+                  </p>
                 </form>
               )}
 
-              {/* ── SUCCESS: contraseña ── */}
               {tab === 'recover' && recSuccess && (
                 <div className="text-center py-8 max-w-sm mx-auto md:max-w-none">
                   <div className="relative w-20 h-20 mx-auto mb-5">
-                    <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-30" />
-                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-200">
-                      <CheckCircle size={36} className="text-white" strokeWidth={2.5} />
+                    <div className="absolute inset-0 rounded-full bg-blue-100 animate-ping opacity-30" />
+                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                      <Mail size={36} className="text-white" strokeWidth={2} />
                     </div>
                   </div>
-                  <h3 className="text-xl font-black text-slate-800 mb-1">¡Contraseña actualizada!</h3>
-                  <p className="text-sm text-slate-400 mb-7 leading-relaxed">Ya puedes iniciar sesión con tu nueva contraseña.</p>
+                  <h3 className="text-xl font-black text-slate-800 mb-1">¡Correo enviado!</h3>
+                  <p className="text-sm text-slate-500 mb-2 leading-relaxed">
+                    Revisa tu bandeja de entrada.<br/>
+                    El enlace expira en <strong>1 hora</strong>.
+                  </p>
+                  <p className="text-xs text-slate-400 mb-7">Si no lo ves, revisa tu carpeta de spam.</p>
                   <button
-                    onClick={() => { setTab('login'); setRecSuccess(false); setRecForm({ email: '', password: '', confirm: '' }); }}
+                    onClick={() => { setTab('login'); setRecSuccess(false); setRecForm({ email: '' }); }}
                     className="w-full py-3.5 rounded-2xl text-white text-sm font-bold tracking-wide transition-all hover:opacity-90"
                     style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6)' }}
                   >
-                    Iniciar Sesión
+                    Volver al inicio de sesión
                   </button>
                 </div>
               )}

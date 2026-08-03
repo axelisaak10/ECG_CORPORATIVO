@@ -6,7 +6,7 @@ import {
   MessageSquare, CheckCheck, ListChecks, Home, ChevronLeft, Hammer, GanttChartSquare,
   KeyRound, Lock, CheckCircle, AlertCircle, EyeOff,
   RotateCcw, AlertTriangle, Clock, UserX, ShieldCheck, Star, Megaphone,
-  Activity,
+  Activity, Zap,
 } from 'lucide-react';
 import { companiesData } from '../../data/companies';
 import { fmtDate, uid } from '../../utils/formatters';
@@ -21,6 +21,7 @@ import AnunciosSection from '../admin/AnunciosSection';
 import TutorialesSection from '../admin/TutorialesSection';
 import ReportesPuestaTierraSection from '../admin/ReportesPuestaTierraSection';
 import DictaminacionSection from '../admin/DictaminacionSection';
+import PruebaAislamientoSection from '../admin/PruebaAislamientoSection';
 
 /* ─── Status maps ─── */
 
@@ -1612,13 +1613,26 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
                   <Activity size={16} />
                   Medición Puesta a Tierra (REG-ELC-01)
                 </button>
+                <button
+                  onClick={() => setDictaminacionSubTab('prueba_aislamiento')}
+                  className={`px-5 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2
+                    ${dictaminacionSubTab === 'prueba_aislamiento'
+                      ? 'border-ecg-rojo1 text-ecg-rojo1'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                  <Zap size={16} />
+                  Prueba de Aislamiento (NFPA 70B)
+                </button>
               </div>
 
               {/* Sub-tab views */}
               {dictaminacionSubTab === 'generales' ? (
                 <DictaminacionSection readOnly={!isAdmin} />
-              ) : (
+              ) : dictaminacionSubTab === 'puesta_tierra' ? (
                 <ReportesPuestaTierraSection currentUser={currentUser} readOnly={!isAdmin} />
+              ) : (
+                <PruebaAislamientoSection readOnly={!isAdmin} />
               )}
             </div>
           )}

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, X, Package, Wrench, Users, Clock, Eye, FileText,
   Pencil, AlertCircle, Loader2, ClipboardList, GanttChartSquare, Percent,
-  Download, Save, Printer
+  Download, Save, Printer, Ruler
 } from 'lucide-react';
 import {
   authHeaders,
@@ -370,6 +370,7 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
     (s, c) => s + c.hr * (cot.horas || 0) + c.dia * (cot.dias || 0) + c.semana * (cot.semanas || 0) + c.mes * (cot.meses || 0), 0
   );
   const totalHer = (cot.herramientas || []).reduce((s, h) => s + (h.precio_renta_diaria || 0) * (1 + (h.margen || 0) / 100) * h.cantidad * totalDias, 0);
+  const totalM2Det = (cot.metros_cuadrados || 0) * (cot.precio_m2 || 0);
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
@@ -503,12 +504,23 @@ const DetalleCotizacionModal = ({ cot, onClose }) => {
             </div>
           </div>
 
+          {(cot.metros_cuadrados > 0 || cot.precio_m2 > 0) && (
+            <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+              <p className="text-[10px] font-bold text-green-500 uppercase tracking-wider mb-2">Metros cuadrados</p>
+              <div className="flex justify-between text-sm text-green-800">
+                <span>{fmt(cot.precio_m2 || 0)} / m² × {(cot.metros_cuadrados || 0).toLocaleString('es-MX')} m²</span>
+                <span className="font-black">{fmt(totalM2Det)}</span>
+              </div>
+            </div>
+          )}
+
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 text-white space-y-1.5">
             {[
               { l: 'Artículos',    v: cot.totales?.articulos    || 0 },
               { l: 'Herramientas', v: totalHer },
               { l: 'Tiempo',       v: cot.totales?.tiempo       || totalTiempo },
-            ].map(({ l, v }) => (
+              { l: 'M²',          v: cot.totales?.m2            || totalM2Det },
+            ].filter(({ v }) => v > 0).map(({ l, v }) => (
               <div key={l} className="flex justify-between text-sm text-blue-100">
                 <span>{l}</span><span className="font-bold text-white">{fmt(v)}</span>
               </div>
@@ -538,6 +550,8 @@ const CotizacionForm = ({
   const [dias,    setDias]    = useState(initial?.dias    || 0);
   const [semanas, setSemanas] = useState(initial?.semanas || 0);
   const [meses,   setMeses]   = useState(initial?.meses   || 0);
+  const [metrosCuadrados, setMetrosCuadrados] = useState(initial?.metros_cuadrados || 0);
+  const [precioM2,        setPrecioM2]        = useState(initial?.precio_m2        || 0);
   const [porcentajeTiempo, setPorcentajeTiempo] = useState(initial?.porcentaje_tiempo ?? '');
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
@@ -559,7 +573,8 @@ const CotizacionForm = ({
   );
   const pct = parseFloat(porcentajeTiempo) || 0;
   const totalTiempo = totalTiempoBase * (1 + pct / 100);
-  const total = totalArticulos + totalHerramientas + totalTiempo;
+  const totalM2  = (parseFloat(metrosCuadrados) || 0) * (parseFloat(precioM2) || 0);
+  const total = totalArticulos + totalHerramientas + totalTiempo + totalM2;
 
   // ── Filtered catalogs ──
   const filteredArticulos = catalogoArticulos.filter(a => {
@@ -637,8 +652,10 @@ const CotizacionForm = ({
         herramientas: herramientas.map(({ _id, ...rest }) => rest),
         empleados,
         horas, dias, semanas, meses,
+        metros_cuadrados: parseFloat(metrosCuadrados) || 0,
+        precio_m2:        parseFloat(precioM2)        || 0,
         porcentaje_tiempo: pct || 0,
-        totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo, porcentaje_tiempo: pct },
+        totales: { articulos: totalArticulos, herramientas: totalHerramientas, tiempo: totalTiempo, m2: totalM2, porcentaje_tiempo: pct },
         total,
       };
       await onSave(payload);
@@ -667,7 +684,10 @@ const CotizacionForm = ({
     onSaveDraft({
       id: initial?.id,
       isDraft: true,
-      cliente_id: clienteId, descripcion, articulos, herramientas, empleados, horas, dias, semanas, meses
+      cliente_id: clienteId, descripcion, articulos, herramientas, empleados,
+      horas, dias, semanas, meses,
+      metros_cuadrados: parseFloat(metrosCuadrados) || 0,
+      precio_m2:        parseFloat(precioM2)        || 0,
     });
   };
 
@@ -995,6 +1015,53 @@ const CotizacionForm = ({
             <span className="text-base font-black text-violet-700">{fmt(totalTiempo)}</span>
           </div>
         </SectionCard>
+
+        {/* ── M² ── */}
+        <SectionCard icon={<Ruler size={16} />} title="Cotización por M²" accent="green">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Precio por m²</p>
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-black text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={precioM2}
+                  onChange={e => setPrecioM2(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 text-center text-2xl font-black border border-slate-200 rounded-xl px-1 py-1 focus:outline-none focus:border-green-400 bg-white"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Metros cuadrados</p>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={metrosCuadrados}
+                  onChange={e => setMetrosCuadrados(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 text-center text-2xl font-black border border-slate-200 rounded-xl px-1 py-1 focus:outline-none focus:border-green-400 bg-white"
+                />
+                <span className="text-lg font-black text-slate-400">m²</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-xl px-4 py-3 flex justify-between items-center border border-green-100">
+            <div>
+              <p className="text-[10px] font-black text-green-500 uppercase tracking-wider mb-0.5">Subtotal m²</p>
+              {(parseFloat(metrosCuadrados) > 0 && parseFloat(precioM2) > 0) && (
+                <p className="text-xs text-green-600">
+                  {fmt(parseFloat(precioM2))} × {parseFloat(metrosCuadrados).toLocaleString('es-MX')} m²
+                </p>
+              )}
+            </div>
+            <span className="text-base font-black text-green-700">{fmt(totalM2)}</span>
+          </div>
+        </SectionCard>
       </div>
 
       {/* ── RIGHT COLUMN: sticky summary + actions ── */}
@@ -1012,7 +1079,8 @@ const CotizacionForm = ({
               { icon: <Package size={13} />, label: 'Artículos',    value: totalArticulos,    color: 'text-blue-600'   },
               { icon: <Wrench  size={13} />, label: 'Herramientas', value: totalHerramientas, color: 'text-amber-600'  },
               { icon: <Clock   size={13} />, label: 'Tiempo',       value: totalTiempo,       color: 'text-violet-600' },
-            ].map(({ icon, label, value, color }) => (
+              { icon: <Ruler   size={13} />, label: 'M²',           value: totalM2,           color: 'text-green-600'  },
+            ].filter(r => r.value > 0).map(({ icon, label, value, color }) => (
               <div key={label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={color}>{icon}</span>
@@ -1069,6 +1137,12 @@ const CotizacionForm = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-slate-600"><Clock size={11} className="text-violet-400" /> Días equiv.</span>
                   <span className="font-black text-slate-800 bg-violet-50 px-2 py-0.5 rounded-full">{totalDias.toFixed(1)}</span>
+                </div>
+              )}
+              {totalM2 > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600"><Ruler size={11} className="text-green-400" /> m²</span>
+                  <span className="font-black text-slate-800 bg-green-50 px-2 py-0.5 rounded-full">{fmt(totalM2)}</span>
                 </div>
               )}
             </div>

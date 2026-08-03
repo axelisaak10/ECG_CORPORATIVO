@@ -120,6 +120,22 @@ export const generateCotizacionWord = (cot) => {
     }
   }
 
+  // M² row
+  const totalM2Word = (cot.metros_cuadrados || 0) * (cot.precio_m2 || 0);
+  if (totalM2Word > 0) {
+    grandTotal += totalM2Word;
+    const m2Letter = catLetters[Object.keys(grouped).length + (hasManoObra || (cot.empleados?.length > 0) ? 1 : 0)] || 'Z';
+    tableBody.push({
+      type: 'catLetter',
+      letter: m2Letter + '.',
+      label: `TRABAJOS POR METRO CUADRADO (${(cot.metros_cuadrados || 0).toLocaleString('es-MX')} m²)`,
+      cant: String(cot.metros_cuadrados || 0),
+      unidad: 'm²',
+      costoUnit: fmt(cot.precio_m2 || 0),
+      importe: fmt(totalM2Word),
+    });
+  }
+
   // ── Build delivery and commercial terms strings ──────────────────────────
   let totalDiasStr = '';
   if ((cot.horas || 0) > 0) totalDiasStr += `${cot.horas} horas `;

@@ -27,11 +27,22 @@ export async function apiLogin(email, password) {
   return data.user;
 }
 
-export async function apiResetPassword(email, newPassword) {
-  const res = await fetch(`${BASE_URL}/api/auth/reset-password?action=reset-password`, {
+export async function apiForgotPassword(email) {
+  const res = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, newPassword }),
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al enviar el correo.');
+  return data;
+}
+
+export async function apiResetPassword(token, newPassword) {
+  const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Error al restablecer la contraseña.');

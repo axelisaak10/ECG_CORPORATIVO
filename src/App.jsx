@@ -17,6 +17,7 @@ import AuthModal from './components/auth/AuthModal';
 import SeguimientoModal from './components/portal/SeguimientoModal';
 import AdminDashboard from './components/auth/AdminDashboard';
 import UserDashboard from './components/auth/UserDashboard';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import { Home, LogIn, LogOut, User, ArrowLeftRight, Search } from 'lucide-react';
 import { companiesData } from './data/companies';
 
@@ -24,16 +25,18 @@ import { companiesData } from './data/companies';
 function useAuth() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const session = localStorage.getItem('ecg_session');
+      // sessionStorage se limpia automáticamente al cerrar el navegador/pestaña
+      // evitando que datos de otro usuario aparezcan en la misma computadora
+      const session = sessionStorage.getItem('ecg_session');
       return session ? JSON.parse(session) : null;
     } catch {
-      localStorage.removeItem('ecg_session');
+      sessionStorage.removeItem('ecg_session');
       return null;
     }
   });
 
   const login = (user) => {
-    localStorage.setItem('ecg_session', JSON.stringify(user));
+    sessionStorage.setItem('ecg_session', JSON.stringify(user));
     setCurrentUser(user);
   };
 
@@ -43,20 +46,20 @@ function useAuth() {
       try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }); }
       catch { /* ignorar errores de red al cerrar sesión */ }
     }
-    localStorage.removeItem('ecg_session');
+    sessionStorage.removeItem('ecg_session');
     setCurrentUser(null);
   };
 
   const impersonate = (targetUser) => {
     const impersonated = { ...targetUser, impersonatedBy: currentUser };
-    localStorage.setItem('ecg_session', JSON.stringify(impersonated));
+    sessionStorage.setItem('ecg_session', JSON.stringify(impersonated));
     setCurrentUser(impersonated);
   };
 
   const stopImpersonating = () => {
     const original = currentUser?.impersonatedBy;
     if (!original) return;
-    localStorage.setItem('ecg_session', JSON.stringify(original));
+    sessionStorage.setItem('ecg_session', JSON.stringify(original));
     setCurrentUser(original);
   };
 
@@ -321,6 +324,7 @@ function App() {
             : <Navigate to="/" replace />
         }
       />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>

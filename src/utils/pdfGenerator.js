@@ -234,6 +234,24 @@ export const generateCotizacionPDF = async (cot) => {
     }
   }
 
+  // M² row
+  const totalM2PDF = (cot.metros_cuadrados || 0) * (cot.precio_m2 || 0);
+  if (totalM2PDF > 0) {
+    grandTotal += totalM2PDF;
+    const m2Letter = catLetters[Object.keys(grouped).length + (hasManoObra || (cot.empleados?.length > 0) ? 1 : 0)] || 'Z';
+    tableRows.push([
+      m2Letter + '.',
+      {
+        content: `TRABAJOS POR METRO CUADRADO (${(cot.metros_cuadrados || 0).toLocaleString('es-MX')} m²)`,
+        styles: { fontStyle: 'bold', textColor: 0 }
+      },
+      String(cot.metros_cuadrados || 0),
+      'm²',
+      fmt(cot.precio_m2 || 0),
+      fmt(totalM2PDF)
+    ]);
+  }
+
   // Grand total row
   tableRows.push([
     '',

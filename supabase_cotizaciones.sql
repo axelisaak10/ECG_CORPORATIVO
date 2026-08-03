@@ -76,3 +76,7 @@ CREATE TABLE IF NOT EXISTS cotizaciones (
 CREATE INDEX IF NOT EXISTS cotizaciones_cliente_id_idx ON cotizaciones(cliente_id);
 CREATE INDEX IF NOT EXISTS cotizaciones_usuario_id_idx ON cotizaciones(usuario_id);
 CREATE INDEX IF NOT EXISTS cotizaciones_estado_idx     ON cotizaciones(estado);
+
+-- Campos para cotización por m²
+ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS metros_cuadrados NUMERIC(12,2) DEFAULT 0;
+ALTER TABLE cotizaciones ADD COLUMN IF NOT EXISTS precio_m2         NUMERIC(12,2) DEFAULT 0;
