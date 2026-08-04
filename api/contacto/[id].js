@@ -1,7 +1,7 @@
 // api/contacto/[id].js — PATCH (marcar leído) y DELETE (eliminar) de mensajes
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('../lib/jwt');
-const { applyCors }    = require('../lib/cors');
+const { verifyToken }  = require('../_lib/jwt');
+const { applyCors }    = require('../_lib/cors');
 
 // UUIDs que Supabase genera por defecto
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -1,9 +1,9 @@
 // api/tareas.js — CRUD de tareas (tabla: tickets)
 const { createClient } = require('@supabase/supabase-js');
 const { randomUUID }   = require('crypto');
-const { verifyToken }  = require('./lib/jwt');
-const { applyCors }    = require('./lib/cors');
-const { sendTareaAsignadaEmail } = require('./lib/mailer');
+const { verifyToken }  = require('./_lib/jwt');
+const { applyCors }    = require('./_lib/cors');
+const { sendTareaAsignadaEmail } = require('./_lib/mailer');
 
 const VALID_PRIORIDAD = ['alta', 'media', 'baja'];
 const VALID_ESTADO    = ['pendiente', 'en_progreso', 'completada', 'cancelada'];

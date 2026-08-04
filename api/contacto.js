@@ -1,7 +1,7 @@
 // api/contacto.js — GET (listar mensajes) y POST (enviar mensaje de contacto)
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('./lib/jwt');
-const { applyCors }    = require('./lib/cors');
+const { verifyToken }  = require('./_lib/jwt');
+const { applyCors }    = require('./_lib/cors');
 
 // Regex básico de email
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

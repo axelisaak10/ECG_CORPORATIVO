@@ -1,7 +1,7 @@
 // api/trabajos.js — Búsqueda pública por código y CRUD autenticado de trabajos
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('./lib/jwt');
-const { applyCors }    = require('./lib/cors');
+const { verifyToken }  = require('./_lib/jwt');
+const { applyCors }    = require('./_lib/cors');
 
 // Código de rastreo: ECG-XXXXXX (solo caracteres seguros)
 const CODIGO_RE = /^ECG-[A-Z2-9]{6}$/;

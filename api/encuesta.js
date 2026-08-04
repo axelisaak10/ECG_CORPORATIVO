@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('./lib/jwt');
-const { applyCors }    = require('./lib/cors');
+const { verifyToken }  = require('./_lib/jwt');
+const { applyCors }    = require('./_lib/cors');
 
 const ENC_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_RESPUESTAS = 50; // límite anti-DoS

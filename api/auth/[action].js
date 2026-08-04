@@ -6,8 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const { randomUUID }   = require('crypto');
 const bcrypt           = require('bcryptjs');
 const jwt              = require('jsonwebtoken');
-const { signToken, verifyToken } = require('../lib/jwt');
-const { applyCors }    = require('../lib/cors');
+const { signToken, verifyToken } = require('../_lib/jwt');
+const { applyCors }    = require('../_lib/cors');
 
 const SESSION_LIMIT     = 2;
 const SESSION_TTL_HOURS = 24;

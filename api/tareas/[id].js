@@ -1,8 +1,8 @@
 // api/tareas/[id].js — PATCH y DELETE de tarea individual
 const { createClient } = require('@supabase/supabase-js');
-const { verifyToken }  = require('../lib/jwt');
-const { applyCors }    = require('../lib/cors');
-const { sendTareaAsignadaEmail } = require('../lib/mailer');
+const { verifyToken }  = require('../_lib/jwt');
+const { applyCors }    = require('../_lib/cors');
+const { sendTareaAsignadaEmail } = require('../_lib/mailer');
 
 // Regex básico de UUID v4
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
