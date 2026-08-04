@@ -4,13 +4,14 @@ const { verifyToken }  = require('./_lib/jwt');
 const { applyCors }    = require('./_lib/cors');
 
 module.exports = async function handler(req, res) {
-  applyCors(req, res, 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  try {
+    applyCors(req, res, 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
-    return res.status(500).json({ error: 'Variables de entorno no configuradas.' });
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
+      return res.status(500).json({ error: 'Variables de entorno SUPABASE no configuradas en Vercel.' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
   // ══════════════════════════════════════════════════════════════════════════
   // RECURSO: ANUNCIOS  (?resource=anuncios)
@@ -226,5 +227,9 @@ module.exports = async function handler(req, res) {
     return res.json({ message: 'Usuario eliminado.' });
   }
 
-  return res.status(405).json({ error: 'Método no permitido.' });
+    return res.status(405).json({ error: 'Método no permitido.' });
+  } catch (err) {
+    console.error('API Error /api/users:', err);
+    return res.status(500).json({ error: err.message || 'Error interno en usuarios.' });
+  }
 };

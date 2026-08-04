@@ -51,14 +51,15 @@ function getClientIp(req) {
 }
 
 module.exports = async function handler(req, res) {
-  applyCors(req, res, 'POST, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  try {
+    applyCors(req, res, 'POST, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
-    return res.status(500).json({ error: 'Variables de entorno no configuradas.' });
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
+      return res.status(500).json({ error: 'Variables de entorno SUPABASE no configuradas en Vercel.' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  const action   = req.query.action;
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const action   = req.query.action;
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
   if (action === 'login') {
@@ -454,5 +455,9 @@ module.exports = async function handler(req, res) {
     return res.json({ message: 'Cuenta eliminada correctamente.' });
   }
 
-  return res.status(404).json({ error: 'Acción no encontrada.' });
+    return res.status(404).json({ error: 'Acción no encontrada.' });
+  } catch (err) {
+    console.error('API Error /api/auth:', err);
+    return res.status(500).json({ error: err.message || 'Error interno en autenticación.' });
+  }
 };

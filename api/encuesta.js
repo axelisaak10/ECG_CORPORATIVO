@@ -12,13 +12,14 @@ function genCodigoEncuesta() {
 }
 
 module.exports = async function handler(req, res) {
-  applyCors(req, res, 'GET, POST, PUT, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  try {
+    applyCors(req, res, 'GET, POST, PUT, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
-    return res.status(500).json({ error: 'Variables de entorno no configuradas.' });
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
+      return res.status(500).json({ error: 'Variables de entorno SUPABASE no configuradas en Vercel.' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
   // Parse the URL manually instead of using Next.js/Vercel [...path] syntax
   const urlPath = req.url.split('?')[0]; // e.g. /api/encuesta/estadisticas
@@ -241,5 +242,9 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(404).json({ error: 'Ruta no encontrada.' });
+    return res.status(404).json({ error: 'Ruta no encontrada.' });
+  } catch (err) {
+    console.error('API Error /api/encuesta:', err);
+    return res.status(500).json({ error: err.message || 'Error interno en encuesta.' });
+  }
 };

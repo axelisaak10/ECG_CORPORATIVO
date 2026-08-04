@@ -1,3 +1,4 @@
 # Vercel Ignore file
-api/_lib/**
+# NOTA: NO agregar api/_lib/** aquí porque Vercel lo necesita para los imports de la API.
+# Las carpetas que empiezan con '_' dentro de /api/ son ignoradas como rutas HTTP pero incluidas en el bundle.
 server/**
