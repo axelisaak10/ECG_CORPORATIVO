@@ -60,11 +60,12 @@ module.exports = async function handler(req, res) {
     // ── Notificar por correo al usuario asignado ──────────────────────────────
     if (data.asignado_a) {
       try {
-        // Obtener datos del usuario asignado
+        // Obtener datos del usuario asignado (asignado_a guarda el email)
         const { data: usuarioAsignado } = await supabase
           .from('Usuarios')
           .select('"Correo", "Nombre Completo"')
-          .eq('id', data.asignado_a)
+          .eq('Correo', data.asignado_a)
+          .is('deleted_at', null)
           .maybeSingle();
 
         // Obtener nombre de quien creó la tarea

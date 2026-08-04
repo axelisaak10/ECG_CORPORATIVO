@@ -60,7 +60,8 @@ module.exports = async function handler(req, res) {
         const { data: usuarioAsignado } = await supabase
           .from('Usuarios')
           .select('"Correo", "Nombre Completo"')
-          .eq('id', nuevoAsignado)
+          .eq('Correo', nuevoAsignado)
+          .is('deleted_at', null)
           .maybeSingle();
 
         // Obtener nombre de quien actualizó la tarea

@@ -497,7 +497,7 @@ const TareasSection = ({ currentUser }) => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { l: 'Asignado a',   v: detailTarea.asignado_a || '—' },
+                  { l: 'Asignado a',   v: detailTarea.asignado_a ? (usuarios.find(u => u.email === detailTarea.asignado_a)?.name || detailTarea.asignado_a) : '—' },
                   { l: 'Creado',       v: fmtDate(detailTarea.created_at) },
                   { l: 'Actualizado',  v: fmtDate(detailTarea.updated_at) },
                   { l: 'Fecha límite', v: fmtDate(detailTarea.fecha_limite) },
@@ -578,7 +578,7 @@ const TareasSection = ({ currentUser }) => {
                   <select value={editing.asignado_a || ''} onChange={e => setField('asignado_a', e.target.value)} className={inputCls}>
                     <option value="">Sin asignar</option>
                     {usuarios.map(u => (
-                      <option key={u.id} value={u.name}>{u.name} ({u.email})</option>
+                      <option key={u.id} value={u.email}>{u.name} ({u.email})</option>
                     ))}
                   </select>
                 </FL>
