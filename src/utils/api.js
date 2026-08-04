@@ -6,7 +6,7 @@ export function authHeaders(includeContentType = true) {
   const headers = {};
   if (includeContentType) headers['Content-Type'] = 'application/json';
   try {
-    const session = JSON.parse(localStorage.getItem('ecg_session') || 'null');
+    const session = JSON.parse(sessionStorage.getItem('ecg_session') || 'null');
     if (session?.sessionToken) headers['Authorization'] = `Bearer ${session.sessionToken}`;
   } catch { /* ignorar */ }
   return headers;

@@ -1,23 +1,9 @@
-/**
- * /api/catalogo — maneja clientes, articulos, herramientas y cotizaciones
- * El recurso e id se pasan como query params desde el frontend:
- *   GET    /api/catalogo?r=clientes
- *   POST   /api/catalogo?r=clientes
- *   PUT    /api/catalogo?r=clientes&id=UUID
- *   DELETE /api/catalogo?r=clientes&id=UUID
- *   PATCH  /api/catalogo?r=cotizaciones&id=UUID
- */
 const { createClient } = require('@supabase/supabase-js');
 const { verifyToken }  = require('./lib/jwt');
-
-const CORS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+const { applyCors }    = require('./lib/cors');
 
 module.exports = async function handler(req, res) {
-  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
+  applyCors(res, 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const resource = req.query.r;

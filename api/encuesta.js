@@ -1,7 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
 const { verifyToken }  = require('./lib/jwt');
+const { applyCors }    = require('./lib/cors');
 
 const ENC_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const MAX_RESPUESTAS = 50; // límite anti-DoS
+
 function genCodigoEncuesta() {
   let c = 'ENC-';
   for (let i = 0; i < 6; i++) c += ENC_CHARS[Math.floor(Math.random() * ENC_CHARS.length)];
@@ -9,9 +12,7 @@ function genCodigoEncuesta() {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyCors(res, 'GET, POST, PUT, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
@@ -116,6 +117,8 @@ module.exports = async function handler(req, res) {
     const { codigo_id, respuestas } = req.body || {};
     if (!codigo_id || !Array.isArray(respuestas) || respuestas.length === 0)
       return res.status(400).json({ error: 'codigo_id y respuestas son requeridos.' });
+    if (respuestas.length > MAX_RESPUESTAS)
+      return res.status(400).json({ error: `Máximo ${MAX_RESPUESTAS} respuestas permitidas.` });
     const { data: codigoData } = await supabase
       .from('encuesta_codigos').select('id, usado').eq('id', codigo_id).maybeSingle();
     if (!codigoData) return res.status(404).json({ error: 'Código no encontrado.' });
@@ -238,5 +241,5 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(404).json({ error: `Ruta no encontrada: ${route || urlPath}` });
+  return res.status(404).json({ error: 'Ruta no encontrada.' });
 };

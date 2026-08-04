@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense, Component } from 'react';
 import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
 import Header from './components/layout/Header';
 import HamburgerMenu from './components/layout/HamburgerMenu';
@@ -15,11 +15,54 @@ import MainPortal from './components/layout/MainPortal';
 import Footer from './components/layout/Footer';
 import AuthModal from './components/auth/AuthModal';
 import SeguimientoModal from './components/portal/SeguimientoModal';
-import AdminDashboard from './components/auth/AdminDashboard';
-import UserDashboard from './components/auth/UserDashboard';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import { Home, LogIn, LogOut, User, ArrowLeftRight, Search } from 'lucide-react';
 import { companiesData } from './data/companies';
+
+// Carga diferida de los dashboards pesados — reduce ~180KB del bundle inicial
+const AdminDashboard = lazy(() => import('./components/auth/AdminDashboard'));
+const UserDashboard  = lazy(() => import('./components/auth/UserDashboard'));
+
+// ── Fallback de carga ─────────────────────────────────────────────────────────
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">Cargando...</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Error Boundary global ────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8">
+          <div className="max-w-md text-center">
+            <p className="text-5xl mb-4">⚠️</p>
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">Algo salió mal</h1>
+            <p className="text-slate-500 mb-6">Ocurrió un error inesperado. Por favor recarga la página.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Recargar página
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ── Shared auth state ────────────────────────────────────────────────────────
 function useAuth() {
@@ -288,8 +331,10 @@ function App() {
   };
 
   return (
+    <ErrorBoundary>
     <>
     <ImpersonationBanner currentUser={currentUser} onStop={handleStopImpersonating} />
+    <Suspense fallback={<LoadingFallback />}>
     <Routes>
       <Route
         path="/"
@@ -327,7 +372,9 @@ function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
     </>
+    </ErrorBoundary>
   );
 }
 

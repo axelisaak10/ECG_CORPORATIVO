@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/encuesta/(.*)", "destination": "/api/encuesta" },
+    { "source": "/api/contacto/:path*",  "destination": "/api/contacto/[id]" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
