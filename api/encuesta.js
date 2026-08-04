@@ -12,7 +12,7 @@ function genCodigoEncuesta() {
 }
 
 module.exports = async function handler(req, res) {
-  applyCors(res, 'GET, POST, PUT, DELETE, OPTIONS');
+  applyCors(req, res, 'GET, POST, PUT, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)

@@ -10,7 +10,7 @@ const VALID_ESTADO    = ['pendiente', 'en_progreso', 'completada', 'cancelada'];
 const VALID_GRUPO     = ['IT', 'Operaciones', 'Comercial', 'Administración', 'Ingeniería'];
 
 module.exports = async function handler(req, res) {
-  applyCors(res, 'GET, POST, OPTIONS');
+  applyCors(req, res, 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)

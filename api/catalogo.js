@@ -3,7 +3,7 @@ const { verifyToken }  = require('./_lib/jwt');
 const { applyCors }    = require('./_lib/cors');
 
 module.exports = async function handler(req, res) {
-  applyCors(res, 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  applyCors(req, res, 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const resource = req.query.r;

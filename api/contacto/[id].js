@@ -7,7 +7,7 @@ const { applyCors }    = require('../_lib/cors');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 module.exports = async function handler(req, res) {
-  applyCors(res, 'PATCH, DELETE, OPTIONS');
+  applyCors(req, res, 'PATCH, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY)
