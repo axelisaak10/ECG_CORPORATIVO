@@ -5,9 +5,9 @@ const { verifyToken }  = require('./_lib/jwt');
 const { applyCors }    = require('./_lib/cors');
 const { sendTareaAsignadaEmail } = require('./_lib/mailer');
 
-const VALID_PRIORIDAD = ['alta', 'media', 'baja'];
-const VALID_ESTADO    = ['pendiente', 'en_progreso', 'completada', 'cancelada'];
-const VALID_GRUPO     = ['IT', 'Operaciones', 'Comercial', 'Administración', 'Ingeniería'];
+const VALID_PRIORIDAD = ['critica', 'urgente', 'alta', 'media', 'baja', 'minima', 'ninguna'];
+const VALID_ESTADO    = ['pendiente', 'en-progreso', 'en_progreso', 'revision', 'hecho', 'completada', 'bloqueado', 'cancelada'];
+const VALID_GRUPO     = ['IT', 'Marketing', 'Redes', 'Sistemas', 'Desarrollo', 'Soporte', 'Operaciones', 'Comercial', 'Administración', 'Ingeniería'];
 
 module.exports = async function handler(req, res) {
   applyCors(req, res, 'GET, POST, OPTIONS');
