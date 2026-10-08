@@ -110,25 +110,11 @@ export const companiesData = [
         bio: 'Técnico en mantenimiento preventivo, correctivo y predictivo de instalaciones eléctricas e infraestructura energética.'
       },
       {
-        name: 'CESAR ERNESTO GUERRA MENDOZA',
-        role: 'Jefe de diseño',
-        specialty: 'Ingeniero Industrial',
-        image: '/assets/miembros/cesar_guerra.jpeg',
-        bio: 'Ingeniero Industrial especializado en la dirección de proyectos de diseño estructural y mecánico. Como Jefe de Diseño, César aporta una visión estratégica que combina la estética funcional con la viabilidad técnica, asegurando que cada plano y modelado cumpla con los más altos estándares de ingeniería y eficiencia operativa.'
-      },
-      {
         name: 'AXEL ISAAC  RODRÍGUEZ',
         role: 'Desarrollo de software e ingeniería',
         specialty: 'Ingeniero en desarrollo y gestión de software',
         image: '/assets/miembros/axel.jpeg',
         bio: 'Ingeniero en Desarrollo y Gestión de Software enfocado en crear soluciones digitales que equilibran la potencia técnica con la eficiencia operativa. Mi trabajo consiste en transformar requerimientos complejos en aplicaciones escalables, gestionando todo el ciclo de vida del producto: desde la arquitectura Fullstack y la optimización de datos, hasta el despliegue y la seguridad.\n\nLo que hago:\n\nDesarrollo Fullstack: Construcción de interfaces dinámicas y backends robustos utilizando tecnologías modernas como React, Angular, Node.js y Spring Boot.\n\nGestión Estratégica: Dirección de proyectos bajo estándares internacionales, asegurando que cada entrega cumpla con plazos, calidad y normativas de seguridad (OWASP/NIST).\n\nSoluciones Integrales: Diseño de bases de datos optimizadas e integración de tecnologías emergentes como IoT para conectar el mundo físico con el digital.'
-      },
-      {
-        name: 'Jessica Aliyah Tobon Vázquez',
-        role: 'Community Manager y Marketing Digital',
-        specialty: 'Lic en Innovación de Negocios y Mercadotecnia',
-        image: '/assets/miembros/jess.png',
-        bio: 'Actualmente curso la Licenciatura en Innovación de Negocios y Mercadotecnia, donde he desarrollado conocimientos en estrategias de marketing, innovación empresarial, análisis de mercados y desarrollo de proyectos, fortaleciendo habilidades de liderazgo, creatividad y comunicación enfocadas al crecimiento y competitividad de las empresas.'
       }
     ],
 
