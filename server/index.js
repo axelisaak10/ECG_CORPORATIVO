@@ -442,7 +442,7 @@ app.post('/api/tareas', async (req, res) => {
   if (!payload) return res.status(401).json({ error: 'Token inválido o expirado.' });
   if (payload.nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para crear tareas.' });
 
-  const { titulo, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
+  const { titulo, cliente, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
   if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
 
   const { data, error } = await supabase
@@ -450,10 +450,11 @@ app.post('/api/tareas', async (req, res) => {
     .insert([{
       id:           randomUUID(),
       titulo:       titulo.trim(),
+      cliente:      cliente?.trim() || null,
       descripcion:  descripcion?.trim() || '',
       prioridad:    prioridad   || 'media',
       estado:       estado      || 'pendiente',
-      grupo:        grupo       || 'IT',
+      grupo:        grupo       || 'Operaciones',
       asignado_a:   asignado_a  || null,
       fecha_limite: fecha_limite || null,
       usuario_id:   payload.sub,
@@ -477,6 +478,7 @@ app.patch('/api/tareas/:id', async (req, res) => {
 
     if (payload.nivel >= 2) {
       if (fields.titulo       !== undefined) updateData.titulo       = fields.titulo;
+      if (fields.cliente      !== undefined) updateData.cliente      = fields.cliente ? String(fields.cliente).trim() : null;
       if (fields.descripcion  !== undefined) updateData.descripcion  = fields.descripcion;
       if (fields.prioridad    !== undefined) updateData.prioridad    = fields.prioridad;
       if (fields.estado       !== undefined) updateData.estado       = fields.estado;

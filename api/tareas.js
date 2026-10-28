@@ -7,7 +7,7 @@ const { sendTareaAsignadaEmail } = require('./_lib/mailer');
 
 const VALID_PRIORIDAD = ['critica', 'urgente', 'alta', 'media', 'baja', 'minima', 'ninguna'];
 const VALID_ESTADO    = ['pendiente', 'en-progreso', 'en_progreso', 'revision', 'hecho', 'completada', 'bloqueado', 'cancelada'];
-const VALID_GRUPO     = ['IT', 'Marketing', 'Redes', 'Sistemas', 'Desarrollo', 'Soporte', 'Operaciones', 'Comercial', 'Administración', 'Ingeniería'];
+const VALID_GRUPO     = ['Operaciones', 'Ingeniería', 'Marketing', 'Sistemas', 'Desarrollo'];
 
 module.exports = async function handler(req, res) {
   applyCors(req, res, 'GET, POST, OPTIONS');
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
     if (nivel < 2) return res.status(403).json({ error: 'Se requiere superadmin para crear tareas.' });
 
-    const { titulo, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
+    const { titulo, cliente, descripcion, prioridad, estado, grupo, asignado_a, fecha_limite } = req.body;
     if (!titulo?.trim()) return res.status(400).json({ error: 'El título es requerido.' });
     if (titulo.trim().length > 200) return res.status(400).json({ error: 'El título es demasiado largo.' });
     if (prioridad && !VALID_PRIORIDAD.includes(prioridad))
@@ -51,10 +51,11 @@ module.exports = async function handler(req, res) {
       .insert([{
         id:           randomUUID(),
         titulo:       titulo.trim(),
+        cliente:      cliente?.trim() || null,
         descripcion:  descripcion?.trim() || '',
         prioridad:    prioridad   || 'media',
         estado:       estado      || 'pendiente',
-        grupo:        grupo       || 'IT',
+        grupo:        grupo       || 'Operaciones',
         asignado_a:   asignado_a  || null,
         fecha_limite: fecha_limite || null,
         usuario_id:   userId,

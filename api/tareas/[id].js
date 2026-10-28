@@ -8,7 +8,7 @@ const { sendTareaAsignadaEmail } = require('../_lib/mailer');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_PRIORIDAD = ['critica', 'urgente', 'alta', 'media', 'baja', 'minima', 'ninguna'];
 const VALID_ESTADO    = ['pendiente', 'en-progreso', 'en_progreso', 'revision', 'hecho', 'completada', 'bloqueado', 'cancelada'];
-const VALID_GRUPO     = ['IT', 'Marketing', 'Redes', 'Sistemas', 'Desarrollo', 'Soporte', 'Operaciones', 'Comercial', 'Administración', 'Ingeniería'];
+const VALID_GRUPO     = ['Operaciones', 'Ingeniería', 'Marketing', 'Sistemas', 'Desarrollo'];
 
 module.exports = async function handler(req, res) {
   applyCors(req, res, 'PATCH, DELETE, OPTIONS');
@@ -38,6 +38,7 @@ module.exports = async function handler(req, res) {
     if (nivel >= 2) {
       // Superadmin: puede cambiar cualquier campo (con whitelist)
       if (fields.titulo       !== undefined) updateData.titulo       = String(fields.titulo).trim().slice(0, 200);
+      if (fields.cliente      !== undefined) updateData.cliente      = fields.cliente ? String(fields.cliente).trim().slice(0, 200) : null;
       if (fields.descripcion  !== undefined) updateData.descripcion  = String(fields.descripcion || '').trim();
       if (fields.prioridad    !== undefined) {
         if (!VALID_PRIORIDAD.includes(fields.prioridad))

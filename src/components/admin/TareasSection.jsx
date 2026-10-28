@@ -25,7 +25,7 @@ export const KANBAN_COLS = [
   { value: 'bloqueado',   label: 'Bloqueado',   color: '#ef4444', Icon: Ban          },
 ];
 
-export const GRUPOS = ['IT', 'Marketing', 'Redes', 'Sistemas', 'Desarrollo', 'Soporte'];
+export const GRUPOS = ['Operaciones', 'Ingeniería', 'Marketing', 'Sistemas', 'Desarrollo'];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmtDate = (d) => {
@@ -73,6 +73,11 @@ const TareaCard = ({ tarea, isDragging, canEditState, locked, onOpen, onDragStar
           {locked && !vencida && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400 flex items-center gap-0.5 whitespace-nowrap"><Lock size={8} /> Sin acceso</span>}
         </div>
       </div>
+      {tarea.cliente && (
+        <div className="text-[11px] font-medium text-blue-600 mb-1 flex items-center gap-1">
+          <span className="font-bold text-[10px] uppercase text-blue-400">Cliente:</span> {tarea.cliente}
+        </div>
+      )}
       <p className="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">{tarea.descripcion}</p>
       <div className="flex items-center justify-between">
         <span className="text-[10px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded">{tarea.grupo}</span>
@@ -239,14 +244,14 @@ const TareasSection = ({ currentUser }) => {
   const openCreate = () => {
     setIsNew(true);
     setFormError('');
-    setEditing({ titulo: '', descripcion: '', prioridad: 'media', estado: 'pendiente', grupo: GRUPOS[0], asignado_a: '', fecha_limite: '' });
+    setEditing({ titulo: '', cliente: '', descripcion: '', prioridad: 'media', estado: 'pendiente', grupo: GRUPOS[0], asignado_a: '', fecha_limite: '' });
     setDetailId(null);
   };
 
   const openEdit = (tarea) => {
     setIsNew(false);
     setFormError('');
-    setEditing({ ...tarea, fecha_limite: toDateStr(tarea.fecha_limite) });
+    setEditing({ ...tarea, cliente: tarea.cliente || '', fecha_limite: toDateStr(tarea.fecha_limite) });
     setDetailId(null);
   };
 
@@ -258,6 +263,7 @@ const TareasSection = ({ currentUser }) => {
     try {
       const payload = {
         titulo:       editing.titulo.trim(),
+        cliente:      editing.cliente?.trim() || null,
         descripcion:  editing.descripcion || '',
         prioridad:    editing.prioridad,
         estado:       editing.estado,
@@ -421,10 +427,17 @@ const TareasSection = ({ currentUser }) => {
                         return (
                           <tr key={tarea.id} className={`hover:bg-slate-50/50 transition-colors ${vencida ? 'bg-red-50/20' : ''}`}>
                             <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => { setDetailId(tarea.id); setEditing(null); }}
-                                  className="font-semibold text-slate-800 text-sm hover:text-blue-600 text-left line-clamp-1 max-w-[180px]">{tarea.titulo}</button>
-                                {vencida && <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 flex-shrink-0"><Lock size={8} /> Vencido</span>}
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => { setDetailId(tarea.id); setEditing(null); }}
+                                    className="font-semibold text-slate-800 text-sm hover:text-blue-600 text-left line-clamp-1 max-w-[180px]">{tarea.titulo}</button>
+                                  {vencida && <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 flex-shrink-0"><Lock size={8} /> Vencido</span>}
+                                </div>
+                                {tarea.cliente && (
+                                  <div className="text-[11px] text-blue-600 font-medium line-clamp-1">
+                                    <span className="text-[10px] text-slate-400">Cliente:</span> {tarea.cliente}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-5 py-3.5">
@@ -497,6 +510,7 @@ const TareasSection = ({ currentUser }) => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
+                  { l: 'Cliente',      v: detailTarea.cliente || '—' },
                   { l: 'Asignado a',   v: detailTarea.asignado_a ? (usuarios.find(u => u.email === detailTarea.asignado_a)?.name || detailTarea.asignado_a) : '—' },
                   { l: 'Creado',       v: fmtDate(detailTarea.created_at) },
                   { l: 'Actualizado',  v: fmtDate(detailTarea.updated_at) },
@@ -549,6 +563,10 @@ const TareasSection = ({ currentUser }) => {
 
               <FL label="Título">
                 <input value={editing.titulo} onChange={e => setField('titulo', e.target.value)} placeholder="Título de la tarea" className={inputCls} />
+              </FL>
+
+              <FL label="Cliente (Opcional)">
+                <input value={editing.cliente || ''} onChange={e => setField('cliente', e.target.value)} placeholder="Nombre del cliente o empresa" className={inputCls} />
               </FL>
 
               <FL label="Descripción">
