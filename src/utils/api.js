@@ -672,7 +672,7 @@ export async function apiDeleteReportePuestaTierra(id) {
 
 // ── Asistencia y Kiosco de Empleados ──────────────────────────────────────────
 export const INITIAL_EMPLEADOS_FALLBACK = [
-  { id: '1', nombre: 'Ing. Juan Erasmo Cuaya', apodo: 'Don Erasmo', puesto: 'Director General', foto_url: '/assets/miembros/erasmo_cuaya.jpeg' },
+  { id: '1', nombre: 'Ing. Juan Erasmo Cuaya', apodo: 'Erasmo', puesto: 'Director General', foto_url: '/assets/miembros/erasmo_cuaya.jpeg' },
   { id: '2', nombre: 'María de Rayo Mancera', apodo: 'Rayo', puesto: 'Recursos Humanos y Finanzas', foto_url: '/assets/miembros/maria_rayo.jpeg' },
   { id: '3', nombre: 'Adelfo Mejía Aguilar', apodo: 'Adelfo', puesto: 'Jefe de Operaciones', foto_url: '/assets/miembros/adelfo.jpeg' },
   { id: '4', nombre: 'Axel Isaac Rodríguez', apodo: 'Axel', puesto: 'Ingeniería y Software', foto_url: '/assets/miembros/axel.jpeg' },

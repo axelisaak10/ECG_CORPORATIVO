@@ -617,10 +617,11 @@ app.all('/api/catalogo', async (req, res) => {
           const rawName = u['Nombre Completo'];
           const nombre = (Array.isArray(rawName) ? rawName[0] : (rawName || '')).toLowerCase();
           const email = (u['Correo'] || '').toLowerCase();
-          // Excluir a César, Jess, Pedro y Juanito del checador
+          // Excluir a César, Jess, Pedro, Juanito y Abel del checador
           if (nombre.includes('cesar') || email.includes('cesar')) return false;
           if (nombre.includes('jess') || email.includes('jess')) return false;
           if (nombre.includes('pedro') || nombre.includes('juanito')) return false;
+          if (nombre.includes('abel') || email.includes('abel')) return false;
           return true;
         })
         .map((u) => {
@@ -638,7 +639,7 @@ app.all('/api/catalogo', async (req, res) => {
 
           let apodo = nombre.split(' ')[0];
           if (lower.includes('rayo') || lower.includes('maria')) apodo = 'Rayo';
-          if (lower.includes('erasmo')) apodo = 'Don Erasmo';
+          if (lower.includes('erasmo')) apodo = 'Erasmo';
           if (lower.includes('francisco')) apodo = 'Francisco';
           if (lower.includes('roberto')) apodo = 'Roberto';
 
