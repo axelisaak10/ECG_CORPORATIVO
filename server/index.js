@@ -657,7 +657,12 @@ app.all('/api/catalogo', async (req, res) => {
     if (r === 'asistencias') {
       const fecha = req.query.fecha || new Date().toISOString().split('T')[0];
       const { data, error } = await supabase.from('asistencias').select('*').eq('fecha', fecha).order('created_at', { ascending: false });
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) {
+        if (error.code === '42P01') {
+          return res.json({ asistencias: [], warning: 'Tabla asistencias aún no creada en Supabase' });
+        }
+        return res.status(500).json({ error: error.message });
+      }
       const asistencias = (data || []).map(a => ({
         ...a,
         empleado_id: String(a.usuario_id || a.empleado_id),
@@ -674,19 +679,44 @@ app.all('/api/catalogo', async (req, res) => {
     const { empleado_id, usuario_id, empleado_nombre, usuario_nombre, tipo, fecha, hora } = req.body;
     const uid = usuario_id || empleado_id;
     if (!uid) return res.status(400).json({ error: 'usuario_id requerido.' });
+
+    let horaFinal = hora;
+    if (!horaFinal) {
+      horaFinal = new Date().toTimeString().split(' ')[0];
+    } else {
+      const match = String(horaFinal).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/i);
+      if (match) {
+        let [_, h, m, s, meridian] = match;
+        let hh = parseInt(h, 10);
+        if (meridian) {
+          const isPM = /p/i.test(meridian);
+          if (isPM && hh < 12) hh += 12;
+          if (!isPM && hh === 12) hh = 0;
+        }
+        horaFinal = `${String(hh).padStart(2, '0')}:${m}:${s || '00'}`;
+      }
+    }
+
     const { data, error } = await supabase.from('asistencias')
       .insert([{
         usuario_id: Number(uid),
         usuario_nombre: usuario_nombre || empleado_nombre || 'Colaborador',
         tipo: tipo || 'entrada',
         fecha: fecha || new Date().toISOString().split('T')[0],
-        hora: hora || new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        hora: horaFinal
       }])
       .select()
       .maybeSingle();
+
     if (error) {
       if (error.code === '23505') {
         return res.status(409).json({ error: 'Ya existe un registro para este empleado en esta fecha y tipo.' });
+      }
+      if (error.code === '42P01') {
+        return res.status(500).json({ 
+          error: 'La tabla "asistencias" no ha sido creada en la base de datos de Supabase. Ejecuta el script create_asistencias.sql en el SQL Editor de Supabase.',
+          code: 'TABLE_NOT_FOUND'
+        });
       }
       return res.status(500).json({ error: error.message });
     }

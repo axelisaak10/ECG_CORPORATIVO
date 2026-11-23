@@ -1,50 +1,57 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- ECG CORPORATIVO: SISTEMA DE ASISTENCIA Y CHECADOR PWA
--- Vinculado a tu tabla existente "Usuarios" (numeric id, _text Nombre Completo)
--- Incluye a: Erasmo, Adelfo, Axel, Rayo, Francisco y Roberto
--- Ejecutar en: Supabase Dashboard → SQL Editor → New query → Run
+-- ECG CORPORATIVO: CREACIÓN DE LA TABLA ASISTENCIAS EN SUPABASE
+-- Instrucciones:
+-- 1. Ve a tu panel de Supabase: https://supabase.com/dashboard
+-- 2. Selecciona tu proyecto ECG
+-- 3. En el menú de la izquierda entra a: "SQL Editor"
+-- 4. Haz clic en "New query" (Nueva consulta)
+-- 5. Pega todo este código y haz clic en el botón verde "Run"
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- 1. ASIGNAR LAS FOTOS OFICIALES A LOS USUARIOS QUE NO TENGAN AvatarURL
--- (Solo para Trabajadores nivel 1, Administradores nivel 2 y Super Admin nivel 3)
+-- 1. ASIGNAR LAS FOTOS OFICIALES A LOS USUARIOS ACTIVOS DE ECG
 UPDATE "Usuarios"
 SET "AvatarURL" = CASE
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%erasmo%'    THEN '/assets/miembros/erasmo_cuaya.jpeg'
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%adelfo%'    THEN '/assets/miembros/adelfo.jpeg'
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%axel%'      THEN '/assets/miembros/axel.jpeg'
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%rayo%' OR LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%maria%' THEN '/assets/miembros/maria_rayo.jpeg'
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%francisco%' THEN '/assets/miembros/francisco.jpeg'
-  WHEN LOWER(CAST("Nombre Completo" AS TEXT)) LIKE '%roberto%'   THEN '/assets/miembros/roberto.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%erasmo%'    THEN '/assets/miembros/erasmo_cuaya.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%adelfo%'    THEN '/assets/miembros/adelfo.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%axel%'      THEN '/assets/miembros/axel.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%rayo%' OR array_to_string("Nombre Completo", ' ') ILIKE '%maria%' THEN '/assets/miembros/maria_rayo.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%francisco%' THEN '/assets/miembros/francisco.jpeg'
+  WHEN array_to_string("Nombre Completo", ' ') ILIKE '%roberto%'   THEN '/assets/miembros/roberto.jpeg'
   ELSE "AvatarURL"
 END
 WHERE ("AvatarURL" IS NULL OR "AvatarURL" = '')
-  AND nivel >= 1
-  AND LOWER(CAST("Nombre Completo" AS TEXT)) NOT LIKE '%cesar%'
-  AND LOWER(CAST("Nombre Completo" AS TEXT)) NOT LIKE '%jess%';
+  AND nivel >= 1;
 
--- 2. CREAR LA TABLA asistencias VINCULADA DIRECTAMENTE A "Usuarios"
+-- 2. CREAR LA TABLA asistencias (compatible con almacenamiento offline y sincronización PWA)
 CREATE TABLE IF NOT EXISTS asistencias (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  usuario_id      NUMERIC NOT NULL REFERENCES "Usuarios"("id") ON DELETE CASCADE,
+  usuario_id      NUMERIC NOT NULL,
   usuario_nombre  TEXT NOT NULL,
   tipo            TEXT NOT NULL DEFAULT 'entrada' CHECK (tipo IN ('entrada', 'salida')),
   fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
-  hora            TIME NOT NULL DEFAULT CURRENT_TIME,
+  hora            TEXT NOT NULL,
   dispositivo     TEXT DEFAULT 'kiosk-pwa',
   created_at      TIMESTAMPTZ DEFAULT NOW(),
 
-  -- REGLA ESTRICTA DE BASE DE DATOS: Solo 1 entrada y 1 salida por día por usuario
+  -- REGLA ESTRICTA: Solo 1 entrada y 1 salida al día por usuario
   CONSTRAINT uq_asistencia_diaria UNIQUE (usuario_id, fecha, tipo)
 );
 
--- 3. ÍNDICES DE RENDIMIENTO PARA PRODUCCIÓN
+-- Si la tabla ya existía previamente con hora tipo TIME, la convertimos a TEXT
+DO $$
+BEGIN
+  ALTER TABLE asistencias ALTER COLUMN hora TYPE TEXT;
+EXCEPTION
+  WHEN OTHERS THEN NULL;
+END $$;
+
+-- 3. ÍNDICES DE VELOCIDAD
 CREATE INDEX IF NOT EXISTS idx_asistencias_fecha ON asistencias(fecha);
 CREATE INDEX IF NOT EXISTS idx_asistencias_usuario ON asistencias(usuario_id);
 
--- 4. HABILITAR SEGURIDAD A NIVEL DE FILAS (RLS)
+-- 4. PERMISOS Y SEGURIDAD RLS (Permitir registrar desde el kiosco/tablet)
 ALTER TABLE asistencias ENABLE ROW LEVEL SECURITY;
 
--- Políticas de acceso para la tablet checadora
 DROP POLICY IF EXISTS "Permitir registrar asistencias desde kiosco" ON asistencias;
 CREATE POLICY "Permitir registrar asistencias desde kiosco"
   ON asistencias FOR INSERT
@@ -62,22 +69,14 @@ CREATE POLICY "Permitir todo a service role en asistencias"
   USING (true)
   WITH CHECK (true);
 
--- 5. CONSULTA DE VERIFICACIÓN: Ver la lista de personal que usará el checador
+-- 5. VERIFICACIÓN: Ver la lista de personal activo en el checador
 SELECT 
   id,
-  "Nombre Completo" AS nombre,
+  array_to_string("Nombre Completo", ' ') AS nombre_completo,
   "Correo" AS correo,
   nivel,
-  CASE 
-    WHEN nivel = 1 THEN 'Trabajador'
-    WHEN nivel = 2 THEN 'Administrador'
-    WHEN nivel >= 3 THEN 'Super Admin'
-    ELSE 'Excluido (Cliente / Nivel 0)'
-  END AS rol_en_checador,
   "AvatarURL" AS foto
 FROM "Usuarios"
 WHERE nivel >= 1
   AND deleted_at IS NULL
-  AND LOWER(CAST("Nombre Completo" AS TEXT)) NOT LIKE '%cesar%'
-  AND LOWER(CAST("Nombre Completo" AS TEXT)) NOT LIKE '%jess%'
 ORDER BY id ASC;
