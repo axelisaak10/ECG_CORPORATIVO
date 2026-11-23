@@ -1516,7 +1516,12 @@ const AdminDashboard = ({ currentUser, onGoToPortal, onLogout, onImpersonate }) 
             );
           })}
 
-          <div className="pt-3 mt-1 border-t border-white/5">
+          <div className="pt-3 mt-1 border-t border-white/5 space-y-1">
+            <button onClick={() => window.open('/asistencia', '_blank')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all text-sm font-semibold">
+              <Clock size={16} />
+              <span className="flex-1 text-left">Checador (Kiosco)</span>
+              <ChevronRight size={13} />
+            </button>
             <button onClick={onGoToPortal} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all text-sm font-semibold">
               <Home size={16} />
               <span className="flex-1 text-left">Ver Portal</span>

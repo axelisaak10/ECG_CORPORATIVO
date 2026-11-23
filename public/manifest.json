@@ -1,0 +1,19 @@
+{
+  "name": "ECG Corporativo - Checador de Asistencia",
+  "short_name": "ECG Checador",
+  "description": "Reloj checador de asistencia para colaboradores de ECG Corporativo",
+  "start_url": "/asistencia",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/assets/logos/Corporativo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

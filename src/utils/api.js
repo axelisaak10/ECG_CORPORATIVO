@@ -669,3 +669,76 @@ export async function apiDeleteReportePuestaTierra(id) {
   if (!res.ok) throw new Error(data.error || 'Error al eliminar reporte de puesta a tierra.');
   return data;
 }
+
+// ── Asistencia y Kiosco de Empleados ──────────────────────────────────────────
+export const INITIAL_EMPLEADOS_FALLBACK = [
+  { id: '1', nombre: 'Ing. Juan Erasmo Cuaya', apodo: 'Don Erasmo', puesto: 'Director General', foto_url: '/assets/miembros/erasmo_cuaya.jpeg' },
+  { id: '2', nombre: 'María de Rayo Mancera', apodo: 'Rayo', puesto: 'Recursos Humanos y Finanzas', foto_url: '/assets/miembros/maria_rayo.jpeg' },
+  { id: '3', nombre: 'Adelfo Mejía Aguilar', apodo: 'Adelfo', puesto: 'Jefe de Operaciones', foto_url: '/assets/miembros/adelfo.jpeg' },
+  { id: '4', nombre: 'Axel Isaac Rodríguez', apodo: 'Axel', puesto: 'Ingeniería y Software', foto_url: '/assets/miembros/axel.jpeg' },
+  { id: '5', nombre: 'Francisco', apodo: 'Francisco', puesto: 'Colaborador', foto_url: '/assets/miembros/francisco.jpeg' },
+  { id: '6', nombre: 'Roberto', apodo: 'Roberto', puesto: 'Colaborador', foto_url: '/assets/miembros/roberto.jpeg' }
+];
+
+export async function apiGetEmpleados() {
+  try {
+    const res = await fetch(`${BASE_URL}/api/catalogo?r=empleados`, { headers: authHeaders(false) });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.empleados) && data.empleados.length > 0) return data.empleados;
+    }
+  } catch { /* fallback local */ }
+
+  return INITIAL_EMPLEADOS_FALLBACK;
+}
+
+export async function apiRegistrarAsistencia({ empleadoId, empleadoNombre, tipo = 'entrada' }) {
+  const registro = {
+    id: 'asist-' + Date.now(),
+    empleado_id: empleadoId,
+    empleado_nombre: empleadoNombre,
+    tipo,
+    fecha: new Date().toISOString().split('T')[0],
+    hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/catalogo?r=asistencias`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(registro),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.asistencia || registro;
+    }
+  } catch { /* fallback local */ }
+
+  // Guardar en almacenamiento local del kiosco
+  try {
+    const prev = JSON.parse(localStorage.getItem('ecg_asistencias_log') || '[]');
+    prev.unshift(registro);
+    localStorage.setItem('ecg_asistencias_log', JSON.stringify(prev.slice(0, 500)));
+  } catch {}
+
+  return registro;
+}
+
+export async function apiGetAsistenciasHoy() {
+  const hoy = new Date().toISOString().split('T')[0];
+  try {
+    const res = await fetch(`${BASE_URL}/api/catalogo?r=asistencias&fecha=${hoy}`, { headers: authHeaders(false) });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.asistencias)) return data.asistencias;
+    }
+  } catch {}
+
+  try {
+    const prev = JSON.parse(localStorage.getItem('ecg_asistencias_log') || '[]');
+    return prev.filter(r => r.fecha === hoy);
+  } catch {
+    return [];
+  }
+}

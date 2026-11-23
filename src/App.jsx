@@ -22,6 +22,7 @@ import { companiesData } from './data/companies';
 // Carga diferida de los dashboards pesados — reduce ~180KB del bundle inicial
 const AdminDashboard = lazy(() => import('./components/auth/AdminDashboard'));
 const UserDashboard  = lazy(() => import('./components/auth/UserDashboard'));
+const AsistenciaKiosk = lazy(() => import('./components/kiosk/AsistenciaKiosk'));
 
 // ── Fallback de carga ─────────────────────────────────────────────────────────
 function LoadingFallback() {
@@ -370,6 +371,8 @@ function App() {
         }
       />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/asistencia" element={<AsistenciaKiosk />} />
+      <Route path="/kiosco" element={<AsistenciaKiosk />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>

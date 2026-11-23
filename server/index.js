@@ -592,6 +592,105 @@ app.all('/api/catalogo', async (req, res) => {
         .eq('proyecto_id', proy.id).order('orden');
       return res.json({ proyecto: proy, tareas: tareas || [] });
     }
+    if (r === 'empleados' || r === 'usuarios_kiosco') {
+      // Filtrar únicamente los usuarios activos que son trabajador (nivel 1), admin (nivel 2) y super admin (nivel 3)
+      const { data, error } = await supabase
+        .from('Usuarios')
+        .select('id, "Nombre Completo", "Correo", nivel, "AvatarURL"')
+        .gte('nivel', 1)
+        .is('deleted_at', null)
+        .order('id', { ascending: true });
+      if (error) return res.status(500).json({ error: error.message });
+
+      const defaultPhotos = {
+        'erasmo': '/assets/miembros/erasmo_cuaya.jpeg',
+        'adelfo': '/assets/miembros/adelfo.jpeg',
+        'axel': '/assets/miembros/axel.jpeg',
+        'rayo': '/assets/miembros/maria_rayo.jpeg',
+        'maria': '/assets/miembros/maria_rayo.jpeg',
+        'francisco': '/assets/miembros/francisco.jpeg',
+        'roberto': '/assets/miembros/roberto.jpeg'
+      };
+
+      const empleados = (data || [])
+        .filter((u) => {
+          const rawName = u['Nombre Completo'];
+          const nombre = (Array.isArray(rawName) ? rawName[0] : (rawName || '')).toLowerCase();
+          const email = (u['Correo'] || '').toLowerCase();
+          // Excluir a César, Jess, Pedro y Juanito del checador
+          if (nombre.includes('cesar') || email.includes('cesar')) return false;
+          if (nombre.includes('jess') || email.includes('jess')) return false;
+          if (nombre.includes('pedro') || nombre.includes('juanito')) return false;
+          return true;
+        })
+        .map((u) => {
+          const rawName = u['Nombre Completo'];
+          const nombre = Array.isArray(rawName) ? rawName[0] : (rawName || 'Colaborador');
+          const role = u.nivel >= 3 ? 'Super Admin' : u.nivel >= 2 ? 'Administrador' : 'Trabajador';
+          const lower = nombre.toLowerCase();
+          let foto = u['AvatarURL'] || '';
+          if (!foto) {
+            for (const [key, path] of Object.entries(defaultPhotos)) {
+              if (lower.includes(key)) { foto = path; break; }
+            }
+          }
+          if (!foto) foto = '/assets/logos/Corporativo.png';
+
+          let apodo = nombre.split(' ')[0];
+          if (lower.includes('rayo') || lower.includes('maria')) apodo = 'Rayo';
+          if (lower.includes('erasmo')) apodo = 'Don Erasmo';
+          if (lower.includes('francisco')) apodo = 'Francisco';
+          if (lower.includes('roberto')) apodo = 'Roberto';
+
+          return {
+            id: String(u.id),
+            nombre,
+            apodo,
+            puesto: role,
+            foto_url: foto,
+            nivel: u.nivel
+          };
+        });
+
+      return res.json({ empleados });
+    }
+    if (r === 'asistencias') {
+      const fecha = req.query.fecha || new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase.from('asistencias').select('*').eq('fecha', fecha).order('created_at', { ascending: false });
+      if (error) return res.status(500).json({ error: error.message });
+      const asistencias = (data || []).map(a => ({
+        ...a,
+        empleado_id: String(a.usuario_id || a.empleado_id),
+        usuario_id: String(a.usuario_id || a.empleado_id),
+        empleado_nombre: a.usuario_nombre || a.empleado_nombre,
+        usuario_nombre: a.usuario_nombre || a.empleado_nombre,
+      }));
+      return res.json({ asistencias });
+    }
+  }
+
+  // Registro de asistencia (Kiosco / PWA)
+  if (method === 'POST' && r === 'asistencias') {
+    const { empleado_id, usuario_id, empleado_nombre, usuario_nombre, tipo, fecha, hora } = req.body;
+    const uid = usuario_id || empleado_id;
+    if (!uid) return res.status(400).json({ error: 'usuario_id requerido.' });
+    const { data, error } = await supabase.from('asistencias')
+      .insert([{
+        usuario_id: Number(uid),
+        usuario_nombre: usuario_nombre || empleado_nombre || 'Colaborador',
+        tipo: tipo || 'entrada',
+        fecha: fecha || new Date().toISOString().split('T')[0],
+        hora: hora || new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      }])
+      .select()
+      .maybeSingle();
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Ya existe un registro para este empleado en esta fecha y tipo.' });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+    return res.status(201).json({ asistencia: data });
   }
 
   const p = verifyToken(req);
