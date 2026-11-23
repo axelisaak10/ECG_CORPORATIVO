@@ -150,7 +150,7 @@ export async function registrarPaseAsistencia({ empleadoId, empleadoNombre, tipo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoRegistro)
       });
-      if (res.ok) {
+      if (res.ok || res.status === 409) {
         nuevoRegistro.synced = true;
         saveHistorialLocal(historial); // actualizar con flag synced = true
         return {
@@ -203,7 +203,7 @@ export async function sincronizarPendientesConServidor() {
         body: JSON.stringify(item)
       });
 
-      if (res.ok) {
+      if (res.ok || res.status === 409) {
         sincronizadosExitosos++;
         // Marcar como sincronizado en el historial local
         const histItem = historial.find((h) => h.id === item.id);

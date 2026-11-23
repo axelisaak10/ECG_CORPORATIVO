@@ -101,7 +101,11 @@ export default function AsistenciaKiosk() {
 
   useEffect(() => {
     loadEmpleados();
-    setPendingSync(getPendientesSync().length);
+    const count = getPendientesSync().length;
+    setPendingSync(count);
+    if (count > 0 && typeof navigator !== 'undefined' && navigator.onLine) {
+      triggerSync();
+    }
   }, []);
 
   // Manejo del contador regresivo para auto-reinicio tras registrar
