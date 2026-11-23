@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Clock, CheckCircle2, Lock, ShieldAlert, ArrowLeft,
+  Clock, CheckCircle2, ArrowLeft,
   User, RefreshCw, Home, Wifi, WifiOff, AlertTriangle,
   Download, UploadCloud, Calendar, LogIn, LogOut
 } from 'lucide-react';
@@ -16,17 +16,8 @@ import {
   getFechaLocal
 } from '../../utils/asistenciaStorage';
 
-const KIOSK_MASTER_PIN = '1234'; // PIN para autorizar la estación en el taller o tablet
-
 export default function AsistenciaKiosk() {
   const navigate = useNavigate();
-
-  // Estados de control del Kiosco
-  const [isAuthorized, setIsAuthorized] = useState(() => {
-    return localStorage.getItem('ecg_kiosk_authorized') === 'true';
-  });
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
 
   // Estados de conectividad y PWA
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -109,11 +100,9 @@ export default function AsistenciaKiosk() {
   };
 
   useEffect(() => {
-    if (isAuthorized) {
-      loadEmpleados();
-      setPendingSync(getPendientesSync().length);
-    }
-  }, [isAuthorized]);
+    loadEmpleados();
+    setPendingSync(getPendientesSync().length);
+  }, []);
 
   // Manejo del contador regresivo para auto-reinicio tras registrar
   useEffect(() => {
@@ -136,27 +125,6 @@ export default function AsistenciaKiosk() {
       if (interval) clearInterval(interval);
     };
   }, [registroExitoso]);
-
-  // Validar PIN de la estación
-  const handlePinSubmit = (e) => {
-    e?.preventDefault();
-    if (pinInput === KIOSK_MASTER_PIN) {
-      localStorage.setItem('ecg_kiosk_authorized', 'true');
-      setIsAuthorized(true);
-      setPinError(false);
-      setPinInput('');
-    } else {
-      setPinError(true);
-      setPinInput('');
-    }
-  };
-
-  const handleBloquearKiosco = () => {
-    localStorage.removeItem('ecg_kiosk_authorized');
-    setIsAuthorized(false);
-    setSelectedWorker(null);
-    setRegistroExitoso(null);
-  };
 
   // Instalar como PWA
   const handleInstallPWA = async () => {
@@ -220,63 +188,7 @@ export default function AsistenciaKiosk() {
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // VISTA 1: PANTALLA DE BLOQUEO DE ESTACIÓN
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (!isAuthorized) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 select-none font-sans">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/20 text-blue-400 mx-auto flex items-center justify-center mb-4 border border-blue-500/30">
-            <Lock size={32} />
-          </div>
-          
-          <h1 className="text-2xl font-black text-white mb-1">Checador de Asistencia ECG</h1>
-          <p className="text-xs text-slate-400 font-medium mb-6">
-            Área restringida para colaboradores. Ingrese el PIN de estación para habilitar este dispositivo.
-          </p>
-
-          <form onSubmit={handlePinSubmit} className="space-y-4">
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              value={pinInput}
-              onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
-              placeholder="••••"
-              autoFocus
-              className="w-full py-4 text-center text-3xl font-mono tracking-[0.5em] rounded-2xl bg-slate-950 border-2 border-slate-700 text-white focus:border-blue-500 focus:outline-none transition-all placeholder-slate-600"
-            />
-
-            {pinError && (
-              <p className="text-xs font-bold text-red-400 flex items-center justify-center gap-1.5 animate-bounce">
-                <ShieldAlert size={14} /> PIN incorrecto. Intente de nuevo.
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-base rounded-2xl shadow-lg transition-all active:scale-95"
-            >
-              Habilitar Estación
-            </button>
-          </form>
-
-          <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-500">
-            <span>PIN predeterminado: <strong className="text-slate-400 font-mono">1234</strong></span>
-            <button
-              onClick={() => navigate('/')}
-              className="text-slate-400 hover:text-white flex items-center gap-1 font-semibold transition-colors"
-            >
-              <Home size={13} /> Ir al Portal
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // VISTA 2: PANTALLA DE ÉXITO (Confirmación gigante tras registrar Entrada o Salida)
+  // VISTA 1: PANTALLA DE ÉXITO (Confirmación gigante tras registrar Entrada o Salida)
   // ─────────────────────────────────────────────────────────────────────────────
   if (registroExitoso) {
     const vocativo = selectedWorker?.apodo || selectedWorker?.nombre?.split(' ')[0] || 'COMPAÑERO';
@@ -541,15 +453,6 @@ export default function AsistenciaKiosk() {
             {currentTime.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
-
-        {/* Bloqueo de estación para el supervisor */}
-        <button
-          onClick={handleBloquearKiosco}
-          className="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
-          title="Bloquear estación de asistencia"
-        >
-          <Lock size={18} />
-        </button>
       </header>
 
       {/* Selector de Trabajadores por Foto */}
