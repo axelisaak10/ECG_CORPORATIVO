@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Clock, CheckCircle2, ArrowLeft,
   User, RefreshCw, Home, Wifi, WifiOff, AlertTriangle,
-  Download, UploadCloud, Calendar, LogIn, LogOut
+  Download, UploadCloud, Calendar, LogIn, LogOut,
+  Share2, PlusSquare, MoreVertical, Smartphone, X, Check, Sparkles
 } from 'lucide-react';
 import { apiGetEmpleados } from '../../utils/api';
 import {
@@ -19,11 +20,25 @@ import {
 export default function AsistenciaKiosk() {
   const navigate = useNavigate();
 
+  // Detección de plataforma móvil (Android / iOS)
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+  const isAndroid = typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent || '');
+
   // Estados de conectividad y PWA
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSync, setPendingSync] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      document.referrer.includes('android-app://')
+    );
+  });
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installTab, setInstallTab] = useState(isIOS ? 'ios' : 'android');
 
   // Estados de datos
   const [empleados, setEmpleados] = useState([]);
@@ -130,14 +145,34 @@ export default function AsistenciaKiosk() {
     };
   }, [registroExitoso]);
 
-  // Instalar como PWA
+  // Abrir modal o flujo nativo de instalación estilo Xbox Cloud Gaming
+  const handleOpenInstallModal = async () => {
+    if (installPrompt && !isIOS) {
+      try {
+        await installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          setInstallPrompt(null);
+          setIsStandalone(true);
+          return;
+        }
+      } catch {}
+    }
+    setInstallTab(isIOS ? 'ios' : 'android');
+    setShowInstallModal(true);
+  };
+
   const handleInstallPWA = async () => {
     if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setInstallPrompt(null);
-    }
+    try {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setInstallPrompt(null);
+        setIsStandalone(true);
+        setShowInstallModal(false);
+      }
+    } catch {}
   };
 
   // Registrar asistencia (entrada o salida) con protección de duplicados diarios y soporte offline
@@ -412,12 +447,14 @@ export default function AsistenciaKiosk() {
           <div>
             <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
               RELOJ CHECADOR
-              {installPrompt && (
+              {!isStandalone && (
                 <button
-                  onClick={handleInstallPWA}
-                  className="px-2.5 py-0.5 rounded-lg bg-blue-600/30 text-blue-300 text-[10px] font-extrabold border border-blue-500/40 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1"
+                  onClick={handleOpenInstallModal}
+                  className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black border border-blue-400/40 shadow-md shadow-blue-900/30 active:scale-95 transition-all flex items-center gap-1.5"
+                  title="Instalar en Celular (Android / iPhone) como acceso directo"
                 >
-                  <Download size={11} /> Instalar App
+                  <Smartphone size={12} className="text-blue-200" />
+                  <span>Instalar App</span>
                 </button>
               )}
             </h1>
@@ -555,6 +592,167 @@ export default function AsistenciaKiosk() {
           <Home size={14} /> Portal Principal
         </button>
       </footer>
+
+      {/* ─────────────────────────────────────────────────────────────────────────────
+          MODAL DE INSTALACIÓN ESTILO XBOX CLOUD (ACCESO DIRECTO / PWA)
+      ───────────────────────────────────────────────────────────────────────────── */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-slate-700 w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-[0_0_60px_rgba(0,0,0,0.8)] relative text-left">
+            {/* Botón cerrar */}
+            <button
+              onClick={() => setShowInstallModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Cabecera del modal */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg flex-shrink-0">
+                ECG
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-1.5">
+                  Instalar Checador ECG <Sparkles size={16} className="text-amber-400" />
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Acceso directo sin barras de navegador (como Xbox Cloud Gaming)
+                </p>
+              </div>
+            </div>
+
+            {/* Selector de plataforma (iPhone / Android) */}
+            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-5">
+              <button
+                onClick={() => setInstallTab('ios')}
+                className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all ${
+                  installTab === 'ios'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🍏 iPhone / iPad (iOS)</span>
+              </button>
+              <button
+                onClick={() => setInstallTab('android')}
+                className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all ${
+                  installTab === 'android'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🤖 Android (Chrome/Edge)</span>
+              </button>
+            </div>
+
+            {/* Contenido pestaña iOS */}
+            {installTab === 'ios' && (
+              <div className="space-y-3.5">
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold border border-blue-500/30">
+                    <Share2 size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 1: Abrir Compartir</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      En el navegador <strong className="text-blue-400">Safari</strong>, presiona el botón <strong>Compartir</strong> (el ícono del cuadrado con la flecha hacia arriba <span className="font-mono text-blue-400">⎋</span> en la barra inferior).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center flex-shrink-0 font-bold border border-indigo-500/30">
+                    <PlusSquare size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 2: Agregar a Inicio</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Baja en las opciones del menú y selecciona <strong className="text-indigo-400">"Agregar a pantalla de inicio"</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold border border-emerald-500/30">
+                    <Check size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 3: Confirmar</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Presiona <strong className="text-emerald-400">"Agregar"</strong> en la esquina superior derecha. ¡Listo! Se creará el ícono en tu pantalla como una app instalada.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Contenido pestaña Android */}
+            {installTab === 'android' && (
+              <div className="space-y-3.5">
+                {installPrompt && (
+                  <button
+                    onClick={handleInstallPWA}
+                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all mb-2 border border-emerald-400/40"
+                  >
+                    <Download size={18} />
+                    <span>Instalar directamente en este Android</span>
+                  </button>
+                )}
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold border border-blue-500/30">
+                    <MoreVertical size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 1: Menú del Navegador</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      En <strong>Chrome</strong> o <strong>Edge</strong>, toca los <strong>tres puntos (⋮)</strong> en la esquina superior derecha.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center flex-shrink-0 font-bold border border-indigo-500/30">
+                    <Smartphone size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 2: Instalar / Acceso Directo</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Selecciona <strong className="text-indigo-400">"Instalar aplicación"</strong> o <strong className="text-indigo-400">"Agregar a la pantalla principal"</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold border border-emerald-500/30">
+                    <Check size={18} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white uppercase tracking-wide">Paso 3: Confirmar</div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Confirma tocando <strong className="text-emerald-400">"Instalar"</strong>. Se añadirá el acceso directo a tu cajón de aplicaciones.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Pie del modal */}
+            <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+              <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                🔒 Funciona offline y sin conexión
+              </span>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
